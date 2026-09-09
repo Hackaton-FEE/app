@@ -105,6 +105,31 @@ void main() {
     expect(controller.activeCount, 2);
   });
 
+  test(
+    'equal timestamps keep the same case order after saving and reloading',
+    () async {
+      const ids = [
+        '10000000-0000-4000-8000-000000000002',
+        '10000000-0000-4000-8000-000000000001',
+      ];
+      var nextId = 0;
+      final ordered = CasesController(
+        LocalCaseRepository(
+          storage: storage,
+          clock: () => DateTime.utc(2026, 9, 9),
+          idFactory: () => ids[nextId++],
+        ),
+      );
+      addTearDown(ordered.dispose);
+      await ordered.load();
+      await ordered.saveCase(input(title: 'Primer guardado'));
+      await ordered.saveCase(input(title: 'Segundo guardado'));
+      expect(ordered.state.cases.map((item) => item.id), ids.reversed);
+      await ordered.load();
+      expect(ordered.state.cases.map((item) => item.id), ids.reversed);
+    },
+  );
+
   test('corrupt data is not treated as an empty successful load', () async {
     storage.records['broken'] = '{invalid';
     await controller.load();

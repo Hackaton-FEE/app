@@ -110,11 +110,7 @@ class CasesController extends ChangeNotifier {
     try {
       final result = await operation();
       if (_disposed) return null;
-      final cases = updateCases(result)
-        ..sort((a, b) {
-          final byDate = b.updatedAt.compareTo(a.updatedAt);
-          return byDate == 0 ? a.id.compareTo(b.id) : byDate;
-        });
+      final cases = updateCases(result)..sort(PrivacyCase.compareByRecency);
       _emit(CasesState(cases: cases, isLoading: false));
       return result;
     } catch (error) {

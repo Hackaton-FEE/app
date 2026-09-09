@@ -300,8 +300,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                             TextButton(
                                               onPressed: footprint.isLoading
                                                   ? null
-                                                  : () =>
-                                                        footprint.loadProfile(),
+                                                  : footprint.retry,
                                               child: const Text('Reintentar'),
                                             ),
                                           ],

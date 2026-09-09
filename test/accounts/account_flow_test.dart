@@ -193,6 +193,8 @@ void main() {
     await select(tester, _second);
     await openGuardAi(tester);
     expect(find.text(message), findsNothing);
+    await tester.ensureVisible(find.byType(TextField, skipOffstage: false));
+    await tester.pumpAndSettle();
     expect(tester.widget<TextField>(input).controller!.text, isEmpty);
 
     await tester.tap(find.byType(BackButtonIcon));
@@ -201,6 +203,8 @@ void main() {
     await select(tester, _first);
     await openGuardAi(tester);
     expect(find.text(message), findsOneWidget);
+    await tester.ensureVisible(find.byType(TextField, skipOffstage: false));
+    await tester.pumpAndSettle();
     expect(tester.widget<TextField>(input).controller!.text, draft);
     expect(cases.records, isEmpty);
   });

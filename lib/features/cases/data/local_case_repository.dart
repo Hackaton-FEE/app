@@ -59,18 +59,19 @@ class LocalCaseRepository implements CaseRepository {
 
   Future<List<PrivacyCase>> _readCases() async {
     final records = await _storageCall(_storage.readAll);
-    final cases = records.entries
+    // Validate every record before a mutation, including unrelated cases.
+    // Only a public collection read needs to sort and freeze this private list.
+    return records.entries
         .map((entry) => _decode(entry.key, entry.value))
         .toList();
-    cases.sort((a, b) {
-      final byUpdate = b.updatedAt.compareTo(a.updatedAt);
-      return byUpdate != 0 ? byUpdate : a.id.compareTo(b.id);
-    });
-    return List.unmodifiable(cases);
   }
 
   @override
-  Future<List<PrivacyCase>> loadCases() => _enqueue(_readCases);
+  Future<List<PrivacyCase>> loadCases() => _enqueue(() async {
+    final cases = await _readCases();
+    cases.sort(PrivacyCase.compareByRecency);
+    return List.unmodifiable(cases);
+  });
 
   @override
   Future<PrivacyCase> createCase(CaseInput input) => _enqueue(() async {

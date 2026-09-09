@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/footprint_item.dart';
+import '../footprint_labels.dart';
 
 class FootprintDetailSheet extends StatelessWidget {
   const FootprintDetailSheet({
@@ -11,18 +12,6 @@ class FootprintDetailSheet extends StatelessWidget {
 
   final FootprintItem item;
   final ValueChanged<FootprintItem> onCreateReport;
-
-  Color _riskColor(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => const Color(0xFF9C4635),
-    FootprintRisk.medium => const Color(0xFF866117),
-    FootprintRisk.low => const Color(0xFF35634A),
-  };
-
-  String _riskText(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => 'Prioridad alta',
-    FootprintRisk.medium => 'Prioridad media',
-    FootprintRisk.low => 'Prioridad baja',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +67,9 @@ class FootprintDetailSheet extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(
-                _riskText(item.riskLevel),
+                item.riskLevel.priorityLabel,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: _riskColor(item.riskLevel),
+                  color: item.riskLevel.color,
                 ),
               ),
               const SizedBox(height: 22),

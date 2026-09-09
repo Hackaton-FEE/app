@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/footprint_item.dart';
+import '../footprint_labels.dart';
 
 class FindingCard extends StatelessWidget {
   const FindingCard({required this.item, required this.onTap, super.key});
@@ -13,18 +14,6 @@ class FindingCard extends StatelessWidget {
     FootprintCategory.exposedContact => Icons.alternate_email_rounded,
     FootprintCategory.dataBreach => Icons.lock_outline_rounded,
     FootprintCategory.dataBroker => Icons.manage_search_rounded,
-  };
-
-  Color _riskColor(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => const Color(0xFF9C4635),
-    FootprintRisk.medium => const Color(0xFF866117),
-    FootprintRisk.low => const Color(0xFF35634A),
-  };
-
-  String _riskText(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => 'Prioridad alta',
-    FootprintRisk.medium => 'Prioridad media',
-    FootprintRisk.low => 'Prioridad baja',
   };
 
   @override
@@ -80,9 +69,9 @@ class FindingCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        _riskText(item.riskLevel),
+                        item.riskLevel.priorityLabel,
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: _riskColor(item.riskLevel),
+                          color: item.riskLevel.color,
                         ),
                       ),
                     ],

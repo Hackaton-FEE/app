@@ -15,6 +15,7 @@ class FootprintController extends ChangeNotifier {
   bool _isLoading = false;
   bool _disposed = false;
   String? _error;
+  String? _failedScanIdentity;
   String? _scanningStage;
   FootprintCategory? _selectedCategory;
 
@@ -42,10 +43,21 @@ class FootprintController extends ChangeNotifier {
     _notify();
   }
 
+  Future<void> retry() async {
+    if (_disposed || _isLoading || _error == null) return;
+    final identity = _failedScanIdentity;
+    if (identity == null) {
+      await loadProfile();
+    } else {
+      await scanIdentity(identity);
+    }
+  }
+
   Future<void> loadProfile() async {
     if (_disposed || _isLoading) return;
     _isLoading = true;
     _error = null;
+    _failedScanIdentity = null;
     _notify();
 
     try {
@@ -65,6 +77,7 @@ class FootprintController extends ChangeNotifier {
     if (_disposed || _isLoading) return false;
     _isLoading = true;
     _error = null;
+    _failedScanIdentity = null;
     _scanningStage = 'Preparando análisis de ejemplo…';
     _notify();
 
@@ -88,6 +101,7 @@ class FootprintController extends ChangeNotifier {
       return true;
     } catch (e) {
       if (!_disposed) {
+        _failedScanIdentity = identity;
         _error = e is FormatException
             ? e.message
             : 'Ocurrió un error al realizar el escaneo.';
@@ -112,6 +126,7 @@ class FootprintController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _failedScanIdentity = null;
     super.dispose();
   }
 }

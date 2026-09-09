@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/footprint_item.dart';
+import '../footprint_labels.dart';
 import '../../domain/footprint_profile.dart';
 
 class ExposureGauge extends StatelessWidget {
@@ -8,24 +9,12 @@ class ExposureGauge extends StatelessWidget {
 
   final FootprintProfile profile;
 
-  Color _riskColor(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => const Color(0xFF9C4635),
-    FootprintRisk.medium => const Color(0xFF866117),
-    FootprintRisk.low => const Color(0xFF35634A),
-  };
-
-  String _riskLabel(FootprintRisk risk) => switch (risk) {
-    FootprintRisk.high => 'Exposición alta',
-    FootprintRisk.medium => 'Exposición moderada',
-    FootprintRisk.low => 'Exposición baja',
-  };
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final risk = profile.overallRisk;
-    final riskColor = _riskColor(risk);
+    final riskColor = risk.color;
     final score = profile.exposureScore;
 
     return Container(
@@ -98,7 +87,7 @@ class ExposureGauge extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            _riskLabel(risk),
+            risk.exposureLabel,
             style: theme.textTheme.titleMedium?.copyWith(
               color: riskColor,
               fontWeight: FontWeight.w600,
@@ -119,17 +108,17 @@ class ExposureGauge extends StatelessWidget {
               _PriorityCount(
                 label: 'alta',
                 count: profile.highRiskCount,
-                color: _riskColor(FootprintRisk.high),
+                color: FootprintRisk.high.color,
               ),
               _PriorityCount(
                 label: 'media',
                 count: profile.mediumRiskCount,
-                color: _riskColor(FootprintRisk.medium),
+                color: FootprintRisk.medium.color,
               ),
               _PriorityCount(
                 label: 'baja',
                 count: profile.lowRiskCount,
-                color: _riskColor(FootprintRisk.low),
+                color: FootprintRisk.low.color,
               ),
             ],
           ),

@@ -8,7 +8,8 @@ Desde la raíz, con Flutter 3.47.2 / Dart 3.13.2:
 
 ```sh
 flutter pub get --enforce-lockfile
-dart format --output=none --set-exit-if-changed lib test integration_test
+dart format --output=none --set-exit-if-changed lib test integration_test tool
+dart run tool/check_source_size.dart
 flutter analyze
 flutter test
 flutter build apk --debug

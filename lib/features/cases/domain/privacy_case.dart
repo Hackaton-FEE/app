@@ -23,4 +23,10 @@ class PrivacyCase {
   final CaseStatus status;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// A stable order shared by persisted reads and presentation updates.
+  static int compareByRecency(PrivacyCase first, PrivacyCase second) {
+    final byDate = second.updatedAt.compareTo(first.updatedAt);
+    return byDate == 0 ? first.id.compareTo(second.id) : byDate;
+  }
 }

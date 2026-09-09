@@ -41,6 +41,16 @@ no se fragmentan solo para cumplir ese número.
 
 ## Evidencia de entrega
 
+Las tres fases están implementadas. Se añadieron cinco archivos de producción
+para secciones completas o presentación compartida: el total pasó de 46 a 51.
+
+| Pantalla | Antes | Después |
+| --- | ---: | ---: |
+| Dashboard | 498 | 345 |
+| Selector inicial | 411 | 250 |
+| Formulario de casos | 360 | 299 |
+| GuardAI | 311 | 295 |
+
 Fase 1: formato y análisis sin incidencias; 157 pruebas unitarias/de widgets
 aprobadas, incluidas las regresiones de recuperación y ciclo de vida. El formulario
 con recuperación se comprobó a 320 × 640 y texto al 200 % mediante pruebas de
@@ -48,7 +58,24 @@ widgets y guidelines. La [captura del formulario](images/quality-case-recovery.p
 es un render de widget Flutter a 390 × 844 con fuentes Roboto y datos ficticios;
 no es una captura de un dispositivo Android.
 
-El registro final distingue pruebas unitarias y de widgets, build Android e
-integración nativa. Las comprobaciones de semántica y tamaños de pantalla no
-sustituyen TalkBack/VoiceOver ni pruebas con personas usuarias. Consulta también
+Validación final local con Flutter 3.47.2 / Dart 3.13.2 en Linux:
+
+- `flutter pub get --enforce-lockfile`: correcto, sin cambios de dependencias.
+- Formato, `flutter analyze --no-pub` y `git diff --check`: sin incidencias.
+- `dart run tool/check_source_size.dart`: 51 archivos; máximo de 345 líneas.
+- `flutter test --no-pub`: 166 pruebas aprobadas. Además se volvió a ejecutar la
+  regresión de reemplazo/desmontaje de controladores tras reforzar sus asserts.
+- `flutter build apk --debug --no-pub`: APK Android compilado correctamente.
+- Lista de 120 hallazgos: acceso al último elemento con menos de 20 tarjetas
+  montadas en el escenario de prueba. El builder evita crear de entrada todos
+  los widgets de tarjetas; el ListView anterior ya difería su montaje.
+- Chat de 161 mensajes de alturas variables: historial bajo demanda; cero
+  reconstrucciones de historial/burbujas durante tres cambios de borrador;
+  respuesta final visible tras enviar o reintentar con teclado abierto y texto
+  al 100 % y 200 %. Un fallo asíncrono devuelve foco después de habilitar el campo.
+
+No se ejecutó integración con el plugin real, reinicio de proceso ni recorridos
+TalkBack/VoiceOver: no había destino Android/iOS conectado. iOS no se compiló en
+este entorno Linux. Las comprobaciones de semántica y tamaños de pantalla no
+sustituyen esas validaciones ni pruebas con personas usuarias. Consulta también
 [la guía de pruebas](testing.md).

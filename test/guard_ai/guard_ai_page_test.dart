@@ -35,6 +35,18 @@ void main() {
 
   Future<void> reveal(WidgetTester tester, Finder target) async {
     await tester.pumpAndSettle();
+    if (target.evaluate().isEmpty) {
+      final container = find.byType(AlertDialog).evaluate().isNotEmpty
+          ? find.byType(AlertDialog)
+          : find.byKey(const Key('guard-ai-scroll'));
+      await tester.scrollUntilVisible(
+        target,
+        240,
+        scrollable: find
+            .descendant(of: container, matching: find.byType(Scrollable))
+            .first,
+      );
+    }
     await Scrollable.ensureVisible(tester.element(target));
     await tester.pumpAndSettle();
   }
