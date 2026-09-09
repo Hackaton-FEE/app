@@ -144,15 +144,15 @@ void main() {
   testWidgets(
     'switching the page controller detaches the prior history listener',
     (tester) async {
-      final first = GuardAiController(_LongHistoryRepository());
-      final second = GuardAiController(_LongHistoryRepository());
+      final first = _ListenerAwareController(_LongHistoryRepository());
+      final second = _ListenerAwareController(_LongHistoryRepository());
       addTearDown(first.dispose);
       addTearDown(second.dispose);
       await _start(tester, first);
       second.setDraft('Borrador de otra sesión');
       await _start(tester, second);
-      expect(first.hasListeners, isFalse);
-      expect(second.hasListeners, isTrue);
+      expect(first.hasActiveListeners, isFalse);
+      expect(second.hasActiveListeners, isTrue);
       final field = find.byType(TextField, skipOffstage: false);
       await _reveal(tester, field);
 
@@ -164,7 +164,7 @@ void main() {
         'Borrador de otra sesión',
       );
       await tester.pumpWidget(const SizedBox());
-      expect(second.hasListeners, isFalse);
+      expect(second.hasActiveListeners, isFalse);
       second.setDraft('Texto tras cerrar');
       await tester.pump();
       expect(tester.takeException(), isNull);
@@ -210,6 +210,12 @@ Future<void> _start(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+class _ListenerAwareController extends GuardAiController {
+  _ListenerAwareController(super.repository);
+
+  bool get hasActiveListeners => hasListeners;
 }
 
 class _LongHistoryRepository implements GuardAiRepository {
