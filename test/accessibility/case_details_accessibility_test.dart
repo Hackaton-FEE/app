@@ -37,7 +37,9 @@ Future<FakeCaseStorage> _openDetails(WidgetTester tester) async {
       notes: 'Notas ficticias.',
     ),
   );
-  await tester.pumpWidget(FeeApp(repository: repository));
+  await tester.pumpWidget(
+    FeeApp(repository: repository, showCasesAsHome: true),
+  );
   await tester.pumpAndSettle();
   await _tap(tester, find.text('Caso de prueba'));
   return storage;

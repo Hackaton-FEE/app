@@ -18,6 +18,24 @@ class HelpPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _HelpSection(
+                    title: 'Elige una cuenta y conoce la app',
+                    body:
+                        'Al abrir la app, elige una cuenta de ejemplo para entrar directamente. Usar otra cuenta agrega un ejemplo y abre su espacio. Si la lista está vacía, pulsa Crear una cuenta. No se piden contraseñas ni se verifica un inicio de sesión.\n\n'
+                        'Desliza hacia abajo en el inicio para conocer Osisn’t y cómo funciona. Desde el perfil puedes cambiar de cuenta. Las cuentas agregadas y las conversaciones duran mientras la app permanece abierta; al reiniciarla se recuperan los ejemplos iniciales.',
+                  ),
+                  _HelpSection(
+                    title: 'Conversa con GuardAI',
+                    body:
+                        'El botón GuardAI abre una conversación de demostración. Escribe una pregunta o elige una sugerencia y continúa con las respuestas. Cada cuenta de ejemplo tiene su propio chat durante esta sesión.\n\n'
+                        'Las respuestas siguen un recorrido local de ejemplo: no hay un modelo de IA conectado, búsquedas externas ni envío de solicitudes. El chat conserva lo que escribes al abrir ayuda o volver al dashboard.',
+                  ),
+                  _HelpSection(
+                    title: 'Explora tu huella digital',
+                    body:
+                        'El dashboard muestra hallazgos simulados para que pruebes el recorrido. Escanear cambia la identidad del ejemplo; no busca cuentas ni confirma filtraciones reales. El índice es orientativo, no una probabilidad de sufrir un incidente.\n\n'
+                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo. GuardAI te permite conversar sobre tus siguientes pasos. Abre el menú de perfil para cambiar la identidad del análisis o consultar los casos del dispositivo. La identidad del ejemplo se conserva solo durante esta sesión.',
+                  ),
+                  _HelpSection(
                     title: 'Organiza un caso a tu ritmo',
                     body:
                         'En Nuevo caso, escribe un título, pega el enlace del contenido y elige un tipo de situación. Las notas son opcionales: escribe solo lo que quieras conservar.\n\n'
@@ -32,7 +50,7 @@ class HelpPage extends StatelessWidget {
                   _HelpSection(
                     title: 'Dónde se guarda tu información',
                     body:
-                        'Los casos guardados permanecen en este dispositivo y no se envían a terceros. La app usa almacenamiento cifrado, pero no tiene un bloqueo propio: quien pueda abrir la app podrá ver tus casos.\n\n'
+                        'Los casos guardados permanecen en este dispositivo y no se envían a terceros. Son compartidos por las cuentas de ejemplo; cambiar de cuenta no los mueve ni los separa. La app usa almacenamiento cifrado, pero no tiene un bloqueo propio: quien pueda abrir la app podrá ver tus casos.\n\n'
                         'No hay sincronización ni recuperación garantizada si borras los datos de la app o cambias de dispositivo. Los cambios del formulario solo se conservan entre sesiones cuando pulsas Guardar caso.',
                   ),
                   _HelpSection(
@@ -43,7 +61,7 @@ class HelpPage extends StatelessWidget {
                   ),
                   _HelpSection(
                     title: 'Qué ayuda está disponible',
-                    body: 'Esta guía explica cómo usar la app. Esta versión todavía no tiene un canal de atención humana, chat ni envío de solicitudes de retiro. Guardar un caso no inicia una gestión con una plataforma.',
+                    body: 'Esta guía explica cómo usar la app. Esta versión todavía no tiene un canal de atención humana ni envío de solicitudes de retiro. Guardar un caso no inicia una gestión con una plataforma.',
                   ),
                 ],
               ),

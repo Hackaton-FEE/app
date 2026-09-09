@@ -55,7 +55,9 @@ class _CasesPageState extends State<CasesPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacidad FEE'),
-        leading: const Icon(Icons.shield_outlined),
+        leading: Navigator.canPop(context)
+            ? null
+            : const Icon(Icons.shield_outlined),
         actions: const [HelpButton()],
       ),
       body: SafeArea(

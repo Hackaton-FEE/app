@@ -1,21 +1,44 @@
 # Arquitectura del cliente
 
-`Hackaton-FEE/app` usa Flutter 3.47.2 / Dart 3.13.2 para Android e iOS. Esta entrega gestiona casos locales: crear, consultar, editar, buscar, archivar, restaurar y eliminar. Cada caso contiene título, URL, categoría y notas; sus estados son `draft` y `archived`. No hay conexión al servidor, imágenes, captura de evidencia ni reportes externos.
+`Hackaton-FEE/app` usa Flutter 3.47.2 / Dart 3.13.2 para Android e iOS. La aplicación ofrece un **Dashboard de Huella Digital y Privacidad Personal** que traduce hallazgos OSINT técnicos a un lenguaje visual y accesible, precedido por un selector de cuentas de ejemplo con información de producto al deslizar, y con una barra inferior superpuesta (Escanear y GuardAI), un panel lateral de perfil y un mapa opcional de categorías. GuardAI propone una conversación iterativa de demostración. Los casos locales existentes se conservan como herramienta secundaria del dispositivo; su rediseño queda pendiente.
 
 ## Responsabilidades
 
 | Área | Responsabilidad |
 | --- | --- |
-| `lib/main.dart`, `lib/app/` | Arranque, composición por constructor y tema. |
+| `lib/main.dart`, `lib/app/` | Arranque, composición por constructor, tema y selector inicial (`AccountPickerPage`) y composición de las sesiones de demostración por cuenta. |
+| `lib/features/accounts/` | Cuentas inmutables, repositorio asíncrono de demostración en memoria, `AccountsController`, selector y presentación de producto desplazable. |
+| `lib/features/guard_ai/` | Mensajes y conversación inmutables, repositorio asíncrono de respuestas locales y `GuardAiController` con historial, borrador, estados y reintentos. |
+| `lib/features/footprint/domain/` | Modelos de huella digital (`FootprintItem`, `FootprintProfile`), cálculo de score de exposición y contrato `FootprintRepository`. |
+| `lib/features/footprint/data/` | Repositorio mock de diagnóstico y escaneo reactivo de identidades (`MockFootprintRepository`). |
+| `lib/features/footprint/presentation/` | `DashboardPage`, indicador de exposición (`ExposureGauge`), tarjetas de hallazgos, filtros, diálogo de análisis de ejemplo, mapa de categorías, panel de perfil y barra inferior translúcida. |
 | `lib/features/cases/domain/` | Modelos inmutables, validación y contrato asíncrono `CaseRepository`. |
 | `lib/features/cases/data/` | Lectura y escritura de registros, formato persistido y adaptación del plugin nativo. |
-| `lib/features/cases/presentation/` | `CasesController` con `ChangeNotifier`, estado visible, búsqueda, formularios y navegación. |
+| `lib/features/cases/presentation/` | `CasesController` con `ChangeNotifier`, estado visible, búsqueda, formularios pre-llenables y navegación. |
 
 El widget recibe acciones y representa el estado del controlador. El controlador llama al repositorio y expone carga, resultado o error; no serializa JSON ni usa canales nativos. El repositorio es la fuente de verdad de los casos y el adaptador `CaseStorage` aísla el almacenamiento. Las dependencias llegan por constructor, de modo que pruebas de reglas y presentación puedan reemplazar el acceso nativo.
 
 La presentación conserva también el estado efímero de edición, foco y confirmaciones de salida; no persiste un borrador a escondidas. `features/help/presentation/` ofrece la guía de uso sin red ni captura de datos. `shared/presentation/status_notice.dart` presenta feedback persistente y semántico; el contenido del caso no se añade a anuncios automáticos de estado. La [revisión de literatura y comparación](research/accessibility-and-user-care.md) explica estas decisiones y sus límites.
 
 Conservamos `ChangeNotifier` porque cubre el tamaño y los flujos actuales. Los modelos no se modifican desde los widgets: una edición produce un nuevo valor validado. No añadimos un framework de estado, un localizador global de servicios ni clases de casos de uso sin una necesidad concreta. Estas decisiones adaptan las [recomendaciones de Flutter sobre separación, modelos inmutables e inyección](https://docs.flutter.dev/app-architecture/recommendations) al proyecto existente.
+
+## Presentación Osisn't
+
+El dashboard sigue las ideas de `../documentation/osisnt-interfaz-huella-digital.md`: exposición comprensible, categorías explorables y un siguiente paso sencillo. `FootprintActionBar` vive en `Scaffold.bottomNavigationBar` con `extendBody: true`. Su gradiente integra la barra con el contenido; el desenfoque se recorta a la acción translúcida para limitar el área filtrada. El desplazamiento modifica sutilmente la opacidad y posición sin ocultar acciones. La preferencia de reducir movimiento desactiva ese desplazamiento y las transiciones de las hojas; alto contraste usa superficie opaca. La lista reserva altura suficiente para alcanzar el último hallazgo sobre la barra.
+
+`ProfileDrawer` usa `NavigationDrawer`, muestra la cuenta de ejemplo y permite volver al selector, cambiar la identidad del análisis, abrir los casos del dispositivo o ayuda. No representa autenticación. `FootprintMap` deriva sus cuatro categorías del mismo perfil de la lista; seleccionar un nodo abre la lista filtrada. En anchos reducidos y texto grande utiliza controles apilados. Se conservan las acciones táctiles mínimas de 48 unidades y las etiquetas visibles.
+
+El análisis de huella continúa usando `MockFootprintRepository`: **no consulta servicios externos**. El inicio y las hojas lo identifican como una demostración. El índice es orientativo y no es una probabilidad de daño. Crear o preparar un caso solo lo guarda localmente; no confirma envío ni eliminación externa. La identidad de ejemplo permanece en memoria durante la sesión.
+
+## Entrada por cuentas y GuardAI
+
+La app siempre abre `AccountPickerPage`. `DemoAccountRepository` entrega dos cuentas ficticias; elegir una entra directamente al dashboard, sin contraseñas ni verificación. «Usar otra cuenta» agrega un perfil de ejemplo y entra con él; un repositorio vacío muestra «Crear una cuenta». Las altas y la cuenta activa son efímeras: al recrear la app aparece de nuevo el selector y, al recrear el repositorio, solo los ejemplos iniciales. No existe persistencia de cuentas ni integración con Google o un proveedor de autenticación.
+
+La misma pantalla permite deslizar hacia contenido de presentación: propuesta de valor, tres pasos de uso y una introducción a GuardAI. La acción «Descubre Osisn't» desplaza a esa sección y respeta la preferencia de reducir movimiento. Los botones, textos y tarjetas admiten ancho reducido y escala de texto grande.
+
+Cada ID de cuenta tiene su propia instancia de `FootprintController` y `GuardAiController`. El chat y su borrador se conservan al volver al dashboard, abrir ayuda o cambiar entre cuentas durante la ejecución. `DemoGuardAiRepository` mantiene la conversación en memoria y produce preguntas y siguientes pasos predefinidos según las respuestas. **No hay un modelo de IA conectado**, consultas externas ni creación o envío automático de casos. La UI confirma un mensaje cuando termina la operación asíncrona; un error conserva el borrador y permite reintentar. Salir y abrir ayuda se bloquean mientras se procesa un envío.
+
+Los casos existentes siguen bajo una única instancia de `CaseRepository` y se identifican como **casos del dispositivo**, visibles desde todas las cuentas de ejemplo. No se atribuyen a una persona ni se migran por inferencia. El aislamiento y propiedad de casos deberán definirse al conectar autenticación real. El cambio del botón principal no modifica su formato persistido, lectura, edición o recuperación de errores.
 
 ## Persistencia local
 

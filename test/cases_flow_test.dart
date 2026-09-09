@@ -18,7 +18,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
-      FeeApp(repository: LocalCaseRepository(storage: storage)),
+      FeeApp(
+        repository: LocalCaseRepository(storage: storage),
+        showCasesAsHome: true,
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -175,7 +178,10 @@ void main() {
       expect(find.text('Cuenta duplicada'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpWidget(
-        FeeApp(repository: LocalCaseRepository(storage: storage)),
+        FeeApp(
+          repository: LocalCaseRepository(storage: storage),
+          showCasesAsHome: true,
+        ),
       );
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(

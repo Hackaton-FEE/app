@@ -9,10 +9,22 @@ import 'case_labels.dart';
 import 'cases_controller.dart';
 
 class CaseFormPage extends StatefulWidget {
-  const CaseFormPage({required this.controller, this.initialCase, super.key});
+  const CaseFormPage({
+    required this.controller,
+    this.initialCase,
+    this.initialTitle,
+    this.initialSourceUrl,
+    this.initialCategory,
+    this.initialNotes,
+    super.key,
+  });
 
   final CasesController controller;
   final PrivacyCase? initialCase;
+  final String? initialTitle;
+  final String? initialSourceUrl;
+  final CaseCategory? initialCategory;
+  final String? initialNotes;
 
   @override
   State<CaseFormPage> createState() => _CaseFormPageState();
@@ -20,12 +32,17 @@ class CaseFormPage extends StatefulWidget {
 
 class _CaseFormPageState extends State<CaseFormPage> {
   final _formKey = GlobalKey<FormState>();
-  late final _title = TextEditingController(text: widget.initialCase?.title);
-  late final _sourceUrl = TextEditingController(
-    text: widget.initialCase?.sourceUrl.toString(),
+  late final _title = TextEditingController(
+    text: widget.initialCase?.title ?? widget.initialTitle,
   );
-  late final _notes = TextEditingController(text: widget.initialCase?.notes);
-  late CaseCategory? _category = widget.initialCase?.category;
+  late final _sourceUrl = TextEditingController(
+    text: widget.initialCase?.sourceUrl.toString() ?? widget.initialSourceUrl,
+  );
+  late final _notes = TextEditingController(
+    text: widget.initialCase?.notes ?? widget.initialNotes,
+  );
+  late CaseCategory? _category =
+      widget.initialCase?.category ?? widget.initialCategory;
   final _fieldFocus = {
     const Key('case-title'): FocusNode(),
     const Key('case-url'): FocusNode(),
@@ -37,10 +54,13 @@ class _CaseFormPageState extends State<CaseFormPage> {
   bool _confirmingExit = false;
 
   bool get _hasChanges =>
-      _title.text != (widget.initialCase?.title ?? '') ||
-      _sourceUrl.text != (widget.initialCase?.sourceUrl.toString() ?? '') ||
-      _notes.text != (widget.initialCase?.notes ?? '') ||
-      _category != widget.initialCase?.category;
+      _title.text != (widget.initialCase?.title ?? widget.initialTitle ?? '') ||
+      _sourceUrl.text !=
+          (widget.initialCase?.sourceUrl.toString() ??
+              widget.initialSourceUrl ??
+              '') ||
+      _notes.text != (widget.initialCase?.notes ?? widget.initialNotes ?? '') ||
+      _category != (widget.initialCase?.category ?? widget.initialCategory);
 
   @override
   void initState() {

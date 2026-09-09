@@ -1,0 +1,31 @@
+import '../../cases/domain/privacy_case.dart';
+
+enum FootprintCategory { socialProfile, exposedContact, dataBreach, dataBroker }
+
+enum FootprintRisk { low, medium, high }
+
+class FootprintItem {
+  const FootprintItem({
+    required this.id,
+    required this.platform,
+    required this.category,
+    required this.riskLevel,
+    required this.title,
+    required this.description,
+    required this.exposedData,
+    required this.sourceUrl,
+    required this.recommendedAction,
+    this.suggestedCaseCategory = CaseCategory.personalData,
+  });
+
+  final String id;
+  final String platform;
+  final FootprintCategory category;
+  final FootprintRisk riskLevel;
+  final String title;
+  final String description;
+  final List<String> exposedData;
+  final String sourceUrl;
+  final String recommendedAction;
+  final CaseCategory suggestedCaseCategory;
+}
