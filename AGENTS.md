@@ -5,6 +5,7 @@ Este repositorio privado, `Hackaton-FEE/app`, contiene el cliente Flutter. Lee [
 - [Colaboración](rules/01-collaboration.md): ramas, alcance autorizado y revisión.
 - [Producto y datos](rules/02-product-and-data.md): alcance local y tratamiento de información.
 - [Calidad](rules/03-quality.md): validaciones y evidencia para el PR.
+- [Accesibilidad y atención](rules/04-accessibility-and-user-care.md): semántica, orientación, recuperación de errores y pruebas con tecnologías de asistencia.
 
 Las skills canónicas están en `skills/`. Abre explícitamente el archivo que corresponda cuando trabajes con IA:
 

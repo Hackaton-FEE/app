@@ -11,10 +11,14 @@ class CasesHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Tu privacidad,\nbajo tu control.',
-          style: theme.textTheme.headlineLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+        Semantics(
+          container: true,
+          header: true,
+          child: Text(
+            'Tu privacidad,\nbajo tu control.',
+            style: theme.textTheme.headlineLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -33,9 +37,13 @@ class CasesHeader extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Guardado en tu dispositivo',
-                        style: theme.textTheme.titleSmall,
+                      Semantics(
+                        container: true,
+                        header: true,
+                        child: Text(
+                          'Guardado en tu dispositivo',
+                          style: theme.textTheme.titleSmall,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(

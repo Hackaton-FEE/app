@@ -16,6 +16,28 @@ flutter build apk --debug
 
 Las pruebas unitarias verifican validación, lectura/escritura y fallos mediante dobles. Las pruebas de widgets verifican interacciones y estados visibles. No usan el backend ni servicios externos. Al cambiar comportamiento, comprueba el caso que el usuario observa y los errores relevantes; no hace falta volver a probar rutas ajenas a un cambio editorial.
 
+## Accesibilidad y orientación de uso
+
+Ejecuta las suites específicas desde la raíz:
+
+```sh
+flutter test test/accessibility
+```
+
+Las Guideline APIs de Flutter comprueban etiquetas, contraste y objetivos pulsables de los elementos construidos en cada escenario. `androidTapTargetGuideline` usa 48 × 48 unidades lógicas e `iOSTapTargetGuideline`, 44 × 44. Pasarlas no demuestra conformidad WCAG global ni reproduce la experiencia de un lector de pantalla. Incluye controles alcanzados mediante desplazamiento, además del primer viewport.
+
+Comprueba los estados afectados en un viewport de **320 × 640 unidades lógicas y texto al 200 %**, con títulos, enlaces y notas largos dentro de sus límites. Revisa también orientación horizontal cuando cambie la distribución: texto, errores, diálogos y acciones deben seguir siendo legibles y alcanzables. Los valores de prueba no sustituyen todas las configuraciones de pantalla y texto del sistema.
+
+Recorre crear → enviar inválido → corregir → guardar → editar → abrir ayuda y volver → cancelar salida o descartar → archivar/restaurar → cancelar o confirmar borrado. Verifica que el primer error reciba foco y quede visible; que una escritura fallida conserve el formulario; y que no haya confirmación de salida si está limpio o el guardado terminó. La ayuda debe conservar la edición y explicar guardado local, notas opcionales y ausencia de envío externo. Los avisos importantes deben permanecer visibles sin pedir foco; el borrado debe identificar el caso.
+
+Para la comprobación manual nativa, usa datos ficticios y registra build, dispositivo, sistema, escala de texto y tecnología asistiva:
+
+- En Android, activa TalkBack; en iOS, VoiceOver. Recorre la secuencia anterior comprobando nombre, rol, obligatoriedad, encabezados, orden y ausencia de focos duplicados.
+- Escucha resultados de búsqueda, validación y acciones; comprueba que los anuncios aporten contexto sin repetir innecesariamente el contenido personal. Revisa el foco al cerrar ayuda y diálogos.
+- Comprueba navegación con teclado y los servicios de entrada disponibles, además de los gestos del lector. Accessibility Scanner e Inspector pueden aportar comprobaciones adicionales.
+
+Registra por separado pruebas automáticas, inspección nativa, recorrido con lectores y evaluación con personas usuarias. Los primeros no demuestran comprensión o utilidad para la población destinataria; una evaluación futura debe permitir pausas y omitir preguntas, sin solicitar historias reales. Consulta [la revisión de evidencia](research/accessibility-and-user-care.md) para sus límites y el registro de resultados de la entrega.
+
 ## Almacenamiento nativo
 
 La prueba `integration_test/local_case_storage_test.dart` requiere un emulador o dispositivo Android; para iOS requiere macOS/Xcode y un destino iOS. Selecciona el identificador real mostrado por `flutter devices`:

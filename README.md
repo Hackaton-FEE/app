@@ -9,6 +9,9 @@ Aplicación Flutter para iOS y Android que organiza casos de privacidad en el di
 - Conservar los casos entre sesiones mediante almacenamiento local: un JSON versión 1 por registro, usando `flutter_secure_storage` 10.3.2 con Keychain en iOS y almacenamiento cifrado en Android.
 - Separar modelos inmutables, repositorio asíncrono, adaptador nativo y presentación con `ChangeNotifier` e inyección por constructor.
 - Mostrar errores de carga o escritura sin confirmar cambios que no se guardaron ni borrar automáticamente datos corruptos.
+- Mantener etiquetas y roles accesibles, llevar el foco al primer error, confirmar el descarte de cambios y ofrecer ayuda de uso desde las pantallas principales.
+
+La [revisión de literatura y comparativa](docs/research/accessibility-and-user-care.md) relaciona estas mejoras con estándares, guías e investigaciones originales. Las [reglas de accesibilidad y atención](rules/04-accessibility-and-user-care.md) mantienen los criterios para las siguientes entregas. Las pruebas automáticas no certifican accesibilidad global ni sustituyen una evaluación con personas.
 
 Los estados **borrador** y **archivado** solo organizan información local: no indican que una plataforma recibió una solicitud ni retiró contenido. La app no conecta al backend, no recibe imágenes y no envía reportes. Las categorías sirven para ordenar los casos; seleccionar contenido íntimo no procesa imágenes ni determina una infracción.
 
@@ -53,6 +56,8 @@ lib/
     domain/                 # Modelos inmutables, validación y contrato async
     data/                   # Repositorio persistente y adaptador de almacenamiento
     presentation/           # Controlador y pantallas
+  features/help/            # Guía de uso y alcance de la app
+  shared/presentation/      # Mensajes de estado reutilizables
 test/                       # Pruebas de dominio y widgets
 integration_test/           # Persistencia mediante el plugin nativo
 android/                    # Proyecto nativo Android

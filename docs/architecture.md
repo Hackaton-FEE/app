@@ -13,6 +13,8 @@
 
 El widget recibe acciones y representa el estado del controlador. El controlador llama al repositorio y expone carga, resultado o error; no serializa JSON ni usa canales nativos. El repositorio es la fuente de verdad de los casos y el adaptador `CaseStorage` aísla el almacenamiento. Las dependencias llegan por constructor, de modo que pruebas de reglas y presentación puedan reemplazar el acceso nativo.
 
+La presentación conserva también el estado efímero de edición, foco y confirmaciones de salida; no persiste un borrador a escondidas. `features/help/presentation/` ofrece la guía de uso sin red ni captura de datos. `shared/presentation/status_notice.dart` presenta feedback persistente y semántico; el contenido del caso no se añade a anuncios automáticos de estado. La [revisión de literatura y comparación](research/accessibility-and-user-care.md) explica estas decisiones y sus límites.
+
 Conservamos `ChangeNotifier` porque cubre el tamaño y los flujos actuales. Los modelos no se modifican desde los widgets: una edición produce un nuevo valor validado. No añadimos un framework de estado, un localizador global de servicios ni clases de casos de uso sin una necesidad concreta. Estas decisiones adaptan las [recomendaciones de Flutter sobre separación, modelos inmutables e inyección](https://docs.flutter.dev/app-architecture/recommendations) al proyecto existente.
 
 ## Persistencia local

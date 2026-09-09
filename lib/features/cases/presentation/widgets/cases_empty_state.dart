@@ -22,10 +22,14 @@ class CasesEmptyState extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 16),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
+          Semantics(
+            container: true,
+            header: true,
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 8),
           Text(description, textAlign: TextAlign.center),

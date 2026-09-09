@@ -5,3 +5,4 @@
 - Prueba comportamiento observable: edición válida/inválida, persistencia al recrear el repositorio, errores de escritura sin falso éxito y lectura corrupta sin pérdida automática. No escribas pruebas que solo reproduzcan el código o texto modificado.
 - Usa dobles para pruebas unitarias y de widgets; verifica el adaptador con el plugin real en integración. Sigue [la guía de pruebas](../docs/testing.md) para distinguir esa comprobación de un cierre y reapertura del proceso.
 - Ejecuta formato, análisis, pruebas y build Android según [CONTRIBUTING.md](../CONTRIBUTING.md). Los cambios nativos iOS requieren macOS/Xcode o una limitación explícita en el PR. Reporta únicamente validaciones realizadas.
+- Los cambios de interacción siguen [accesibilidad y atención](04-accessibility-and-user-care.md). Comprueba el foco, la recuperación de errores y las guías automáticas en los estados afectados; distingue estos resultados de TalkBack/VoiceOver y de evaluación con personas.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../help/presentation/help_button.dart';
 import 'case_details_page.dart';
 import 'case_form_page.dart';
 import 'cases_controller.dart';
@@ -55,6 +56,7 @@ class _CasesPageState extends State<CasesPage> {
       appBar: AppBar(
         title: const Text('Privacidad FEE'),
         leading: const Icon(Icons.shield_outlined),
+        actions: const [HelpButton()],
       ),
       body: SafeArea(
         child: Align(
@@ -82,7 +84,13 @@ class _CasesPageState extends State<CasesPage> {
                         children: [
                           const Icon(Icons.lock_outline, size: 48),
                           const SizedBox(height: 20),
-                          Text(state.loadError!, textAlign: TextAlign.center),
+                          Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              state.loadError!,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
                           const SizedBox(height: 20),
                           FilledButton(
                             onPressed: controller.load,
@@ -94,6 +102,10 @@ class _CasesPageState extends State<CasesPage> {
                   );
                 }
                 final cases = controller.visibleCases;
+                final isArchived = controller.filter == CaseFilter.archived;
+                final resultCount = cases.length == 1
+                    ? '1 caso ${isArchived ? 'archivado' : 'activo'}'
+                    : '${cases.length} casos ${isArchived ? 'archivados' : 'activos'}';
                 return CustomScrollView(
                   slivers: [
                     SliverPadding(
@@ -106,9 +118,13 @@ class _CasesPageState extends State<CasesPage> {
                               onCreate: state.isSaving ? null : _createCase,
                             ),
                             const SizedBox(height: 28),
-                            Text(
-                              'Mis casos',
-                              style: theme.textTheme.titleLarge,
+                            Semantics(
+                              container: true,
+                              header: true,
+                              child: Text(
+                                'Mis casos',
+                                style: theme.textTheme.titleLarge,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             SizedBox(
@@ -140,6 +156,7 @@ class _CasesPageState extends State<CasesPage> {
                               controller: _search,
                               onChanged: controller.search,
                               decoration: InputDecoration(
+                                labelText: 'Buscar casos',
                                 hintText: 'Buscar por título o sitio',
                                 prefixIcon: const Icon(Icons.search),
                                 suffixIcon: controller.query.isEmpty
@@ -152,6 +169,15 @@ class _CasesPageState extends State<CasesPage> {
                                         },
                                         icon: const Icon(Icons.close),
                                       ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Semantics(
+                              key: const Key('case-results-count'),
+                              liveRegion: true,
+                              child: Text(
+                                resultCount,
+                                style: theme.textTheme.bodySmall,
                               ),
                             ),
                             const SizedBox(height: 20),

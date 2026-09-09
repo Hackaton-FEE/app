@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/presentation/status_notice.dart';
+import '../../help/presentation/help_button.dart';
 import '../domain/case_input.dart';
 import '../domain/privacy_case.dart';
 import '../domain/source_link.dart';
@@ -24,23 +26,114 @@ class _CaseFormPageState extends State<CaseFormPage> {
   );
   late final _notes = TextEditingController(text: widget.initialCase?.notes);
   late CaseCategory? _category = widget.initialCase?.category;
+  final _fieldFocus = {
+    const Key('case-title'): FocusNode(),
+    const Key('case-url'): FocusNode(),
+    const Key('case-category'): FocusNode(),
+  };
   String? _error;
+  bool _dirty = false;
+  bool _allowPop = false;
+  bool _confirmingExit = false;
+
+  bool get _hasChanges =>
+      _title.text != (widget.initialCase?.title ?? '') ||
+      _sourceUrl.text != (widget.initialCase?.sourceUrl.toString() ?? '') ||
+      _notes.text != (widget.initialCase?.notes ?? '') ||
+      _category != widget.initialCase?.category;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final controller in [_title, _sourceUrl, _notes]) {
+      controller.addListener(_trackChanges);
+    }
+  }
+
+  void _trackChanges() {
+    final dirty = _hasChanges;
+    if (_dirty != dirty) setState(() => _dirty = dirty);
+  }
 
   @override
   void dispose() {
     _title.dispose();
     _sourceUrl.dispose();
     _notes.dispose();
+    for (final node in _fieldFocus.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
+  Future<void> _leave([String? savedId]) async {
+    setState(() => _allowPop = true);
+    // PopScope must register the updated permission before a programmatic pop.
+    await WidgetsBinding.instance.endOfFrame;
+    if (mounted) Navigator.of(context).pop(savedId);
+  }
+
+  Future<void> _requestExit() async {
+    if (widget.controller.state.isSaving || _confirmingExit) return;
+    if (!_dirty) return _leave();
+    _confirmingExit = true;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        scrollable: true,
+        title: const Text('¿Descartar los cambios?'),
+        content: const Text(
+          'Todavía no guardaste estos cambios. Puedes seguir editando o salir sin guardarlos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Descartar cambios'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Seguir editando'),
+          ),
+        ],
+      ),
+    );
+    _confirmingExit = false;
+    if (discard == true && mounted) await _leave();
+  }
+
+  Future<void> _focusFirstError(
+    Set<FormFieldState<Object?>> invalidFields,
+  ) async {
+    for (final entry in _fieldFocus.entries) {
+      if (!invalidFields.any((field) => field.widget.key == entry.key)) {
+        continue;
+      }
+      entry.value.requestFocus();
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      final fieldContext = entry.value.context;
+      if (fieldContext != null && fieldContext.mounted) {
+        await Scrollable.ensureVisible(
+          fieldContext,
+          alignment: 0.15,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+        );
+      }
+      return;
+    }
+  }
+
   Future<void> _save() async {
-    if (widget.controller.state.isSaving ||
-        !_formKey.currentState!.validate()) {
+    if (widget.controller.state.isSaving) return;
+    setState(() => _error = null);
+    final invalidFields = _formKey.currentState!.validateGranularly();
+    if (invalidFields.isNotEmpty) {
+      await _focusFirstError(invalidFields);
       return;
     }
     FocusScope.of(context).unfocus();
-    setState(() => _error = null);
     try {
       final input = CaseInput(
         title: _title.text,
@@ -54,7 +147,7 @@ class _CaseFormPageState extends State<CaseFormPage> {
       );
       if (!mounted) return;
       if (saved != null) {
-        Navigator.of(context).pop(saved.id);
+        await _leave(saved.id);
       } else {
         setState(
           () => _error =
@@ -73,13 +166,18 @@ class _CaseFormPageState extends State<CaseFormPage> {
       listenable: widget.controller,
       builder: (context, _) {
         final saving = widget.controller.state.isSaving;
-        return PopScope(
-          canPop: !saving,
+        return PopScope<String>(
+          canPop: _allowPop || (!saving && !_dirty),
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _requestExit();
+          },
           child: Scaffold(
             appBar: AppBar(
+              leading: BackButton(onPressed: _requestExit),
               title: Text(
                 widget.initialCase == null ? 'Nuevo caso' : 'Editar caso',
               ),
+              actions: [HelpButton(enabled: !saving)],
             ),
             body: SafeArea(
               child: Align(
@@ -93,77 +191,101 @@ class _CaseFormPageState extends State<CaseFormPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            'Organiza lo que está pasando',
-                            style: Theme.of(context).textTheme.headlineSmall,
+                          Semantics(
+                            header: true,
+                            child: Text(
+                              'Organiza lo que está pasando',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
-                            'Guarda una referencia del contenido y unas notas para tus próximos pasos.',
+                            'El título, el enlace y el tipo de situación son obligatorios. Las notas son opcionales; escribe solo lo que quieras conservar.',
                           ),
                           const SizedBox(height: 28),
-                          TextFormField(
-                            key: const Key('case-title'),
-                            controller: _title,
-                            enabled: !saving,
-                            maxLength: CaseInput.maxTitleLength,
-                            textCapitalization: TextCapitalization.sentences,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Título del caso',
-                              hintText: 'Por ejemplo: perfil que usa mi nombre',
+                          Semantics(
+                            isRequired: true,
+                            child: TextFormField(
+                              key: const Key('case-title'),
+                              controller: _title,
+                              focusNode: _fieldFocus[const Key('case-title')],
+                              enabled: !saving,
+                              maxLength: CaseInput.maxTitleLength,
+                              textCapitalization: TextCapitalization.sentences,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'Título del caso',
+                                hintText:
+                                    'Por ejemplo: perfil que usa mi nombre',
+                                errorMaxLines: 5,
+                              ),
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
+                                  ? 'Escribe un título para identificar el caso.'
+                                  : null,
                             ),
-                            validator: (value) =>
-                                value == null || value.trim().isEmpty
-                                ? 'Escribe un título para identificar el caso.'
-                                : null,
                           ),
                           const SizedBox(height: 12),
-                          TextFormField(
-                            key: const Key('case-url'),
-                            controller: _sourceUrl,
-                            enabled: !saving,
-                            maxLength: CaseInput.maxSourceLinkLength,
-                            keyboardType: TextInputType.url,
-                            autocorrect: false,
-                            enableSuggestions: false,
-                            textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
-                              labelText: 'Enlace del contenido',
-                              hintText: 'https://example.com/publicacion',
-                              prefixIcon: Icon(Icons.link),
-                              errorMaxLines: 3,
+                          Semantics(
+                            isRequired: true,
+                            child: TextFormField(
+                              key: const Key('case-url'),
+                              controller: _sourceUrl,
+                              focusNode: _fieldFocus[const Key('case-url')],
+                              enabled: !saving,
+                              maxLength: CaseInput.maxSourceLinkLength,
+                              keyboardType: TextInputType.url,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'Enlace del contenido',
+                                hintText: 'https://example.com/publicacion',
+                                prefixIcon: Icon(Icons.link),
+                                errorMaxLines: 5,
+                              ),
+                              validator: (value) {
+                                try {
+                                  parseSourceLink(value ?? '');
+                                  return null;
+                                } on FormatException catch (error) {
+                                  return error.message;
+                                }
+                              },
                             ),
-                            validator: (value) {
-                              try {
-                                parseSourceLink(value ?? '');
-                                return null;
-                              } on FormatException catch (error) {
-                                return error.message;
-                              }
-                            },
                           ),
                           const SizedBox(height: 12),
-                          DropdownButtonFormField<CaseCategory>(
-                            key: const Key('case-category'),
-                            initialValue: _category,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              labelText: 'Tipo de situación',
+                          Semantics(
+                            isRequired: true,
+                            child: DropdownButtonFormField<CaseCategory>(
+                              key: const Key('case-category'),
+                              focusNode:
+                                  _fieldFocus[const Key('case-category')],
+                              initialValue: _category,
+                              isExpanded: true,
+                              isDense: false,
+                              itemHeight: null,
+                              decoration: const InputDecoration(
+                                labelText: 'Tipo de situación',
+                                errorMaxLines: 5,
+                              ),
+                              items: [
+                                for (final category in CaseCategory.values)
+                                  DropdownMenuItem(
+                                    value: category,
+                                    child: Text(category.label),
+                                  ),
+                              ],
+                              onChanged: saving
+                                  ? null
+                                  : (value) => setState(() {
+                                      _category = value;
+                                      _dirty = _hasChanges;
+                                    }),
+                              validator: (value) => value == null
+                                  ? 'Selecciona un tipo de situación.'
+                                  : null,
                             ),
-                            items: [
-                              for (final category in CaseCategory.values)
-                                DropdownMenuItem(
-                                  value: category,
-                                  child: Text(category.label),
-                                ),
-                            ],
-                            onChanged: saving
-                                ? null
-                                : (value) => setState(() => _category = value),
-                            validator: (value) => value == null
-                                ? 'Selecciona un tipo de situación.'
-                                : null,
                           ),
                           const SizedBox(height: 24),
                           TextFormField(
@@ -185,15 +307,7 @@ class _CaseFormPageState extends State<CaseFormPage> {
                           ),
                           if (_error != null) ...[
                             const SizedBox(height: 16),
-                            Semantics(
-                              liveRegion: true,
-                              child: Text(
-                                _error!,
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                              ),
-                            ),
+                            StatusNotice(message: _error!, isError: true),
                           ],
                           const SizedBox(height: 24),
                           FilledButton.icon(
@@ -204,6 +318,7 @@ class _CaseFormPageState extends State<CaseFormPage> {
                                     dimension: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
+                                      semanticsLabel: 'Guardando caso',
                                     ),
                                   )
                                 : const Icon(Icons.check),
