@@ -17,4 +17,6 @@ class CasesState {
   final bool isSaving;
   final String? loadError;
   final String? actionError;
+
+  bool get canSave => !isLoading && !isSaving && loadError == null;
 }

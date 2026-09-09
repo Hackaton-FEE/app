@@ -43,6 +43,7 @@ void main() {
   Future<void> start(
     WidgetTester tester, {
     PrivacyCase? initialCase,
+    bool prefilled = false,
     Size size = const Size(390, 844),
     double textScale = 1,
   }) async {
@@ -73,6 +74,14 @@ void main() {
                     builder: (_) => CaseFormPage(
                       controller: controller,
                       initialCase: initialCase,
+                      initialTitle: prefilled ? 'Referencia de ejemplo' : null,
+                      initialSourceUrl: prefilled
+                          ? 'https://example.com/referencia'
+                          : null,
+                      initialCategory: prefilled
+                          ? CaseCategory.personalData
+                          : null,
+                      initialNotes: prefilled ? 'Notas de ejemplo' : null,
                     ),
                   ),
                 ),
@@ -275,6 +284,94 @@ void main() {
     expect(
       (await repository.loadCases()).single.notes,
       'Texto que debe conservarse',
+    );
+  });
+
+  testWidgets(
+    'load retry is accessible and preserves the draft until storage confirms save',
+    (tester) async {
+      initialize();
+      storage.failRead = true;
+      await start(
+        tester,
+        prefilled: true,
+        size: const Size(320, 640),
+        textScale: 2,
+      );
+      final loadError = controller.state.loadError!;
+      final retry = find.byKey(const Key('reload-form-cases'));
+      final save = find.byKey(const Key('save-case'));
+      expect(find.text(loadError), findsOneWidget);
+      expect(tester.widget<FilledButton>(save).onPressed, isNull);
+      await reveal(tester, retry);
+      expect(retry.hitTestable(), findsOneWidget);
+      await checkGuidelines(tester);
+      expect(
+        tester.getSemantics(retry).getSemanticsData().label,
+        contains('Volver a cargar los casos'),
+      );
+      await enter(tester, 'title', 'Borrador conservado');
+      await enter(tester, 'notes', 'Estas notas deben sobrevivir al reintento');
+      await reveal(tester, retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text(loadError), findsOneWidget);
+      expect(storage.writes, 0);
+      expect(textValue(tester, 'title'), 'Borrador conservado');
+
+      storage.failRead = false;
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(find.text(loadError), findsNothing);
+      expect(find.byType(CaseFormPage), findsOneWidget);
+      expect(textValue(tester, 'title'), 'Borrador conservado');
+      expect(textValue(tester, 'url'), 'https://example.com/referencia');
+      expect(
+        textValue(tester, 'notes'),
+        'Estas notas deben sobrevivir al reintento',
+      );
+      expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
+      expect(storage.writes, 0);
+
+      final gate = Completer<void>();
+      storage.writeGate = gate;
+      storage.writeStarted = Completer<void>();
+      await reveal(tester, save);
+      await tester.tap(save);
+      await tester.pump();
+      expect(storage.writeStarted!.isCompleted, isTrue);
+      expect(find.byType(CaseFormPage), findsOneWidget);
+      expect(storage.records, isEmpty);
+      gate.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(CaseFormPage), findsNothing);
+      expect(find.byType(AlertDialog), findsNothing);
+      final saved = (await repository.loadCases()).single;
+      expect(saved.title, 'Borrador conservado');
+      expect(saved.notes, 'Estas notas deben sobrevivir al reintento');
+      expect(saved.category, CaseCategory.personalData);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('retrying corrupt storage keeps the draft and prevents writes', (
+    tester,
+  ) async {
+    initialize();
+    storage.records['broken'] = '{invalid';
+    await start(tester, prefilled: true);
+    await enter(tester, 'notes', 'Borrador que todavía no se guarda');
+    final retry = find.byKey(const Key('reload-form-cases'));
+    await reveal(tester, retry);
+    await tester.tap(retry);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Conservamos los datos'), findsOneWidget);
+    expect(storage.records, {'broken': '{invalid'});
+    expect(storage.writes, 0);
+    expect(textValue(tester, 'notes'), 'Borrador que todavía no se guarda');
+    expect(
+      tester.widget<FilledButton>(find.byKey(const Key('save-case'))).onPressed,
+      isNull,
     );
   });
 

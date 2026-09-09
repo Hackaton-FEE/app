@@ -5,18 +5,18 @@ enum FootprintCategory { socialProfile, exposedContact, dataBreach, dataBroker }
 enum FootprintRisk { low, medium, high }
 
 class FootprintItem {
-  const FootprintItem({
+  FootprintItem({
     required this.id,
     required this.platform,
     required this.category,
     required this.riskLevel,
     required this.title,
     required this.description,
-    required this.exposedData,
+    required Iterable<String> exposedData,
     required this.sourceUrl,
     required this.recommendedAction,
     this.suggestedCaseCategory = CaseCategory.personalData,
-  });
+  }) : exposedData = List.unmodifiable(exposedData);
 
   final String id;
   final String platform;

@@ -105,12 +105,7 @@ class CasesController extends ChangeNotifier {
     Future<T> Function() operation,
     List<PrivacyCase> Function(T result) updateCases,
   ) async {
-    if (_disposed ||
-        _state.isLoading ||
-        _state.isSaving ||
-        _state.loadError != null) {
-      return null;
-    }
+    if (_disposed || !_state.canSave) return null;
     _emit(CasesState(cases: _state.cases, isLoading: false, isSaving: true));
     try {
       final result = await operation();

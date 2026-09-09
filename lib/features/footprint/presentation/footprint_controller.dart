@@ -13,6 +13,7 @@ class FootprintController extends ChangeNotifier {
 
   FootprintProfile? _profile;
   bool _isLoading = false;
+  bool _disposed = false;
   String? _error;
   String? _scanningStage;
   FootprintCategory? _selectedCategory;
@@ -26,67 +27,91 @@ class FootprintController extends ChangeNotifier {
   List<FootprintItem> get visibleItems {
     if (_profile == null) return const [];
     if (_selectedCategory == null) return _profile!.items;
-    return _profile!.items
-        .where((item) => item.category == _selectedCategory)
-        .toList();
+    return List.unmodifiable(
+      _profile!.items.where((item) => item.category == _selectedCategory),
+    );
   }
 
   void setCategoryFilter(FootprintCategory? category) {
+    if (_disposed) return;
     if (_selectedCategory == category) {
       _selectedCategory = null;
     } else {
       _selectedCategory = category;
     }
-    notifyListeners();
+    _notify();
   }
 
   Future<void> loadProfile() async {
+    if (_disposed || _isLoading) return;
     _isLoading = true;
     _error = null;
-    notifyListeners();
+    _notify();
 
     try {
-      _profile = await _repository.getProfile();
-    } catch (e) {
-      _error = 'No se pudo cargar la información de huella digital.';
+      final profile = await _repository.getProfile();
+      if (_disposed) return;
+      _profile = profile;
+    } catch (_) {
+      if (!_disposed) {
+        _error = 'No se pudo cargar la información de huella digital.';
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _finishOperation();
     }
   }
 
   Future<bool> scanIdentity(String identity) async {
-    if (_isLoading) return false;
+    if (_disposed || _isLoading) return false;
     _isLoading = true;
     _error = null;
     _scanningStage = 'Preparando análisis de ejemplo…';
-    notifyListeners();
+    _notify();
 
     try {
       _scanningStage = 'Preparando perfiles de ejemplo…';
-      notifyListeners();
+      _notify();
       await Future<void>.delayed(const Duration(milliseconds: 150));
+      if (_disposed) return false;
 
       _scanningStage = 'Organizando datos simulados…';
-      notifyListeners();
+      _notify();
       await Future<void>.delayed(const Duration(milliseconds: 150));
+      if (_disposed) return false;
 
       _scanningStage = 'Construyendo tu vista de ejemplo…';
-      notifyListeners();
+      _notify();
 
-      _profile = await _repository.scanIdentity(identity);
-      _scanningStage = null;
-      _isLoading = false;
-      notifyListeners();
+      final profile = await _repository.scanIdentity(identity);
+      if (_disposed) return false;
+      _profile = profile;
       return true;
     } catch (e) {
-      _scanningStage = null;
-      _isLoading = false;
-      _error = e is FormatException
-          ? e.message
-          : 'Ocurrió un error al realizar el escaneo.';
-      notifyListeners();
+      if (!_disposed) {
+        _error = e is FormatException
+            ? e.message
+            : 'Ocurrió un error al realizar el escaneo.';
+      }
       return false;
+    } finally {
+      _finishOperation();
     }
+  }
+
+  void _finishOperation() {
+    if (_disposed) return;
+    _isLoading = false;
+    _scanningStage = null;
+    _notify();
+  }
+
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

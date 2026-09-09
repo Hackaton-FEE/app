@@ -44,6 +44,26 @@ void main() {
       expect(controller.visibleItems.length, totalCount);
     });
 
+    test(
+      'visible items cannot mutate the repository with or without a filter',
+      () async {
+        await controller.loadProfile();
+        final original = await repository.getProfile();
+        var notifications = 0;
+        controller.addListener(() => notifications++);
+
+        expect(() => controller.visibleItems.clear(), throwsUnsupportedError);
+        expect((await repository.getProfile()).items, hasLength(5));
+        expect(notifications, 0);
+
+        controller.setCategoryFilter(FootprintCategory.dataBroker);
+        expect(() => controller.visibleItems.clear(), throwsUnsupportedError);
+        expect(controller.visibleItems, hasLength(1));
+        expect(await repository.getProfile(), same(original));
+        expect(notifications, 1);
+      },
+    );
+
     test('scanIdentity validates input and updates target profile', () async {
       final success = await controller.scanIdentity('nuevo_usuario@gmail.com');
       expect(success, isTrue);

@@ -1,11 +1,11 @@
 import 'footprint_item.dart';
 
 class FootprintProfile {
-  const FootprintProfile({
+  FootprintProfile({
     required this.targetIdentity,
-    required this.items,
+    required Iterable<FootprintItem> items,
     required this.lastScannedAt,
-  });
+  }) : items = List.unmodifiable(items);
 
   final String targetIdentity;
   final List<FootprintItem> items;

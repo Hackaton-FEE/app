@@ -17,7 +17,7 @@ class MockFootprintRepository implements FootprintRepository {
       targetIdentity: targetIdentity ?? 'usuario@ejemplo.com',
       lastScannedAt: DateTime.now().subtract(const Duration(hours: 3)),
       items: [
-        const FootprintItem(
+        FootprintItem(
           id: 'fp-broker-1',
           platform: 'Radaris / Buscador de Personas',
           category: FootprintCategory.dataBroker,
@@ -33,7 +33,7 @@ class MockFootprintRepository implements FootprintRepository {
           recommendedAction: 'Solicitar el retiro y desindexación formal de datos amparado en normativas de privacidad.',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
-        const FootprintItem(
+        FootprintItem(
           id: 'fp-breach-1',
           platform: 'Colección de Filtraciones (Breaches)',
           category: FootprintCategory.dataBreach,
@@ -45,7 +45,7 @@ class MockFootprintRepository implements FootprintRepository {
           recommendedAction: 'Cambiar la contraseña en cuentas donde la hayas reutilizado y activar autenticación en dos pasos.',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
-        const FootprintItem(
+        FootprintItem(
           id: 'fp-oracle-1',
           platform: 'X (Twitter)',
           category: FootprintCategory.exposedContact,
@@ -57,7 +57,7 @@ class MockFootprintRepository implements FootprintRepository {
           recommendedAction: 'Desactivar en configuración la opción "Permitir que otros me encuentren por teléfono".',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
-        const FootprintItem(
+        FootprintItem(
           id: 'fp-social-1',
           platform: 'Instagram',
           category: FootprintCategory.socialProfile,
@@ -69,7 +69,7 @@ class MockFootprintRepository implements FootprintRepository {
           recommendedAction: 'Cambiar la cuenta a privada y eliminar información sensible de la biografía pública.',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
-        const FootprintItem(
+        FootprintItem(
           id: 'fp-github-1',
           platform: 'GitHub',
           category: FootprintCategory.socialProfile,

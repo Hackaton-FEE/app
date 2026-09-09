@@ -8,7 +8,7 @@ void main() {
       final profile = FootprintProfile(
         targetIdentity: 'test@example.com',
         lastScannedAt: DateTime.now(),
-        items: const [
+        items: [
           FootprintItem(
             id: '1',
             platform: 'Platform A',
@@ -64,5 +64,46 @@ void main() {
       expect(profile.highRiskCount, 0);
       expect(profile.overallRisk, FootprintRisk.low);
     });
+
+    test('copies the input list and exposes an immutable snapshot', () {
+      final items = [
+        _item(['Correo']),
+      ];
+      final profile = FootprintProfile(
+        targetIdentity: 'ejemplo@example.invalid',
+        lastScannedAt: DateTime(2026),
+        items: items,
+      );
+
+      items.clear();
+
+      expect(profile.items, hasLength(1));
+      expect(profile.exposureScore, 28);
+      expect(() => profile.items.clear(), throwsUnsupportedError);
+      expect(() => profile.items[0] = _item([]), throwsUnsupportedError);
+    });
+
+    test('an item copies exposed data and rejects later mutations', () {
+      final exposedData = ['Correo'];
+      final item = _item(exposedData);
+
+      exposedData.add('Teléfono');
+
+      expect(item.exposedData, ['Correo']);
+      expect(() => item.exposedData.add('Nombre'), throwsUnsupportedError);
+      expect(() => item.exposedData[0] = 'Nombre', throwsUnsupportedError);
+    });
   });
 }
+
+FootprintItem _item(List<String> exposedData) => FootprintItem(
+  id: 'example',
+  platform: 'Plataforma de ejemplo',
+  category: FootprintCategory.dataBroker,
+  riskLevel: FootprintRisk.high,
+  title: 'Hallazgo de ejemplo',
+  description: 'Datos simulados',
+  exposedData: exposedData,
+  sourceUrl: 'https://example.invalid',
+  recommendedAction: 'Revisar el ejemplo',
+);

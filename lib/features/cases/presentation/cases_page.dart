@@ -19,7 +19,7 @@ class CasesPage extends StatefulWidget {
 }
 
 class _CasesPageState extends State<CasesPage> {
-  final _search = TextEditingController();
+  late final _search = TextEditingController(text: widget.controller.query);
 
   @override
   void dispose() {

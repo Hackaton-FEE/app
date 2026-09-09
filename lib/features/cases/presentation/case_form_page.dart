@@ -4,9 +4,8 @@ import '../../../shared/presentation/status_notice.dart';
 import '../../help/presentation/help_button.dart';
 import '../domain/case_input.dart';
 import '../domain/privacy_case.dart';
-import '../domain/source_link.dart';
-import 'case_labels.dart';
 import 'cases_controller.dart';
+import 'widgets/case_form_fields.dart';
 
 class CaseFormPage extends StatefulWidget {
   const CaseFormPage({
@@ -146,7 +145,7 @@ class _CaseFormPageState extends State<CaseFormPage> {
   }
 
   Future<void> _save() async {
-    if (widget.controller.state.isSaving) return;
+    if (!widget.controller.state.canSave) return;
     setState(() => _error = null);
     final invalidFields = _formKey.currentState!.validateGranularly();
     if (invalidFields.isNotEmpty) {
@@ -185,7 +184,8 @@ class _CaseFormPageState extends State<CaseFormPage> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        final saving = widget.controller.state.isSaving;
+        final state = widget.controller.state;
+        final saving = state.isSaving;
         return PopScope<String>(
           canPop: _allowPop || (!saving && !_dirty),
           onPopInvokedWithResult: (didPop, _) {
@@ -223,103 +223,42 @@ class _CaseFormPageState extends State<CaseFormPage> {
                             'El título, el enlace y el tipo de situación son obligatorios. Las notas son opcionales; escribe solo lo que quieras conservar.',
                           ),
                           const SizedBox(height: 28),
-                          Semantics(
-                            isRequired: true,
-                            child: TextFormField(
-                              key: const Key('case-title'),
-                              controller: _title,
-                              focusNode: _fieldFocus[const Key('case-title')],
-                              enabled: !saving,
-                              maxLength: CaseInput.maxTitleLength,
-                              textCapitalization: TextCapitalization.sentences,
-                              textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Título del caso',
-                                hintText:
-                                    'Por ejemplo: perfil que usa mi nombre',
-                                errorMaxLines: 5,
-                              ),
-                              validator: (value) =>
-                                  value == null || value.trim().isEmpty
-                                  ? 'Escribe un título para identificar el caso.'
-                                  : null,
+                          if (state.isLoading) ...[
+                            const StatusNotice(
+                              message: 'Cargando los casos guardados. Podrás guardar cuando termine la carga.',
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Semantics(
-                            isRequired: true,
-                            child: TextFormField(
-                              key: const Key('case-url'),
-                              controller: _sourceUrl,
-                              focusNode: _fieldFocus[const Key('case-url')],
-                              enabled: !saving,
-                              maxLength: CaseInput.maxSourceLinkLength,
-                              keyboardType: TextInputType.url,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              textInputAction: TextInputAction.next,
-                              decoration: const InputDecoration(
-                                labelText: 'Enlace del contenido',
-                                hintText: 'https://example.com/publicacion',
-                                prefixIcon: Icon(Icons.link),
-                                errorMaxLines: 5,
-                              ),
-                              validator: (value) {
-                                try {
-                                  parseSourceLink(value ?? '');
-                                  return null;
-                                } on FormatException catch (error) {
-                                  return error.message;
-                                }
-                              },
+                            const SizedBox(height: 16),
+                          ],
+                          if (state.loadError != null) ...[
+                            StatusNotice(
+                              key: const Key('case-form-load-error'),
+                              message: state.loadError!,
+                              isError: true,
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Semantics(
-                            isRequired: true,
-                            child: DropdownButtonFormField<CaseCategory>(
-                              key: const Key('case-category'),
-                              focusNode:
-                                  _fieldFocus[const Key('case-category')],
-                              initialValue: _category,
-                              isExpanded: true,
-                              isDense: false,
-                              itemHeight: null,
-                              decoration: const InputDecoration(
-                                labelText: 'Tipo de situación',
-                                errorMaxLines: 5,
-                              ),
-                              items: [
-                                for (final category in CaseCategory.values)
-                                  DropdownMenuItem(
-                                    value: category,
-                                    child: Text(category.label),
-                                  ),
-                              ],
-                              onChanged: saving
-                                  ? null
-                                  : (value) => setState(() {
-                                      _category = value;
-                                      _dirty = _hasChanges;
-                                    }),
-                              validator: (value) => value == null
-                                  ? 'Selecciona un tipo de situación.'
-                                  : null,
+                            const SizedBox(height: 8),
+                            FilledButton.tonalIcon(
+                              key: const Key('reload-form-cases'),
+                              onPressed: widget.controller.load,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Volver a cargar los casos'),
                             ),
-                          ),
-                          const SizedBox(height: 24),
-                          TextFormField(
-                            key: const Key('case-notes'),
-                            controller: _notes,
+                            const SizedBox(height: 16),
+                          ],
+                          CaseFormFields(
+                            key: const Key('case-form-fields'),
+                            titleController: _title,
+                            sourceUrlController: _sourceUrl,
+                            notesController: _notes,
+                            titleFocus: _fieldFocus[const Key('case-title')]!,
+                            sourceUrlFocus: _fieldFocus[const Key('case-url')]!,
+                            categoryFocus:
+                                _fieldFocus[const Key('case-category')]!,
+                            category: _category,
+                            onCategoryChanged: (value) => setState(() {
+                              _category = value;
+                              _dirty = _hasChanges;
+                            }),
                             enabled: !saving,
-                            maxLength: CaseInput.maxNotesLength,
-                            minLines: 3,
-                            maxLines: 6,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: const InputDecoration(
-                              labelText: 'Notas (opcional)',
-                              hintText: 'Anota solo lo necesario para recordar el caso.',
-                            ),
                           ),
                           const SizedBox(height: 12),
                           const Text(
@@ -332,7 +271,7 @@ class _CaseFormPageState extends State<CaseFormPage> {
                           const SizedBox(height: 24),
                           FilledButton.icon(
                             key: const Key('save-case'),
-                            onPressed: saving ? null : _save,
+                            onPressed: state.canSave ? _save : null,
                             icon: saving
                                 ? const SizedBox.square(
                                     dimension: 18,
