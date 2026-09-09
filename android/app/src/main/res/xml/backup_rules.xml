@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Secure storage data, cipher configuration, and wrapped keys all use
+         SharedPreferences. They must not be restored without the device keys. -->
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

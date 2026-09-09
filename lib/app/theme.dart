@@ -14,6 +14,12 @@ ThemeData buildAppTheme() {
       backgroundColor: Color(0xFFF5F7F8),
       scrolledUnderElevation: 0,
     ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(minimumSize: const Size(48, 52)),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(minimumSize: const Size(48, 52)),
+    ),
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
       filled: true,

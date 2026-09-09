@@ -5,7 +5,7 @@ description: Proponer, revisar o integrar el contrato HTTP entre Hackaton-FEE/ap
 
 # Contrato desde el cliente
 
-Consulta [arquitectura](../../docs/architecture.md). La demo no tiene backend conectado; una tarea de UI por sí sola no autoriza introducir esa integración.
+Consulta [arquitectura](../../docs/architecture.md). Los casos persisten en el dispositivo y no tienen backend conectado. El esquema JSON local versión 1 no es un contrato HTTP ni implica sincronización; incorpora integración cuando forme parte de la tarea.
 
 Antes de programar el consumidor, lee el esquema OpenAPI o los modelos y pruebas del servidor en la revisión que se integrará. El contrato inicial disponible es `GET /api/v1/health`, HTTP 200:
 
@@ -15,7 +15,7 @@ Antes de programar el consumidor, lee el esquema OpenAPI o los modelos y pruebas
 
 No deduzcas que existen endpoints de casos, identidad o reportes. Si el servidor no está disponible, documenta el contrato propuesto y el bloqueo de integración; usa un doble de prueba claramente identificado para el trabajo independiente.
 
-Para un cambio compartido, acuerda método, ruta, campos, obligatoriedad, respuestas y errores observables. Enlaza el PR servidor/cliente y señala el orden de integración o conserva compatibilidad para que cada `main` siga funcionando por separado.
+Para un cambio compartido, acuerda método, ruta, campos, obligatoriedad, respuestas y errores observables. Define la correspondencia con el modelo local, la propiedad de datos por usuario y el manejo de conflictos antes de sincronizar. Enlaza el PR servidor/cliente y señala el orden de integración o conserva compatibilidad para que cada `main` siga funcionando por separado.
 
 Prueba serialización y los estados de éxito/error relevantes sin hacer solicitudes reales a terceros. La creación o envío de una solicitud nunca equivale por sí sola a retiro o desindexación. Mantén payloads y URL fuera de logs y mensajes de diagnóstico.
 

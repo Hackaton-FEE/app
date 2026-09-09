@@ -1,110 +1,187 @@
 import 'package:flutter/material.dart';
 
+import 'case_details_page.dart';
+import 'case_form_page.dart';
 import 'cases_controller.dart';
-import 'new_case_page.dart';
+import 'cases_state.dart';
+import 'widgets/case_card.dart';
+import 'widgets/cases_empty_state.dart';
+import 'widgets/cases_header.dart';
 
-class CasesPage extends StatelessWidget {
+class CasesPage extends StatefulWidget {
   const CasesPage({required this.controller, super.key});
 
   final CasesController controller;
 
-  Future<void> _newDraft(BuildContext context) async {
-    final sourceUrl = await Navigator.of(context)
-        .push<Uri>(MaterialPageRoute(builder: (_) => const NewCasePage()));
-    if (sourceUrl != null && context.mounted) {
-      controller.addDraft(sourceUrl);
-    }
+  @override
+  State<CasesPage> createState() => _CasesPageState();
+}
+
+class _CasesPageState extends State<CasesPage> {
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _createCase() async {
+    final id = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => CaseFormPage(controller: widget.controller),
+      ),
+    );
+    if (id == null || !mounted) return;
+    _search.clear();
+    widget.controller.search('');
+    widget.controller.setFilter(CaseFilter.active);
+    _openCase(id);
+  }
+
+  void _openCase(String id) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CaseDetailsPage(controller: widget.controller, caseId: id),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Privacidad FEE'),
         leading: const Icon(Icons.shield_outlined),
       ),
       body: SafeArea(
-        child: Center(
+        child: Align(
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: ListenableBuilder(
-              listenable: controller,
+              listenable: widget.controller,
               builder: (context, _) {
-                final drafts = controller.drafts;
-                return ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    Text(
-                      'Tu privacidad,\nbajo tu control.',
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF152D37),
+                final controller = widget.controller;
+                final state = controller.state;
+                if (state.isLoading) {
+                  return const Center(
+                    child: CircularProgressIndicator(
+                      semanticsLabel: 'Cargando casos',
+                    ),
+                  );
+                }
+                if (state.loadError != null) {
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.lock_outline, size: 48),
+                          const SizedBox(height: 20),
+                          Text(state.loadError!, textAlign: TextAlign.center),
+                          const SizedBox(height: 20),
+                          FilledButton(
+                            onPressed: controller.load,
+                            child: const Text('Volver a intentar'),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Organiza tus primeros pasos para gestionar '
-                      'contenido que expone tu información.',
-                    ),
-                    const SizedBox(height: 24),
-                    Card.filled(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
+                  );
+                }
+                final cases = controller.visibleCases;
+                return CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                      sliver: SliverToBoxAdapter(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            CasesHeader(
+                              onCreate: state.isSaving ? null : _createCase,
+                            ),
+                            const SizedBox(height: 28),
                             Text(
-                              'Prototipo local',
-                              style: theme.textTheme.titleMedium,
+                              'Mis casos',
+                              style: theme.textTheme.titleLarge,
                             ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Los borradores existen solo mientras la app está abierta. '
-                              'Todavía no se envían solicitudes de retiro.',
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: SegmentedButton<CaseFilter>(
+                                segments: [
+                                  ButtonSegment(
+                                    value: CaseFilter.active,
+                                    label: Text(
+                                      'Activos (${controller.activeCount})',
+                                    ),
+                                  ),
+                                  ButtonSegment(
+                                    value: CaseFilter.archived,
+                                    label: Text(
+                                      'Archivo (${controller.archivedCount})',
+                                    ),
+                                  ),
+                                ],
+                                selected: {controller.filter},
+                                showSelectedIcon: false,
+                                onSelectionChanged: (value) =>
+                                    controller.setFilter(value.single),
+                              ),
                             ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              key: const Key('search-cases'),
+                              controller: _search,
+                              onChanged: controller.search,
+                              decoration: InputDecoration(
+                                hintText: 'Buscar por título o sitio',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: controller.query.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: 'Limpiar búsqueda',
+                                        onPressed: () {
+                                          _search.clear();
+                                          controller.search('');
+                                        },
+                                        icon: const Icon(Icons.close),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: () => _newDraft(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nuevo borrador'),
-                    ),
-                    const SizedBox(height: 32),
-                    Text('Mis borradores', style: theme.textTheme.titleLarge),
-                    const SizedBox(height: 12),
-                    if (drafts.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Column(
-                          children: [
-                            Icon(Icons.folder_open_outlined, size: 48),
-                            SizedBox(height: 12),
-                            Text('Aún no tienes borradores.'),
-                            SizedBox(height: 4),
-                            Text('Agrega un enlace de ejemplo para comenzar.'),
-                          ],
+                    if (cases.isEmpty)
+                      SliverToBoxAdapter(
+                        child: CasesEmptyState(
+                          title: controller.query.trim().isNotEmpty
+                              ? 'No encontramos coincidencias'
+                              : controller.filter == CaseFilter.archived
+                              ? 'Tu archivo está vacío'
+                              : 'Tu primer paso empieza aquí',
+                          description: controller.query.trim().isNotEmpty
+                              ? 'Prueba con otro título o nombre del sitio.'
+                              : controller.filter == CaseFilter.archived
+                              ? 'Los casos que archives aparecerán aquí.'
+                              : 'Crea un caso para guardar el enlace y tus notas.',
                         ),
-                      ),
-                    for (final draft in drafts)
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.description_outlined),
-                          title: Text(
-                            draft.sourceUrl.host,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: const Text('Borrador · sin enviar'),
-                          trailing: IconButton(
-                            tooltip: 'Eliminar borrador',
-                            onPressed: () => controller.removeDraft(draft.id),
-                            icon: const Icon(Icons.delete_outline),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                        sliver: SliverList.builder(
+                          itemCount: cases.length,
+                          itemBuilder: (context, index) => CaseCard(
+                            item: cases[index],
+                            onTap: () => _openCase(cases[index].id),
                           ),
                         ),
                       ),

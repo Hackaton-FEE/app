@@ -9,13 +9,15 @@ Un PR describe el problema, el comportamiento final, su alcance y las verificaci
 Configura Flutter 3.47.2 / Dart 3.13.2 y ejecuta desde la raíz:
 
 ```sh
-flutter pub get
-dart format --output=none --set-exit-if-changed lib test
+flutter pub get --enforce-lockfile
+dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
 flutter build apk --debug
 ```
 
 `Flutter checks` y `Android build` son los checks automáticos esperados. iOS requiere macOS y Xcode; su compilación en CI se ejecuta manualmente. Un build Android no verifica iOS: deja esa diferencia explícita en el PR cuando afecte integración nativa.
+
+Los cambios de persistencia o integración nativa también siguen [la guía de pruebas](docs/testing.md): una prueba con almacenamiento simulado no verifica el plugin y recrear el repositorio no prueba el reinicio del proceso.
 
 Al trabajar con IA, sigue [AGENTS.md](AGENTS.md) y proporciona objetivo, criterios de aceptación y restricciones. La persona autora revisa el diff y responde por lo que se integra, incluyendo código generado.

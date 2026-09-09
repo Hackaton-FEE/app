@@ -1,7 +1,7 @@
 # Producto y datos
 
-- La versión inicial crea y muestra borradores locales en memoria. No implica envío, recepción por terceros, retiro en origen ni desindexación. La interfaz debe distinguir esos estados si se implementan después.
-- Mantén URL, nombres, correos y demás datos personales fuera de logs, analítica, mensajes de error y capturas de ejemplo. Usa datos ficticios en pruebas y demostraciones.
-- No presentes un hash como una garantía de conocimiento cero, anonimato o certificación. Describe únicamente lo que una implementación verifica.
-- No implementes KYC, tratamiento de imágenes íntimas, extensiones de compartir, solicitudes externas ni reportes automáticos como parte del scaffold. Son funciones de roadmap que necesitan una tarea y criterios de aceptación propios.
-- Conserva el texto visible orientado al usuario: estado del borrador, siguiente acción y limitaciones reales, sin promesas de eliminación ni plazos no comprobados.
+- Los casos persisten localmente con título, URL, categoría, notas y estado borrador/archivado. Archivar organiza el caso; no implica envío, recepción, retiro o desindexación.
+- Mantén URL, notas y demás datos personales fuera de logs, analítica, mensajes de error y capturas de ejemplo. Usa datos ficticios en pruebas y demostraciones.
+- Confirma guardar, editar o eliminar solo después de completar la operación persistente. Ante corrupción o esquema desconocido, conserva los datos y presenta el error: no resetees ni sobrescribas con una colección vacía.
+- Describe protección y capacidades comprobables. El almacenamiento local no incorpora conocimiento cero, bloqueo propio, sincronización, exportación ni recuperación garantizada desde backups.
+- Compartir, autenticación, backend, imágenes y reportes pertenecen a entregas posteriores; las categorías locales no habilitan esas funciones. Las tareas nuevas autorizadas pueden ampliar el alcance sin convertir este documento en una aprobación adicional.

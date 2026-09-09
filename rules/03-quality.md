@@ -1,7 +1,7 @@
 # Calidad del cliente
 
-- Usa Flutter 3.47.2 / Dart 3.13.2. Mantén las dependencias existentes salvo que la tarea justifique añadir otra.
-- Preserva la separación actual entre datos en memoria, dominio y presentación. Una tarea pequeña no requiere una arquitectura nueva ni bibliotecas de estado adicionales.
-- Comprueba formato, análisis y pruebas con los comandos de [CONTRIBUTING.md](../CONTRIBUTING.md). Prueba comportamiento observable cuando cambie lógica o interacción; una corrección puramente editorial no requiere una prueba que replique su texto.
-- Verifica la compilación Android al cerrar cambios de código del cliente. Los cambios nativos iOS requieren validación en macOS/Xcode o una limitación explícita en el PR.
-- Las pruebas de la demo no deben depender del backend ni de servicios externos. Distingue pruebas ejecutadas, pendientes y bloqueadas; no declares éxito por ausencia de errores observados.
+- Conserva Flutter 3.47.2 / Dart 3.13.2 y dependencias resueltas en `pubspec.lock`. Añade paquetes cuando el comportamiento pedido los justifique.
+- Mantén responsabilidades: modelos inmutables y validación en dominio; repositorio asíncrono como fuente de verdad; plugin detrás del adaptador; estado de pantalla con `ChangeNotifier`. Inyecta dependencias por constructor y comparte una sola instancia de repositorio.
+- Prueba comportamiento observable: edición válida/inválida, persistencia al recrear el repositorio, errores de escritura sin falso éxito y lectura corrupta sin pérdida automática. No escribas pruebas que solo reproduzcan el código o texto modificado.
+- Usa dobles para pruebas unitarias y de widgets; verifica el adaptador con el plugin real en integración. Sigue [la guía de pruebas](../docs/testing.md) para distinguir esa comprobación de un cierre y reapertura del proceso.
+- Ejecuta formato, análisis, pruebas y build Android según [CONTRIBUTING.md](../CONTRIBUTING.md). Los cambios nativos iOS requieren macOS/Xcode o una limitación explícita en el PR. Reporta únicamente validaciones realizadas.

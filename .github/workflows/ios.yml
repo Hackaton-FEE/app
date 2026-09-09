@@ -1,6 +1,6 @@
 name: iOS simulator build
 
-# Manual macOS build: no Apple signing credentials or App Store upload.
+# Manual native Keychain test and simulator build; no signing credentials needed.
 on:
   workflow_dispatch:
 
@@ -11,13 +11,54 @@ jobs:
   ios:
     name: iOS simulator build
     runs-on: macos-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.2'
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
-      - run: flutter build ios --simulator --debug
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - name: Select and boot an available iPhone simulator
+        id: simulator
+        timeout-minutes: 5
+        shell: python3 {0}
+        run: |
+          import json
+          import os
+          import re
+          import subprocess
+
+          inventory = json.loads(subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "--json"],
+              text=True,
+          ))
+          candidates = []
+          for runtime, devices in inventory["devices"].items():
+              if "SimRuntime.iOS-" not in runtime:
+                  continue
+              version = tuple(int(part) for part in re.findall(
+                  r"\d+", runtime.split("SimRuntime.iOS-", 1)[1],
+              ))
+              for device in devices:
+                  if device.get("isAvailable") and device["name"].startswith("iPhone"):
+                      candidates.append((device["state"] == "Booted", version, device))
+          if not candidates:
+              raise SystemExit("No available iPhone simulator in the selected Xcode.")
+          candidates.sort(key=lambda candidate: candidate[:2], reverse=True)
+          device = candidates[0][2]
+          print(f"Using {device['name']} ({device['udid']})", flush=True)
+          subprocess.run(
+              ["xcrun", "simctl", "bootstatus", device["udid"], "-b"], check=True,
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"udid={device['udid']}\n")
+      - name: Test native Keychain persistence
+        timeout-minutes: 20
+        env:
+          IOS_DEVICE_ID: ${{ steps.simulator.outputs.udid }}
+        run: flutter test integration_test/local_case_storage_test.dart -d "$IOS_DEVICE_ID"
+      - name: Build the normal simulator app
+        run: flutter build ios --simulator --debug

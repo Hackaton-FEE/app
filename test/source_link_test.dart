@@ -17,6 +17,8 @@ void main() {
       'https://name:password@example.com',
       'https://invalid host/post',
       'https://invalid%20host/post',
+      'https://@example.com',
+      'https://example.com:99999',
     ]) {
       expect(
         () => parseSourceLink(value),
@@ -24,5 +26,13 @@ void main() {
         reason: value,
       );
     }
+  });
+
+  test('bounds links before and after URI normalization', () {
+    const prefix = 'https://example.com/';
+    final exact = prefix + ('a' * (maxSourceLinkLength - prefix.length));
+    expect(parseSourceLink(exact).toString().length, maxSourceLinkLength);
+    expect(() => parseSourceLink('${exact}a'), throwsFormatException);
+    expect(() => parseSourceLink(prefix + ('á' * 1000)), throwsFormatException);
   });
 }

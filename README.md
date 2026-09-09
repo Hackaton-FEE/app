@@ -1,20 +1,26 @@
 # App móvil · Hackaton-FEE
 
-Base Flutter para iOS y Android de la aplicación de gestión de privacidad. El concepto está en [documentation/concepto-central-plataforma.md](https://github.com/Hackaton-FEE/documentation/blob/main/concepto-central-plataforma.md); este repositorio distingue la visión del producto de las capacidades implementadas.
+Aplicación Flutter para iOS y Android que organiza casos de privacidad en el dispositivo. El concepto está en [documentation/concepto-central-plataforma.md](https://github.com/Hackaton-FEE/documentation/blob/main/concepto-central-plataforma.md); este repositorio distingue la visión del producto de las capacidades implementadas.
 
 ## Qué funciona
 
-- Pantalla de inicio y flujo para crear, listar y eliminar borradores a partir de un enlace HTTP/HTTPS.
-- Borradores exclusivamente en memoria: una nueva sesión empieza vacía. No hay llamadas a red ni reportes a terceros.
-- Proyectos nativos Android (Kotlin) e iOS (Swift) generados por Flutter.
-- Separación de dominio, repositorio y presentación con inyección de dependencias sencilla.
-- Pruebas de validación de enlaces, ciclo de vida del repositorio y flujo de usuario.
+- Crear, consultar y editar casos con título, enlace HTTP/HTTPS, categoría y notas.
+- Buscar casos y organizarlos como borradores o archivados; restaurarlos o eliminarlos.
+- Conservar los casos entre sesiones mediante almacenamiento local: un JSON versión 1 por registro, usando `flutter_secure_storage` 10.3.2 con Keychain en iOS y almacenamiento cifrado en Android.
+- Separar modelos inmutables, repositorio asíncrono, adaptador nativo y presentación con `ChangeNotifier` e inyección por constructor.
+- Mostrar errores de carga o escritura sin confirmar cambios que no se guardaron ni borrar automáticamente datos corruptos.
 
-Es un prototipo para datos de ejemplo. No contiene almacenamiento persistente, autenticación, recepción desde el menú Compartir, captura de evidencia, hashing NCII, notificaciones push ni solicitudes de retiro. Estas capacidades se desarrollarán mediante PRs independientes.
+Los estados **borrador** y **archivado** solo organizan información local: no indican que una plataforma recibió una solicitud ni retiró contenido. La app no conecta al backend, no recibe imágenes y no envía reportes. Las categorías sirven para ordenar los casos; seleccionar contenido íntimo no procesa imágenes ni determina una infracción.
+
+El almacenamiento no incorpora autenticación o bloqueo propio de la app, sincronización, exportación ni recuperación garantizada desde backups. Tampoco es una arquitectura de conocimiento cero. La configuración y sus límites están en [arquitectura](docs/architecture.md); usa información ficticia para pruebas.
 
 ## Inicio rápido
 
-Requisitos: Flutter **3.47.2** (Dart **3.13.2** incluido), Git y herramientas de la plataforma. `.fvmrc` fija la versión si el equipo usa FVM; FVM es opcional. Las dependencias resueltas están en `pubspec.lock`.
+Capturas de Android con datos ficticios; el archivo conserva su contenido después de cerrar el proceso y abrir la app:
+
+<img src="docs/images/cases-android.png" alt="Lista de casos archivados" width="280"> <img src="docs/images/case-detail-android.png" alt="Detalle de un caso local" width="280">
+
+Requisitos: Flutter **3.47.2** (Dart **3.13.2** incluido), Git y herramientas de la plataforma. `.fvmrc` fija la versión si el equipo usa FVM; FVM es opcional. Las dependencias resueltas están en `pubspec.lock`; `flutter_secure_storage` está fijado en 10.3.2 y Android usa `compileSdk` 36.
 
 ```bash
 git clone https://github.com/Hackaton-FEE/app.git
@@ -44,10 +50,11 @@ lib/
   main.dart
   app/                      # Composición de dependencias y tema
   features/cases/
-    domain/                 # Borrador, contrato del repositorio y enlace
-    data/                   # Repositorio local en memoria
+    domain/                 # Modelos inmutables, validación y contrato async
+    data/                   # Repositorio persistente y adaptador de almacenamiento
     presentation/           # Controlador y pantallas
 test/                       # Pruebas de dominio y widgets
+integration_test/           # Persistencia mediante el plugin nativo
 android/                    # Proyecto nativo Android
 ios/                        # Proyecto nativo iOS
 rules/                      # Reglas mantenidas por el equipo
@@ -59,13 +66,15 @@ docs/                       # Arquitectura y forma de trabajo
 ## Validación
 
 ```bash
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
 flutter build apk --debug
 ```
 
-GitHub Actions ejecuta `Flutter checks` y `Android build` en pushes y pull requests. El APK debug se conserva siete días como artifact. `iOS simulator build` se ejecuta manualmente desde Actions en un runner macOS; no publica nada en App Store y no se considera verificado hasta que su ejecución pase. Usar ese runner consume la cuota correspondiente de GitHub Actions.
+GitHub Actions ejecuta `Flutter checks` y `Android build` en pushes y pull requests. El APK debug se conserva siete días como artifact. `iOS simulator build` se ejecuta manualmente desde Actions en un runner macOS: prueba la persistencia nativa de Keychain en un iPhone simulado y compila la app. No publica nada en App Store y no se considera verificado hasta que su ejecución pase. Usar ese runner consume la cuota correspondiente de GitHub Actions.
+
+Las pruebas unitarias y de widgets usan almacenamiento de prueba. La prueba de integración necesita un dispositivo o emulador y ejercita el plugin real; recrear el repositorio no equivale a reiniciar el proceso. Sigue [la guía de pruebas](docs/testing.md) para ejecutarla y comprobar cierre/reapertura en Android sin desinstalar la app.
 
 ## Dos ingenieros y desarrollo con IA
 
@@ -73,11 +82,11 @@ Leer [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) y [flujo del equ
 
 El [servidor](https://github.com/Hackaton-FEE/server) es independiente. Su contrato inicial es `GET /api/v1/health`; esta app todavía no lo consume. No incluir claves privadas en Dart, `--dart-define`, assets ni código nativo: cualquier valor distribuido en una app puede extraerse.
 
-## Siguiente entrega sugerida
+## Siguientes entregas
 
-1. Acordar contrato de casos y autenticación con el servidor.
-2. Implementar recepción de enlaces en Android y una Share Extension de iOS con pruebas en dispositivos reales.
-3. Añadir persistencia, acceso por usuario y seguimiento con estados verificables.
-4. Preparar solicitudes revisables para una plataforma y una jurisdicción concretas.
+1. Recibir enlaces desde Compartir en Android y una Share Extension de iOS, reutilizando la validación y definiendo cómo coordinar escrituras entre procesos.
+2. Definir autenticación, bloqueo de acceso y qué ocurre con los casos locales al iniciar/cerrar sesión o cambiar de cuenta.
+3. Acordar el contrato de casos con el servidor e integrar sincronización, conflictos y errores, conservando la diferencia entre estados locales y resultados externos.
+4. Preparar una solicitud revisable para un canal concreto. El envío y su seguimiento requieren una integración y evidencia propias.
 
-Referencias: [crear una app Flutter](https://docs.flutter.dev/reference/create-new-app) y [protección de ramas en GitHub](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+Referencias de implementación: [recomendaciones de arquitectura de Flutter](https://docs.flutter.dev/app-architecture/recommendations) y [documentación de flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage).
