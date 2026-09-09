@@ -68,7 +68,8 @@ Resultados del 9 de septiembre de 2026 con Flutter 3.47.2 / Dart 3.13.2. «Pendi
 | Detalle y ayuda | 3 pruebas de detalle aprobadas; ayuda cubierta también en formulario e inicio. | Confirmación contextual, estados persistentes, errores y navegación. |
 | Análisis, suite completa y build Android | Formato correcto, análisis sin incidencias, 80 pruebas aprobadas y APK debug compilado. | Regresión técnica; no certifica accesibilidad. |
 | Recorrido visual Android | Realizado en emulador API 36 con datos ficticios. | Foco al enviar vacío, ayuda y vuelta con valores conservados, seguir editando, guardar sin notas, archivar y selector ampliado. Inspección visual y árbol nativo; no recorrido de lector de pantalla. |
-| TalkBack en Android | Pendiente de recorrido manual documentado. | Orden, anuncios, agrupación, foco y acciones con servicio real. |
+| Pixel físico | [Comprobación funcional completada](pixel-device-validation.md) en Pixel 10 Pro XL, Android 17 / API 37. | Guardado, edición, búsqueda, archivo/restauración y borrado comprobados con cierre y reapertura del proceso. Ajustes restaurados y datos ficticios eliminados. |
+| TalkBack en Android | Recorrido manual aplazado; activación y foco observado en Pixel documentados por separado. | Orden, anuncios, agrupación, foco y acciones con servicio real. |
 | VoiceOver e inspector iOS | Pendiente; requiere entorno Apple. | No extrapolar Android ni integración de almacenamiento a iOS. |
 | Evaluación con personas usuarias | No realizada. | No se han medido comprensión, esfuerzo ni utilidad con la población destinataria. |
 
