@@ -12,6 +12,7 @@ import '../../cases/presentation/cases_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
 import 'widgets/dashboard_tour.dart';
+import 'widgets/dashboard_spotlight.dart';
 import 'widgets/dashboard_status.dart';
 import 'widgets/footprint_action_bar.dart';
 import 'widgets/footprint_explorer.dart';
@@ -44,6 +45,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   final _scrollController = ScrollController();
   final _tourAnchor = GlobalKey();
+  final _spotlightSurface = GlobalKey();
+  final _tourTargets = List.generate(5, (_) => GlobalKey());
+  bool _drawerOpen = false;
   final _helpFocus = FocusNode();
   final _tourFocus = FocusNode();
   int? _tourStep;
@@ -66,6 +70,11 @@ class _DashboardPageState extends State<DashboardPage> {
       }
     });
   }
+
+  Widget _region(Widget child, [int step = -1]) => SpotlightRegion(
+    dimmed: _tourStep != null && _tourStep != step && !_drawerOpen,
+    child: child,
+  );
 
   Widget _tourPanel() => DashboardTourPanel(
     key: _tourAnchor,
@@ -184,116 +193,144 @@ class _DashboardPageState extends State<DashboardPage> {
                 (item) => item.riskLevel == FootprintRisk.high,
                 orElse: () => profile.items.first,
               );
-        return Scaffold(
-          extendBody: true,
-          appBar: AppBar(
-            toolbarHeight: 72,
-            title: const Text(
-              "Osisn't",
-              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1),
-            ),
-            leading: Builder(
-              builder: (context) => IconButton(
-                key: const Key('dashboard-profile-button'),
-                tooltip: 'Abrir perfil',
-                style: _tourStep == 4
-                    ? IconButton.styleFrom(
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .primaryContainer,
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      )
-                    : null,
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                icon: Icon(
-                  _tourStep == 4 ? Icons.person_pin : Icons.menu_rounded,
+        return DashboardSpotlight(
+          surfaceKey: _spotlightSurface,
+          panelKey: _tourAnchor,
+          targetKey: _tourTargets[_tourStep ?? 0],
+          scrollController: _scrollController,
+          enabled: _tourStep != null && !_drawerOpen,
+          targetInBody: (_tourStep ?? 0) < 2,
+          bottomInset:
+              FootprintActionBar.contentHeight(context) +
+              MediaQuery.viewPaddingOf(context).bottom,
+          child: Scaffold(
+            onDrawerChanged: (open) => setState(() => _drawerOpen = open),
+            extendBody: _tourStep == null,
+            appBar: AppBar(
+              toolbarHeight: 72,
+              title: _region(
+                const Text(
+                  "Osisn't",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
+                  ),
                 ),
               ),
-            ),
-            actions: [
-              IconButton(
-                focusNode: _helpFocus,
-                tooltip: 'Ayuda de uso',
-                onPressed: _openHelp,
-                icon: const Icon(Icons.help_outline),
+              leading: Builder(
+                key: _tourTargets[4],
+                builder: (context) => _region(
+                  IconButton(
+                    key: const Key('dashboard-profile-button'),
+                    tooltip: 'Abrir perfil',
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    icon: Icon(
+                      _tourStep == 4 ? Icons.person_pin : Icons.menu_rounded,
+                    ),
+                  ),
+                  4,
+                ),
               ),
-            ],
-          ),
-          drawer: ProfileDrawer(
-            identity: widget.account.email,
-            accountName: widget.account.name,
-            onManageAccounts: widget.onManageAccounts,
-            caseCount: widget.casesController.state.cases.length,
-            onViewCases: _openAllCases,
-            onHelp: _openHelp,
-          ),
-          bottomNavigationBar: FootprintActionBar(
-            scanning: footprint.isLoading,
-            tourStep: _tourStep,
-            onScan: _openScanSheet,
-            onGuardAi: _openGuardAi,
-          ),
-          body: SafeArea(
-            bottom: false,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: CustomScrollView(
-                  key: const Key('dashboard-scroll'),
-                  controller: _scrollController,
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        24,
-                        8,
-                        24,
-                        FootprintActionBar.contentHeight(context) +
-                            MediaQuery.viewPaddingOf(context).bottom +
-                            32,
-                      ),
-                      sliver: SliverMainAxisGroup(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: RepaintBoundary(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  DashboardStatus(footprint: footprint),
-                                  if (_tourStep != null && _tourStep != 1)
-                                    _tourPanel(),
-                                  if (profile != null) ...[
-                                    ExposureGauge(profile: profile),
-                                    const SizedBox(height: 20),
-                                    RecommendationCard(
-                                      casesController: widget.casesController,
-                                      featuredItem: featuredItem,
-                                      onGuardAi: _openGuardAi,
-                                      onViewAllCases: _openAllCases,
+              actions: [
+                _region(
+                  IconButton(
+                    focusNode: _helpFocus,
+                    tooltip: 'Ayuda de uso',
+                    onPressed: _openHelp,
+                    icon: const Icon(Icons.help_outline),
+                  ),
+                ),
+              ],
+            ),
+            drawer: ProfileDrawer(
+              identity: widget.account.email,
+              accountName: widget.account.name,
+              onManageAccounts: widget.onManageAccounts,
+              caseCount: widget.casesController.state.cases.length,
+              onViewCases: _openAllCases,
+              onHelp: _openHelp,
+            ),
+            bottomNavigationBar: FootprintActionBar(
+              scanning: footprint.isLoading,
+              tourStep: _tourStep,
+              scanKey: _tourTargets[2],
+              guardAiKey: _tourTargets[3],
+              onScan: _openScanSheet,
+              onGuardAi: _openGuardAi,
+            ),
+            body: SafeArea(
+              bottom: false,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: CustomScrollView(
+                    key: const Key('dashboard-scroll'),
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          24,
+                          8,
+                          24,
+                          FootprintActionBar.contentHeight(context) +
+                              MediaQuery.viewPaddingOf(context).bottom +
+                              32,
+                        ),
+                        sliver: SliverMainAxisGroup(
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: RepaintBoundary(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _region(
+                                      DashboardStatus(footprint: footprint),
                                     ),
-                                    const SizedBox(height: 28),
+                                    if (_tourStep != null && _tourStep != 1)
+                                      _tourPanel(),
+                                    if (profile != null) ...[
+                                      _region(
+                                        ExposureGauge(
+                                          key: _tourTargets[0],
+                                          profile: profile,
+                                        ),
+                                        0,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      _region(
+                                        RecommendationCard(
+                                          casesController:
+                                              widget.casesController,
+                                          featuredItem: featuredItem,
+                                          onGuardAi: _openGuardAi,
+                                          onViewAllCases: _openAllCases,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 28),
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (_tourStep == 1)
-                            SliverToBoxAdapter(child: _tourPanel()),
-                          if (profile != null)
-                            FootprintExplorer(
-                              profile: profile,
-                              visibleItems: footprint.visibleItems,
-                              selectedCategory: footprint.selectedCategory,
-                              onCategorySelected: footprint.setCategoryFilter,
-                              onFindingSelected: _showFindingDetail,
-                            ),
-                        ],
+                            if (_tourStep == 1)
+                              SliverToBoxAdapter(child: _tourPanel()),
+                            if (profile != null)
+                              FootprintExplorer(
+                                tourTargetKey: _tourTargets[1],
+                                tourStep: _tourStep,
+                                profile: profile,
+                                visibleItems: footprint.visibleItems,
+                                selectedCategory: footprint.selectedCategory,
+                                onCategorySelected: footprint.setCategoryFilter,
+                                onFindingSelected: _showFindingDetail,
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

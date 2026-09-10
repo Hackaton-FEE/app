@@ -4,7 +4,12 @@ import 'package:fee_app/features/cases/presentation/case_form_page.dart';
 import 'package:fee_app/features/cases/presentation/cases_page.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
 import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:fee_app/features/footprint/presentation/widgets/dashboard_spotlight.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'data/fake_case_storage.dart';
@@ -107,6 +112,65 @@ void main() {
 
     expect(find.text('nuevo_objetivo@gmail.com'), findsOneWidget);
   });
+
+  testWidgets(
+    'spotlight darkens the background but preserves the active target',
+    (tester) async {
+      await startDashboard(tester);
+      Future<List<int>> pixelsAt(List<Offset> points) async {
+        final widget = tester.widget<DashboardSpotlight>(
+          find.byType(DashboardSpotlight),
+        );
+        final boundary =
+            widget.surfaceKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
+        return (await tester.runAsync(() async {
+          final image = await boundary.toImage();
+          final bytes = (await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          ))!;
+          final pixels = points
+              .map(
+                (point) => bytes.getUint32(
+                  (point.dy.floor() * image.width + point.dx.floor()) * 4,
+                ),
+              )
+              .toList();
+          image.dispose();
+          return pixels;
+        }))!;
+      }
+
+      Offset targetPoint() {
+        final widget = tester.widget<DashboardSpotlight>(
+          find.byType(DashboardSpotlight),
+        );
+        final rect = tester.getRect(find.byKey(widget.targetKey));
+        return Offset(rect.center.dx, rect.top + 16);
+      }
+
+      final before = await pixelsAt([const Offset(5, 100), targetPoint()]);
+      await tester.tap(find.byTooltip('Ayuda de uso'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dashboard-spotlight')), findsOneWidget);
+      final after = await pixelsAt([const Offset(5, 100), targetPoint()]);
+      expect(after.first >> 24, lessThan((before.first >> 24) ~/ 2));
+      expect(after.last, before.last);
+      await tester.tap(
+        find.byKey(const Key('dashboard-scan-fab')),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scan-identity-field')), findsNothing);
+      await tester.ensureVisible(find.text('Salir del recorrido'));
+      await tester.tap(find.text('Salir del recorrido'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dashboard-spotlight')), findsNothing);
+      await tester.tap(find.byKey(const Key('dashboard-scan-fab')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scan-identity-field')), findsOneWidget);
+    },
+  );
 
   testWidgets('help offers a tour with navigation and live feature actions', (
     tester,
