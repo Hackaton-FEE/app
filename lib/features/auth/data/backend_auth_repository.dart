@@ -96,16 +96,21 @@ class BackendAuthRepository implements AuthRepository {
   Future<UserProfile> register({
     required String email,
     required String password,
-  }) =>
-      _client.register(email: email, password: password);
+  }) async {
+    // El backend v0.2.0 opera exclusivamente con Passkeys FIDO2.
+    // Para compatibilidad total con la UI y pruebas, enlazamos el registro
+    // a la creación de una bóveda passkey etiquetada con el correo/alias.
+    return registerWithPasskey(label: email);
+  }
 
   @override
   Future<UserProfile> login({
     required String email,
     required String password,
   }) async {
-    await _client.login(email: email, password: password);
-    return _client.getMe();
+    // El backend v0.2.0 opera con credenciales descubribles FIDO2.
+    // Enlazamos el login tradicional al desafío passkey de la bóveda.
+    return loginWithPasskey();
   }
 
   @override

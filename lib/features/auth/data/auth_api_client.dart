@@ -506,6 +506,14 @@ class AuthApiClient {
       'session_not_found' => 'La sesión no fue encontrada o ya expiró.',
       'rate_limited' => 'Demasiadas solicitudes. Espera un momento.',
       'storage_unavailable' => 'Base de datos no disponible temporalmente.',
+      'unknown_credential' =>
+          'No se encontró una Bóveda registrada con esta credencial. Por favor crea tu bóveda primero.',
+      'invalid_credential' =>
+          'La credencial de la bóveda no pudo ser validada. Intenta nuevamente.',
+      'invalid_challenge' =>
+          'El reto de seguridad ha caducado. Inténtalo de nuevo.',
+      'no_passkey_found' =>
+          'No se encontró una Bóveda registrada en este dispositivo. Por favor crea una bóveda primero.',
       _ => fallback,
     };
   }
