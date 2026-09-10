@@ -54,7 +54,7 @@ class _CasesPageState extends State<CasesPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Privacidad FEE'),
+        title: const Text('Osisnt'),
         leading: Navigator.canPop(context)
             ? null
             : const Icon(Icons.shield_outlined),
