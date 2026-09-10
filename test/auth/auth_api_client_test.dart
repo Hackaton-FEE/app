@@ -1,6 +1,8 @@
+import '../support/in_memory_token_storage.dart';
+
 import 'dart:convert';
+
 import 'package:fee_app/features/auth/data/auth_api_client.dart';
-import 'package:fee_app/features/auth/data/token_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -31,100 +33,10 @@ void main() {
       expect(await client.checkHealth(), isTrue);
     });
 
-    test('register sends lowercase email and returns UserProfile on 201', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/register');
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['email'], 'user@example.com');
-        expect(body['password'], 'secure-pass-1234');
-        return http.Response(
-          jsonEncode({
-            'id': 'uuid-123',
-            'email': 'user@example.com',
-            'is_active': true,
-            'created_at': '2026-09-10T12:00:00Z',
-          }),
-          201,
-        );
-      });
-
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
-
-      final profile = await client.register(
-        email: '  USER@EXAMPLE.COM ',
-        password: 'secure-pass-1234',
-      );
-
-      expect(profile.id, 'uuid-123');
-      expect(profile.email, 'user@example.com');
-      expect(profile.isActive, isTrue);
-    });
-
-    test('register throws AuthApiException on 409 conflict', () async {
-      final mockClient = MockClient((request) async {
-        return http.Response(
-          jsonEncode({
-            'detail': {
-              'code': 'registration_conflict',
-              'message': 'Ya existe una cuenta con este correo.',
-            }
-          }),
-          409,
-        );
-      });
-
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
-
-      expect(
-        () => client.register(email: 'user@example.com', password: 'password12345'),
-        throwsA(isA<AuthApiException>().having((e) => e.statusCode, 'statusCode', 409)),
-      );
-    });
-
-    test('login saves access in memory and refresh in storage', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/login');
-        return http.Response(
-          jsonEncode({
-            'access_token': 'jwt.access.token',
-            'refresh_token': 'opaque.refresh.token',
-            'token_type': 'bearer',
-            'expires_in': 900,
-            'session_id': 'sess-123',
-          }),
-          200,
-        );
-      });
-
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
-
-      final tokens = await client.login(
-        email: 'user@example.com',
-        password: 'secure-pass-1234',
-      );
-
-      expect(tokens.accessToken, 'jwt.access.token');
-      expect(tokens.refreshToken, 'opaque.refresh.token');
-      expect(tokenStorage.accessToken, 'jwt.access.token');
-      expect(await tokenStorage.readRefreshToken(), 'opaque.refresh.token');
-    });
-
     test('refreshTokens executes a single concurrent HTTP request', () async {
       var refreshCalls = 0;
       final mockClient = MockClient((request) async {
-        if (request.url.path == '/api/v1/auth/refresh') {
+        if (request.url.path == '/api/v1/auth/token/refresh') {
           refreshCalls++;
           await Future<void>.delayed(const Duration(milliseconds: 50));
           return http.Response(
@@ -169,7 +81,7 @@ void main() {
             'detail': {
               'code': 'invalid_refresh_token',
               'message': 'Sesión caducada.',
-            }
+            },
           }),
           401,
         );
@@ -216,107 +128,88 @@ void main() {
       expect(await tokenStorage.readRefreshToken(), isNull);
     });
 
-    test('getSessions returns session list', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/sessions');
-        return http.Response(
-          jsonEncode([
-            {
-              'id': 'sess-1',
-              'created_at': '2026-09-01T10:00:00Z',
-              'expires_at': '2026-10-01T10:00:00Z',
-              'last_used_at': '2026-09-10T08:00:00Z',
-              'is_current': true,
-            },
-            {
-              'id': 'sess-2',
-              'created_at': '2026-08-15T10:00:00Z',
-              'expires_at': '2026-09-15T10:00:00Z',
-              'is_current': false,
-            },
-          ]),
-          200,
+    test(
+      'unsupported catalogs never fabricate data or call absent routes',
+      () async {
+        var calls = 0;
+        final client = AuthApiClient(
+          tokenStorage: tokenStorage,
+          httpClient: MockClient((request) async {
+            calls++;
+            return http.Response('{}', 200);
+          }),
         );
-      });
+        await expectLater(
+          client.getSessions(),
+          throwsA(isA<AuthApiException>()),
+        );
+        await expectLater(
+          client.getScanCapabilities(),
+          throwsA(isA<AuthApiException>()),
+        );
+        await expectLater(
+          client.revokeSession('test'),
+          throwsA(isA<AuthApiException>()),
+        );
+        expect(calls, 0);
+      },
+    );
 
-      tokenStorage.accessToken = 'jwt.token';
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
+    test(
+      'failed refresh preserves existing credentials and shares the error',
+      () async {
+        await tokenStorage.saveRefreshToken('existing-refresh');
+        tokenStorage.accessToken = 'existing-access';
+        var calls = 0;
+        final client = AuthApiClient(
+          tokenStorage: tokenStorage,
+          httpClient: MockClient((request) async {
+            calls++;
+            return http.Response('{}', 503);
+          }),
+        );
+        final first = client.refreshTokens();
+        final second = client.refreshTokens();
+        await Future.wait([
+          expectLater(first, throwsA(isA<AuthApiException>())),
+          expectLater(second, throwsA(isA<AuthApiException>())),
+        ]);
+        expect(calls, 1);
+        expect(await tokenStorage.readRefreshToken(), 'existing-refresh');
+        expect(tokenStorage.accessToken, 'existing-access');
+      },
+    );
 
-      final sessions = await client.getSessions();
-      expect(sessions, hasLength(2));
-      expect(sessions.first.id, 'sess-1');
-      expect(sessions.first.isCurrent, isTrue);
-      expect(sessions.last.id, 'sess-2');
-      expect(sessions.last.isCurrent, isFalse);
-    });
-
-    test('getScanCapabilities returns providers and availability', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/scans/capabilities');
-        return http.Response(
-          jsonEncode({
-            'providers': [
-              {
-                'provider_id': 'sherlock',
-                'name': 'Sherlock',
-                'capabilities': ['username'],
-                'available': false,
+    test(
+      'getRegistrationOptions requests options and returns challenge',
+      () async {
+        final mockClient = MockClient((request) async {
+          expect(request.url.path, '/api/v1/auth/passkey/registration/options');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['label'], 'Bóveda Test');
+          return http.Response(
+            jsonEncode({
+              'challenge_token': 'chal-token-123',
+              'public_key': {
+                'challenge': 'chal-bytes',
+                'rp': {'id': 'example.com'},
               },
-              {
-                'provider_id': 'holehe',
-                'name': 'Holehe',
-                'capabilities': ['email'],
-                'available': false,
-              }
-            ]
-          }),
-          200,
+            }),
+            200,
+          );
+        });
+
+        final client = AuthApiClient(
+          baseUrl: 'https://example.com/api/v1',
+          tokenStorage: tokenStorage,
+          httpClient: mockClient,
         );
-      });
 
-      tokenStorage.accessToken = 'jwt.token';
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
-
-      final capabilities = await client.getScanCapabilities();
-      expect(capabilities, hasLength(2));
-      expect(capabilities[0].providerId, 'sherlock');
-      expect(capabilities[0].available, isFalse);
-      expect(capabilities[1].providerId, 'holehe');
-      expect(capabilities[1].available, isFalse);
-    });
-
-    test('getRegistrationOptions requests options and returns challenge', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/passkey/registration/options');
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['label'], 'Bóveda Test');
-        return http.Response(
-          jsonEncode({
-            'challenge_token': 'chal-token-123',
-            'public_key': {'challenge': 'chal-bytes', 'rp': {'id': 'example.com'}},
-          }),
-          200,
-        );
-      });
-
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
-
-      final res = await client.getRegistrationOptions(label: 'Bóveda Test');
-      expect(res['challenge_token'], 'chal-token-123');
-      expect(res['public_key']['challenge'], 'chal-bytes');
-    });
+        final res = await client.getRegistrationOptions(label: 'Bóveda Test');
+        expect(res['challenge_token'], 'chal-token-123');
+        expect(res['public_key']['challenge'], 'chal-bytes');
+      },
+    );
 
     test('verifyRegistration sends credential and stores tokens', () async {
       final mockClient = MockClient((request) async {
@@ -376,38 +269,44 @@ void main() {
       expect(res['challenge_token'], 'auth-token-999');
     });
 
-    test('verifyAuthentication validates credential and stores tokens', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/v1/auth/passkey/authentication/verify');
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['challenge_token'], 'auth-token-999');
-        return http.Response(
-          jsonEncode({
-            'access_token': 'auth-jwt',
-            'refresh_token': 'auth-refresh',
-            'token_type': 'bearer',
-            'expires_in': 3600,
-            'user': {'id': 'usr-1', 'label': 'Mi Bóveda'},
-          }),
-          200,
-          headers: {'content-type': 'application/json; charset=utf-8'},
+    test(
+      'verifyAuthentication validates credential and stores tokens',
+      () async {
+        final mockClient = MockClient((request) async {
+          expect(
+            request.url.path,
+            '/api/v1/auth/passkey/authentication/verify',
+          );
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['challenge_token'], 'auth-token-999');
+          return http.Response(
+            jsonEncode({
+              'access_token': 'auth-jwt',
+              'refresh_token': 'auth-refresh',
+              'token_type': 'bearer',
+              'expires_in': 3600,
+              'user': {'id': 'usr-1', 'label': 'Mi Bóveda'},
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        });
+
+        final client = AuthApiClient(
+          baseUrl: 'https://example.com/api/v1',
+          tokenStorage: tokenStorage,
+          httpClient: mockClient,
         );
-      });
 
-      final client = AuthApiClient(
-        baseUrl: 'https://example.com/api/v1',
-        tokenStorage: tokenStorage,
-        httpClient: mockClient,
-      );
+        final tokens = await client.verifyAuthentication(
+          challengeToken: 'auth-token-999',
+          credential: {'id': 'cred-auth'},
+        );
 
-      final tokens = await client.verifyAuthentication(
-        challengeToken: 'auth-token-999',
-        credential: {'id': 'cred-auth'},
-      );
-
-      expect(tokens.accessToken, 'auth-jwt');
-      expect(tokenStorage.accessToken, 'auth-jwt');
-      expect(await tokenStorage.readRefreshToken(), 'auth-refresh');
-    });
+        expect(tokens.accessToken, 'auth-jwt');
+        expect(tokenStorage.accessToken, 'auth-jwt');
+        expect(await tokenStorage.readRefreshToken(), 'auth-refresh');
+      },
+    );
   });
 }

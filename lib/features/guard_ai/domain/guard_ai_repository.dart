@@ -40,3 +40,8 @@ abstract interface class GuardAiRepository {
 
   Future<GuardAiConversation> reply(GuardAiInput input);
 }
+
+/// The deployed API does not currently expose a GuardAI conversation service.
+class GuardAiUnavailableException implements Exception {
+  const GuardAiUnavailableException();
+}

@@ -6,10 +6,7 @@ import '../../domain/session_info.dart';
 /// Diálogo que muestra las sesiones activas (`GET /api/v1/auth/sessions`)
 /// y permite revocar sesiones remotas (`DELETE /api/v1/auth/sessions/{id}`).
 class ActiveSessionsDialog extends StatefulWidget {
-  const ActiveSessionsDialog({
-    required this.authRepository,
-    super.key,
-  });
+  const ActiveSessionsDialog({required this.authRepository, super.key});
 
   final AuthRepository authRepository;
 
@@ -44,7 +41,8 @@ class _ActiveSessionsDialogState extends State<ActiveSessionsDialog> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'No se pudieron cargar las sesiones.';
+        _errorMessage =
+            'La lista de sesiones no está disponible en el servidor.';
         _isLoading = false;
       });
     }
@@ -76,85 +74,79 @@ class _ActiveSessionsDialogState extends State<ActiveSessionsDialog> {
       content: SizedBox(
         width: double.maxFinite,
         child: _isLoading
-            ? const Center(
-                heightFactor: 3,
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(heightFactor: 3, child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_errorMessage!),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: _loadSessions,
-                        child: const Text('Reintentar'),
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_errorMessage!),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _loadSessions,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              )
+            : _sessions.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No hay sesiones registradas.'),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                itemCount: _sessions.length,
+                separatorBuilder: (_, _) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final session = _sessions[index];
+                  final isCurrent = session.isCurrent;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      isCurrent
+                          ? Icons.phone_android_rounded
+                          : Icons.devices_rounded,
+                      color: isCurrent
+                          ? colors.primary
+                          : colors.onSurfaceVariant,
+                    ),
+                    title: Text(
+                      isCurrent ? 'Esta sesión (actual)' : 'Otra sesión',
+                      style: TextStyle(
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
-                    ],
-                  )
-                : _sessions.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('No hay sesiones registradas.'),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: _sessions.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final session = _sessions[index];
-                          final isCurrent = session.isCurrent;
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(
-                              isCurrent
-                                  ? Icons.phone_android_rounded
-                                  : Icons.devices_rounded,
-                              color: isCurrent
-                                  ? colors.primary
-                                  : colors.onSurfaceVariant,
+                    ),
+                    subtitle: Text(
+                      'ID: ${session.id.length > 8 ? session.id.substring(0, 8) : session.id}...\nCreada: ${_formatDate(session.createdAt)}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    trailing: isCurrent
+                        ? Chip(
+                            label: const Text('Actual'),
+                            backgroundColor: colors.primaryContainer,
+                            labelStyle: TextStyle(
+                              color: colors.onPrimaryContainer,
+                              fontSize: 12,
                             ),
-                            title: Text(
-                              isCurrent ? 'Esta sesión (actual)' : 'Otra sesión',
-                              style: TextStyle(
-                                fontWeight: isCurrent
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+                          )
+                        : _revokingId == session.id
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : IconButton(
+                            tooltip: 'Cerrar esta sesión',
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.redAccent,
                             ),
-                            subtitle: Text(
-                              'ID: ${session.id.substring(0, 8)}...\nCreada: ${_formatDate(session.createdAt)}',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            trailing: isCurrent
-                                ? Chip(
-                                    label: const Text('Actual'),
-                                    backgroundColor: colors.primaryContainer,
-                                    labelStyle: TextStyle(
-                                      color: colors.onPrimaryContainer,
-                                      fontSize: 12,
-                                    ),
-                                  )
-                                : _revokingId == session.id
-                                    ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : IconButton(
-                                        tooltip: 'Cerrar esta sesión',
-                                        icon: const Icon(
-                                          Icons.delete_outline_rounded,
-                                          color: Colors.redAccent,
-                                        ),
-                                        onPressed: () =>
-                                            _revokeSession(session.id),
-                                      ),
-                          );
-                        },
-                      ),
+                            onPressed: () => _revokeSession(session.id),
+                          ),
+                  );
+                },
+              ),
       ),
       actions: [
         TextButton(

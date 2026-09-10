@@ -1,13 +1,20 @@
+import '../support/ready_identity_repository.dart';
+import '../support/demo_guard_ai_repository.dart';
+
 import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
 
 import '../footprint/fake_scan_history_storage.dart';
 
 import 'package:fee_app/app/app.dart';
-import 'package:fee_app/features/accounts/data/demo_account_repository.dart';
+
+import '../support/demo_account_repository.dart';
+
 import 'package:fee_app/features/accounts/domain/local_account.dart';
 import 'package:fee_app/features/accounts/presentation/account_picker_page.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
-import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+
+import '../support/mock_footprint_repository.dart';
+
 import 'package:fee_app/features/footprint/presentation/dashboard_page.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +49,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       FeeApp(
+        guardAiRepositoryFactory: (_) => DemoGuardAiRepository(),
+        identityProfileRepository: ReadyIdentityRepository(),
         scanHistoryRepositoryFactory: (_) =>
             LocalScanHistoryRepository(storage: FakeScanHistoryStorage()),
         accountRepository: accounts,

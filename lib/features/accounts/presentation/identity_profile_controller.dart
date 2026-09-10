@@ -5,15 +5,10 @@ import '../domain/identity_profile_repository.dart';
 
 /// Manages identity profile configuration and onboarding state per account.
 class IdentityProfileController extends ChangeNotifier {
-  IdentityProfileController(
-    this._repository, {
-    required this.accountId,
-    this.isDemo = false,
-  });
+  IdentityProfileController(this._repository, {required this.accountId});
 
   final IdentityProfileRepository _repository;
   final String accountId;
-  final bool isDemo;
 
   IdentityProfile? _profile;
   bool _isLoading = false;
@@ -28,10 +23,9 @@ class IdentityProfileController extends ChangeNotifier {
   bool get isLoaded => _isLoaded;
   String? get error => _error;
 
-  /// True if a non-demo account has not yet completed profile setup.
+  /// True until this account completes or explicitly skips profile setup.
   bool get needsOnboarding {
-    if (isDemo) return false;
-    if (!_isLoaded) return false;
+    if (!_isLoaded || _error != null) return false;
     return _profile == null || !_profile!.hasCompletedOnboarding;
   }
 
@@ -49,7 +43,7 @@ class IdentityProfileController extends ChangeNotifier {
     } catch (e) {
       if (!_disposed) {
         _error = 'No se pudo cargar el perfil de identidad.';
-        _isLoaded = true;
+        _isLoaded = false;
       }
     } finally {
       if (!_disposed) {
@@ -61,6 +55,11 @@ class IdentityProfileController extends ChangeNotifier {
 
   Future<bool> save(IdentityProfile profile) async {
     if (_disposed || _isSaving) return false;
+    if (profile.accountId != accountId) {
+      _error = 'El perfil no corresponde a esta cuenta.';
+      _notify();
+      return false;
+    }
     _isSaving = true;
     _error = null;
     _notify();
@@ -73,8 +72,9 @@ class IdentityProfileController extends ChangeNotifier {
       return true;
     } catch (e) {
       if (!_disposed) {
-        _error =
-            e is FormatException ? e.message : 'Error al guardar el perfil.';
+        _error = e is FormatException
+            ? e.message
+            : 'Error al guardar el perfil.';
       }
       return false;
     } finally {
@@ -94,7 +94,7 @@ class IdentityProfileController extends ChangeNotifier {
       mainIdentifier: effectiveId,
       associatedEmail: effectiveId.contains('@') ? effectiveId : null,
       hasCompletedOnboarding: true,
-      consentSelfAudit: true,
+      consentSelfAudit: false,
       createdAt: DateTime.now(),
     );
     return save(defaultProfile);

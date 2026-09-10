@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../../footprint/domain/footprint_profile.dart';
-import '../data/demo_guard_ai_repository.dart';
 import '../domain/guard_ai_repository.dart';
 
 class GuardAiController extends ChangeNotifier {
@@ -9,16 +7,12 @@ class GuardAiController extends ChangeNotifier {
 
   final GuardAiRepository _repository;
 
-  void setContextProfile(FootprintProfile? profile) {
-    if (_repository is DemoGuardAiRepository) {
-      _repository.setFootprintContext(profile);
-    }
-  }
   GuardAiConversation _conversation = GuardAiConversation();
   String _draft = '';
   String? _error;
   String? _status;
   bool _loaded = false;
+  bool _unavailable = false;
   bool _isLoading = false;
   bool _isSending = false;
   bool _disposed = false;
@@ -30,6 +24,7 @@ class GuardAiController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSending => _isSending;
   bool get isReady => _loaded;
+  bool get isUnavailable => _unavailable;
 
   void setDraft(String value) {
     if (_disposed || _isSending || _draft == value) return;
@@ -47,6 +42,11 @@ class GuardAiController extends ChangeNotifier {
       if (_disposed) return;
       _conversation = conversation;
       _loaded = true;
+    } on GuardAiUnavailableException {
+      _unavailable = true;
+      _error =
+          'GuardAI aún no está disponible en el servidor. '
+          'Puedes consultar tus hallazgos y gestionar casos locales.';
     } catch (_) {
       _error = 'No pudimos abrir el chat. Inténtalo de nuevo.';
     } finally {

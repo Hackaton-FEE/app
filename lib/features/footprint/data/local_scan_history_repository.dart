@@ -13,7 +13,7 @@ class LocalScanHistoryRepository implements ScanHistoryRepository {
   final ScanHistoryStorage storage;
   final DateTime Function() _clock;
   Future<void>? _pending;
-  static const maxRecordBytes = 32 * 1024;
+  static const maxRecordBytes = 1024 * 1024;
 
   Future<T> _enqueue<T>(Future<T> Function() operation) {
     final result = _pending == null

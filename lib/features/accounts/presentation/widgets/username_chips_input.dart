@@ -65,9 +65,7 @@ class _UsernameChipsInputState extends State<UsernameChipsInput> {
             const SizedBox(width: 8),
             FilledButton.tonal(
               onPressed: _add,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(48, 48),
-              ),
+              style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
               child: const Icon(Icons.add_rounded),
             ),
           ],

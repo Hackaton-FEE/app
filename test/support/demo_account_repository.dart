@@ -1,8 +1,8 @@
 import 'package:uuid/uuid.dart';
 
-import '../domain/account_input.dart';
-import '../domain/account_repository.dart';
-import '../domain/local_account.dart';
+import 'package:fee_app/features/accounts/domain/account_input.dart';
+import 'package:fee_app/features/accounts/domain/account_repository.dart';
+import 'package:fee_app/features/accounts/domain/local_account.dart';
 
 /// Preview data lives only in memory, with no authentication or remote service.
 class DemoAccountRepository implements AccountRepository {
@@ -14,7 +14,6 @@ class DemoAccountRepository implements AccountRepository {
       id: 'demo-personal',
       name: 'Cuenta personal',
       email: 'pedro.gomez@gmail.com',
-      isDemo: true,
     ),
   ];
 

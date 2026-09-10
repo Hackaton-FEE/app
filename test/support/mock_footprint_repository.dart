@@ -1,7 +1,7 @@
-import '../../cases/domain/privacy_case.dart';
-import '../domain/footprint_item.dart';
-import '../domain/footprint_profile.dart';
-import '../domain/footprint_repository.dart';
+import 'package:fee_app/features/cases/domain/privacy_case.dart';
+import 'package:fee_app/features/footprint/domain/footprint_item.dart';
+import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
+import 'package:fee_app/features/footprint/domain/footprint_repository.dart';
 
 class MockFootprintRepository implements FootprintRepository {
   MockFootprintRepository({

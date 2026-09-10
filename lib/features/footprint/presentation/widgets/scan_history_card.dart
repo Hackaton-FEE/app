@@ -39,7 +39,10 @@ class ScanHistoryCard extends StatelessWidget {
                 spacing: 12,
                 runSpacing: 8,
                 children: [
-                  ScanHistoryRiskBadge(risk: entry.overallRisk),
+                  if (entry.hasBackendReport)
+                    ScanHistoryRiskBadge(risk: entry.overallRisk)
+                  else
+                    const Text('Origen no verificado'),
                   Text('${date.day}/${date.month}/${date.year} · $expiry'),
                 ],
               ),
@@ -49,8 +52,10 @@ class ScanHistoryCard extends StatelessWidget {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text('Exposición: ${entry.exposureScore}/100'),
-                  Text('${entry.findingsCount} hallazgos'),
+                  if (entry.hasBackendReport) ...[
+                    Text('Exposición: ${entry.exposureScore}/100'),
+                    Text('${entry.findingsCount} hallazgos'),
+                  ],
                   IconButton(
                     tooltip: 'Eliminar escaneo',
                     onPressed: onDelete,

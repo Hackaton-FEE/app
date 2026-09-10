@@ -1,4 +1,5 @@
 import 'footprint_item.dart';
+import 'osint_report.dart';
 
 class FootprintProfile {
   FootprintProfile({
@@ -6,6 +7,7 @@ class FootprintProfile {
     required Iterable<FootprintItem> items,
     required this.lastScannedAt,
     this.hasScanned = true,
+    this.osintReport,
   }) : items = List.unmodifiable(items);
 
   factory FootprintProfile.initial({required String targetIdentity}) =>
@@ -20,9 +22,11 @@ class FootprintProfile {
   final List<FootprintItem> items;
   final DateTime lastScannedAt;
   final bool hasScanned;
+  final OsintReport? osintReport;
 
   int get exposureScore {
     if (!hasScanned) return 0;
+    if (osintReport != null) return osintReport!.exposureScore;
     if (items.isEmpty) return 10;
     int points = 0;
     for (final item in items) {
@@ -51,6 +55,13 @@ class FootprintProfile {
       items.where((it) => it.riskLevel == FootprintRisk.low).length;
 
   FootprintRisk get overallRisk {
+    if (osintReport != null) {
+      return switch (osintReport!.riskLevel) {
+        'HIGH' || 'ELEVATED' => FootprintRisk.high,
+        'MODERATE' => FootprintRisk.medium,
+        _ => FootprintRisk.low,
+      };
+    }
     if (highRiskCount > 0 || exposureScore >= 70) return FootprintRisk.high;
     if (mediumRiskCount > 0 || exposureScore >= 40) return FootprintRisk.medium;
     return FootprintRisk.low;

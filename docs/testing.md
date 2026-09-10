@@ -98,3 +98,29 @@ En el PR indica comandos ejecutados, plataforma/destino, resultado del plugin re
 `flutter test integration_test/scan_history_storage_test.dart -d <device-id>` comprueba el plugin nativo con un espacio de almacenamiento de prueba: persistencia al recrear el repositorio, separación por cuenta, corrupción conservada y purga de registros vencidos. Se ejecutó en Pixel 10 Pro XL con Android 17; no prueba reinicio del proceso, iOS, TalkBack ni VoiceOver.
 
 Referencias inspeccionadas de widgets a 390 × 844: [perfil con historial y casos](images/integrated-profile-history-cases.png) e [historial](images/integrated-scan-history.png).
+
+## Integración OSINT y retirada de datos de demostración
+
+Los datos de ejemplo y repositorios simulados viven en `test/support` y nunca
+se componen en la app de producción. El smoke test de red es opt-in mediante
+`FEE_LIVE_BACKEND_TEST`; las pruebas ordinarias no registran cuentas ni
+consumen tráfico de Decodo.
+
+Las pruebas de `test/footprint/` cubren el contrato de correlación, compatibilidad
+sin `correlation`, round-trip de historial, corrupción sin pérdida, teléfono
+internacional y errores sin falso éxito. El panel se verifica a 390 px y a
+320 px con texto al 200 %, incluyendo apertura, desplazamiento y cierre.
+
+Para regenerar la captura de widgets con fuentes legibles del SDK:
+
+```sh
+flutter test --dart-define=FEE_CAPTURE_CORRELATION=true \
+  --dart-define=FEE_FLUTTER_FONTS=/ruta/flutter/bin/cache/artifacts/material_fonts \
+  test/footprint/osint_report_card_test.dart
+```
+
+La imagen usa exclusivamente el fixture `correlated_dashboard.json`. No
+representa un dispositivo, una ceremonia biométrica ni un recorrido TalkBack.
+Las pruebas de adaptador passkeys están en `test/auth/`; véase
+[native-passkeys.md](native-passkeys.md). Apple queda aplazado por petición del
+usuario. El build Android no acredita que un proveedor externo acepte cada consulta.

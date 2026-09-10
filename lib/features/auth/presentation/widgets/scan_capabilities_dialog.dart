@@ -5,10 +5,7 @@ import '../../domain/scan_capability.dart';
 
 /// Diálogo que consulta el catálogo de proveedores previsto en `GET /api/v1/scans/capabilities`.
 class ScanCapabilitiesDialog extends StatefulWidget {
-  const ScanCapabilitiesDialog({
-    required this.authRepository,
-    super.key,
-  });
+  const ScanCapabilitiesDialog({required this.authRepository, super.key});
 
   final AuthRepository authRepository;
 
@@ -42,7 +39,8 @@ class _ScanCapabilitiesDialogState extends State<ScanCapabilitiesDialog> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'No se pudo obtener el catálogo de escaneos del servidor.';
+        _errorMessage =
+            'El catálogo de motores no está disponible en el servidor.';
         _isLoading = false;
       });
     }
@@ -58,79 +56,76 @@ class _ScanCapabilitiesDialogState extends State<ScanCapabilitiesDialog> {
       content: SizedBox(
         width: double.maxFinite,
         child: _isLoading
-            ? const Center(
-                heightFactor: 3,
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(heightFactor: 3, child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_errorMessage!),
-                      const SizedBox(height: 12),
-                      OutlinedButton(
-                        onPressed: _loadCapabilities,
-                        child: const Text('Reintentar'),
-                      ),
-                    ],
-                  )
-                : ListView(
-                    shrinkWrap: true,
-                    children: [
-                      Text(
-                        'Estado reportado por el backend (/scans/capabilities):',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      for (final p in _providers)
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            p.available
-                                ? Icons.check_circle_rounded
-                                : Icons.schedule_rounded,
-                            color: p.available
-                                ? Colors.green
-                                : colors.onSurfaceVariant,
-                          ),
-                          title: Text(
-                            p.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(
-                            'Capacidades: ${p.capabilities.join(", ")}',
-                          ),
-                          trailing: Chip(
-                            label: Text(
-                              p.available ? 'Disponible' : 'Próximamente',
-                            ),
-                            backgroundColor: p.available
-                                ? colors.primaryContainer
-                                : colors.surfaceContainerHighest,
-                            labelStyle: TextStyle(
-                              fontSize: 11,
-                              color: p.available
-                                  ? colors.onPrimaryContainer
-                                  : colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Capacidades y fuentes de análisis habilitadas para la auditoría de exposición e identidad digital.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ),
-                    ],
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_errorMessage!),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _loadCapabilities,
+                    child: const Text('Reintentar'),
                   ),
+                ],
+              )
+            : ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(
+                    'Motores y fuentes de auditoría disponibles:',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  for (final p in _providers)
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        p.available
+                            ? Icons.check_circle_rounded
+                            : Icons.schedule_rounded,
+                        color: p.available
+                            ? Colors.green
+                            : colors.onSurfaceVariant,
+                      ),
+                      title: Text(
+                        p.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Capacidades: ${p.capabilities.join(", ")}',
+                      ),
+                      trailing: Chip(
+                        label: Text(
+                          p.available ? 'Disponible' : 'Próximamente',
+                        ),
+                        backgroundColor: p.available
+                            ? colors.primaryContainer
+                            : colors.surfaceContainerHighest,
+                        labelStyle: TextStyle(
+                          fontSize: 11,
+                          color: p.available
+                              ? colors.onPrimaryContainer
+                              : colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Capacidades y fuentes de análisis habilitadas para la auditoría de exposición e identidad digital.',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
       ),
       actions: [
         TextButton(

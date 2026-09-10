@@ -1,10 +1,16 @@
+import '../support/ready_identity_repository.dart';
+import '../support/demo_guard_ai_repository.dart';
+import '../support/demo_account_repository.dart';
+
 import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
 
 import '../footprint/fake_scan_history_storage.dart';
 
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
-import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+
+import '../support/mock_footprint_repository.dart';
+
 import 'package:fee_app/features/footprint/presentation/widgets/footprint_detail_sheet.dart';
 import 'package:fee_app/features/footprint/presentation/widgets/profile_drawer.dart';
 import 'package:fee_app/features/footprint/presentation/widgets/scan_bottom_sheet.dart';
@@ -34,6 +40,9 @@ void main() {
 
     await tester.pumpWidget(
       FeeApp(
+        guardAiRepositoryFactory: (_) => DemoGuardAiRepository(),
+        identityProfileRepository: ReadyIdentityRepository(),
+        accountRepository: DemoAccountRepository(),
         scanHistoryRepositoryFactory: (_) =>
             LocalScanHistoryRepository(storage: FakeScanHistoryStorage()),
         repository: LocalCaseRepository(storage: FakeCaseStorage()),
@@ -223,7 +232,7 @@ void main() {
           )
           .getSemanticsData();
       expect(input.flagsCollection.isTextField, isTrue);
-      expect(input.label, contains('Correo o alias'));
+      expect(input.label, contains('Correo, alias o teléfono'));
       expect(input.value, 'identidad.ficticia@example.invalid');
 
       final submit = find.byKey(const Key('start-scan-submit-button'));

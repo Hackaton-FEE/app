@@ -1,3 +1,4 @@
+import '../../../shared/domain/profile_date.dart';
 import '../../accounts/domain/local_account.dart';
 
 /// Perfil de usuario devuelto por `/api/v1/auth/me` (FastAPI v0.2.0).
@@ -12,25 +13,25 @@ class UserProfile {
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
-    final labelVal = (json['label'] as String?)?.trim();
-    final emailVal = (json['email'] as String?)?.trim();
-    final effectiveLabel = labelVal?.isNotEmpty == true
-        ? labelVal!
-        : (emailVal?.isNotEmpty == true ? emailVal! : 'Mi Bóveda FEE');
-
-    final createdAtStr = json['created_at'] as String?;
-    final parsedCreatedAt = createdAtStr != null
-        ? DateTime.tryParse(createdAtStr) ?? DateTime.now()
-        : DateTime.now();
-
-    return UserProfile(
-      id: json['id'] as String? ?? '',
-      label: effectiveLabel,
-      email: emailVal ?? effectiveLabel,
-      isActive: json['is_active'] as bool? ?? true,
-      createdAt: parsedCreatedAt,
-      credentialsCount: (json['credentials_count'] as num?)?.toInt() ?? 1,
-    );
+    try {
+      final id = json['id'] as String;
+      final label = json['label'] as String;
+      final count = json['credentials_count'] as int;
+      if (id.trim().isEmpty || count < 0) throw const FormatException();
+      final active = json.containsKey('is_active')
+          ? json['is_active'] as bool
+          : true;
+      return UserProfile(
+        id: id,
+        label: label,
+        email: json['email'] == null ? '' : json['email'] as String,
+        isActive: active,
+        createdAt: parseProfileDate(json['created_at']),
+        credentialsCount: count,
+      );
+    } catch (_) {
+      throw const FormatException('El perfil del servidor no es válido.');
+    }
   }
 
   final String id;
@@ -50,29 +51,13 @@ class UserProfile {
   };
 
   /// Convierte el perfil del backend a [LocalAccount] para ser usado en el resto de la app.
-  LocalAccount toLocalAccount({String? displayName}) {
-    final effectiveLabel = (label.isNotEmpty && label != 'Mi Bóveda FEE')
-        ? label
-        : (email.isNotEmpty ? _derivedName(email) : label);
-    final name = displayName?.trim().isNotEmpty == true
-        ? displayName!
-        : (effectiveLabel.isNotEmpty ? effectiveLabel : 'Usuario');
-    return LocalAccount(
-      id: id,
-      name: name,
-      email: email.contains('@') ? email : name,
-      isDemo: false,
-      isActive: isActive,
-      createdAt: createdAt,
-    );
-  }
-
-  static String _derivedName(String email) {
-    final parts = email.split('@');
-    if (parts.isNotEmpty && parts.first.isNotEmpty) {
-      final user = parts.first;
-      return user[0].toUpperCase() + user.substring(1);
-    }
-    return 'Usuario';
-  }
+  LocalAccount toLocalAccount({String? displayName}) => LocalAccount(
+    id: id,
+    name: displayName?.trim().isNotEmpty == true
+        ? displayName!.trim()
+        : (label.trim().isNotEmpty ? label : 'Usuario'),
+    email: email,
+    isActive: isActive,
+    createdAt: createdAt,
+  );
 }

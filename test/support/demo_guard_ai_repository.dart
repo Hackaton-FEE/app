@@ -1,6 +1,6 @@
-import '../../footprint/domain/footprint_item.dart';
-import '../../footprint/domain/footprint_profile.dart';
-import '../domain/guard_ai_repository.dart';
+import 'package:fee_app/features/footprint/domain/footprint_item.dart';
+import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
+import 'package:fee_app/features/guard_ai/domain/guard_ai_repository.dart';
 
 /// A deterministic conversation held only in memory, without network or AI.
 class DemoGuardAiRepository implements GuardAiRepository {
@@ -73,9 +73,13 @@ class DemoGuardAiRepository implements GuardAiRepository {
                 text.contains('riesgo') ||
                 text.contains('resumen'))) {
           final profile = _footprintContext!;
-          if (text.contains('ubicaci') || text.contains('donde') || text.contains('dónde')) {
+          if (text.contains('ubicaci') ||
+              text.contains('donde') ||
+              text.contains('dónde')) {
             final locs = profile.items
-                .where((i) => i.exposedData.any((d) => d.startsWith('Ubicación:')))
+                .where(
+                  (i) => i.exposedData.any((d) => d.startsWith('Ubicación:')),
+                )
                 .toList();
             if (locs.isNotEmpty) {
               final platforms = locs.map((e) => e.platform).join(', ');
@@ -101,10 +105,12 @@ class DemoGuardAiRepository implements GuardAiRepository {
             final riskLabel = profile.overallRisk == FootprintRisk.high
                 ? 'Alto'
                 : profile.overallRisk == FootprintRisk.medium
-                    ? 'Medio'
-                    : 'Bajo';
-            final samplePlats =
-                profile.items.take(3).map((e) => e.platform).join(', ');
+                ? 'Medio'
+                : 'Bajo';
+            final samplePlats = profile.items
+                .take(3)
+                .map((e) => e.platform)
+                .join(', ');
             response =
                 'Para "${profile.targetIdentity}", tu Nivel de Exposición es de ${profile.exposureScore}/100 (Riesgo $riskLabel). Detectamos ${profile.items.length} presencias públicas, incluyendo $samplePlats. ¿Deseas preparar un reporte para mitigar alguna?';
           }

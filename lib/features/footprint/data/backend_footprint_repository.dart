@@ -4,21 +4,22 @@ import '../../cases/domain/privacy_case.dart';
 import '../domain/footprint_item.dart';
 import '../domain/footprint_profile.dart';
 import '../domain/footprint_repository.dart';
-import 'mock_footprint_repository.dart';
+import '../domain/scan_history_repository.dart';
 import 'osint_client.dart';
+import 'osint_dashboard_payload.dart';
 
 /// Implementación de [FootprintRepository] conectada al motor OSINT real de FastAPI v0.2.0.
 class BackendFootprintRepository implements FootprintRepository {
   BackendFootprintRepository({
     required this.client,
     this.targetIdentity,
-    FootprintRepository? fallbackRepository,
+    this._historyRepository,
     this.onProgressUpdate,
-  }) : _fallback = fallbackRepository ?? MockFootprintRepository();
+  });
 
   final OsintClient client;
   final String? targetIdentity;
-  final FootprintRepository _fallback;
+  final ScanHistoryRepository? _historyRepository;
   final void Function(String stage, int percentage)? onProgressUpdate;
 
   FootprintProfile? _currentProfile;
@@ -28,10 +29,24 @@ class BackendFootprintRepository implements FootprintRepository {
     if (_currentProfile != null) {
       return _currentProfile!;
     }
+    if (_historyRepository != null) {
+      final entries = await _historyRepository.loadHistory();
+      final target = targetIdentity?.trim().toLowerCase();
+      for (final entry in entries) {
+        if (!entry.hasBackendReport) continue;
+        if (target == null ||
+            target.isEmpty ||
+            entry.targetIdentity.trim().toLowerCase() == target) {
+          _currentProfile = entry.toProfile();
+          return _currentProfile!;
+        }
+      }
+    }
+
     if (targetIdentity != null && targetIdentity!.trim().isNotEmpty) {
       return FootprintProfile.initial(targetIdentity: targetIdentity!.trim());
     }
-    return _fallback.getProfile();
+    return FootprintProfile.initial(targetIdentity: '');
   }
 
   @override
@@ -42,77 +57,67 @@ class BackendFootprintRepository implements FootprintRepository {
   }) async {
     final cleanIdentity = identity.trim();
     if (cleanIdentity.isEmpty) {
-      throw const FormatException('Ingresa un correo o alias válido.');
-    }
-
-    try {
-      onProgressUpdate?.call('Encolando auditoría en el motor OSINT…', 5);
-
-      final isEmail = cleanIdentity.contains('@');
-      final scanId = await client.startScan(
-        mainIdentifier: cleanIdentity,
-        associatedUsernames: associatedUsernames,
-        associatedEmail: isEmail ? cleanIdentity : null,
-        consentSelfAudit: consentSelfAudit,
+      throw const FormatException(
+        'Ingresa un correo, alias o teléfono válido.',
       );
-
-      onProgressUpdate?.call('Escaneando en cascada (Blackbird, Maigret, Holehe)…', 15);
-
-      await for (final progress in client.pollProgress(scanId)) {
-        final pct = progress.progressPercentage.clamp(15, 95);
-        final running = progress.runningEngines.isNotEmpty
-            ? ' (${progress.runningEngines.join(', ')})'
-            : '';
-        onProgressUpdate?.call('Consultando plataformas$running… $pct%', pct);
-      }
-
-      onProgressUpdate?.call('Consolidando resultados y deduplicando…', 98);
-      final rawResults = await client.fetchResults(scanId);
-
-      final profile = _parseDashboardResult(cleanIdentity, rawResults);
-      _currentProfile = profile;
-      onProgressUpdate?.call('Diagnóstico de huella completado', 100);
-      return profile;
-    } catch (e) {
-      // Si la llamada remota falla y es un entorno de prueba/offline, permitir fallback seguro
-      if (_currentProfile != null) {
-        return _currentProfile!;
-      }
-      rethrow;
     }
+
+    onProgressUpdate?.call('Encolando auditoría en el motor OSINT…', 5);
+
+    final isEmail = cleanIdentity.contains('@');
+    final scanId = await client.startScan(
+      mainIdentifier: cleanIdentity,
+      associatedUsernames: associatedUsernames,
+      associatedEmail: isEmail ? cleanIdentity : null,
+      consentSelfAudit: consentSelfAudit,
+    );
+
+    onProgressUpdate?.call(
+      'Consultando las fuentes disponibles para este identificador…',
+      15,
+    );
+
+    await for (final progress in client.pollProgress(scanId)) {
+      final pct = progress.progressPercentage.clamp(15, 95);
+      final running = progress.runningEngines.isNotEmpty
+          ? ' (${progress.runningEngines.join(', ')})'
+          : '';
+      onProgressUpdate?.call('Consultando plataformas$running… $pct%', pct);
+    }
+
+    onProgressUpdate?.call('Consolidando resultados y deduplicando…', 98);
+    final rawResults = await client.fetchResults(scanId);
+
+    final profile = _parseDashboardResult(cleanIdentity, rawResults);
+    _currentProfile = profile;
+    onProgressUpdate?.call('Diagnóstico de huella completado', 100);
+    return profile;
   }
 
   FootprintProfile _parseDashboardResult(
     String identity,
     Map<String, dynamic> data,
   ) {
-    final categoriesData = data['categories'] as List<dynamic>? ?? const [];
+    final dashboard = OsintDashboardPayload.fromJson(data);
+    final report = dashboard.report;
     final items = <FootprintItem>[];
     var counter = 0;
 
-    for (final catJson in categoriesData) {
-      if (catJson is! Map<String, dynamic>) continue;
-      final catName = catJson['name'] as String? ?? 'general';
-      final catItems = catJson['items'] as List<dynamic>? ?? const [];
-
-      for (final itemJson in catItems) {
-        if (itemJson is! Map<String, dynamic>) continue;
+    for (final categoryData in dashboard.categories) {
+      for (final finding in categoryData.items) {
         counter++;
-
-        final platform = itemJson['platform'] as String? ?? 'Plataforma';
-        final username = itemJson['username'] as String?;
-        final url = itemJson['url'] as String? ?? '';
-        final status = itemJson['status'] as String? ?? 'CONFIRMED';
-        final confidence = (itemJson['confidence'] as num?)?.toInt() ?? 80;
-        final sources = (itemJson['sources'] as List<dynamic>?)
-                ?.map((s) => s.toString())
-                .toList() ??
-            const [];
-        final details = itemJson['details'] as Map<String, dynamic>? ?? const {};
+        // The entire payload, including blocked checks, was validated above.
+        if (finding.status == 'RATE_LIMITED') continue;
+        final platform = finding.platform;
+        final username = finding.username;
+        final url = finding.url ?? '';
+        final status = finding.status;
+        final confidence = finding.confidence;
+        final sources = finding.sources;
+        final details = finding.details;
 
         final category = _mapCategory(
-          catName,
-          platform: platform,
+          categoryData.name,
           sources: sources,
           details: details,
         );
@@ -151,19 +156,22 @@ class BackendFootprintRepository implements FootprintRepository {
         }
 
         final riskLevel = _mapRisk(status, confidence);
-        final title = details['full_name'] != null
-            ? 'Cuenta pública vinculada a "${details['full_name']}"'
-            : 'Perfil público detectado en $platform';
+        final title = status == 'POTENTIAL_MATCH'
+            ? 'Posible coincidencia en $platform'
+            : details['full_name'] != null
+            ? 'Hallazgo público con nombre "${details['full_name']}"'
+            : 'Hallazgo público en $platform';
 
-        final desc = url.isNotEmpty
-            ? 'Cuenta activa y accesible en $url detectada por ${sources.join(', ')}.'
-            : 'Registro activo en $platform detectado con certeza del $confidence%.';
+        final desc =
+            'Señal detectada por ${sources.join(', ')}. '
+            'Confianza reportada: $confidence%. '
+            'No confirma titularidad ni actividad reciente.';
 
         final recommendedAction = _recommendedActionFor(category, platform);
 
         items.add(
           FootprintItem(
-            id: 'osint-$counter-${DateTime.now().millisecondsSinceEpoch}',
+            id: '${report.scanId}-$counter',
             platform: platform,
             category: category,
             riskLevel: riskLevel,
@@ -182,40 +190,22 @@ class BackendFootprintRepository implements FootprintRepository {
 
     return FootprintProfile(
       targetIdentity: identity,
-      items: items.isEmpty
-          ? _fallbackProfileItems(identity)
-          : items,
-      lastScannedAt: DateTime.now(),
+      items: items,
+      lastScannedAt: dashboard.generatedAt.toLocal(),
+      osintReport: report,
     );
-  }
-
-  List<FootprintItem> _fallbackProfileItems(String identity) {
-    return [
-      FootprintItem(
-        id: 'clean-1',
-        platform: 'Superficie de Exposición',
-        category: FootprintCategory.socialProfile,
-        riskLevel: FootprintRisk.low,
-        title: 'Baja exposición pública detectada',
-        description: 'No se encontraron filtraciones críticas inmediatas para "$identity".',
-        exposedData: ['Identificador auditado: $identity'],
-        sourceUrl: '',
-        recommendedAction: 'Mantén contraseñas seguras y monitorea periódicamente tu huella.',
-        suggestedCaseCategory: CaseCategory.personalData,
-      ),
-    ];
   }
 
   FootprintCategory _mapCategory(
     String name, {
-    String platform = '',
-    List<String> sources = const [],
-    Map<String, dynamic> details = const {},
+    required List<String> sources,
+    required Map<String, dynamic> details,
   }) {
     final lowerCat = name.toLowerCase();
 
     // Verificaciones de correo / teléfono o motor Holehe -> Contacto
     if (sources.contains('holehe') ||
+        sources.contains('ignorant') ||
         details['masked_email'] != null ||
         details['masked_phone'] != null ||
         lowerCat.contains('contact') ||
@@ -272,12 +262,10 @@ class BackendFootprintRepository implements FootprintRepository {
 
   String _recommendedActionFor(FootprintCategory category, String platform) {
     return switch (category) {
-      FootprintCategory.dataBreach =>
-        'Cambiar la contraseña inmediatamente y habilitar autenticación multifactor.',
+      FootprintCategory.dataBreach => 'Cambiar la contraseña inmediatamente y habilitar autenticación multifactor.',
       FootprintCategory.dataBroker =>
         'Generar un reclamo formal de desindexación y retiro de registros en $platform.',
-      FootprintCategory.exposedContact =>
-        'Ocultar teléfonos y correos en los ajustes de privacidad de recuperación.',
+      FootprintCategory.exposedContact => 'Ocultar teléfonos y correos en los ajustes de privacidad de recuperación.',
       FootprintCategory.socialProfile =>
         'Revisar la visibilidad de tu perfil en $platform y restringir datos personales públicos.',
     };

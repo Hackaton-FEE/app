@@ -86,11 +86,11 @@ class AccountProductOverview extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Una conversación para empezar a entender. Sin tener todas las respuestas desde el primer mensaje.',
+                  'GuardAI todavía no está disponible. Puedes revisar tus hallazgos y gestionar casos locales.',
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Asistencia interactiva para auditar tu huella digital y resolver incidentes de privacidad paso a paso.',
+                  'El chat se habilitará cuando el servidor ofrezca el servicio de conversación.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

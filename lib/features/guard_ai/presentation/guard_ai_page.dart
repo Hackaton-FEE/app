@@ -110,12 +110,9 @@ class _GuardAiPageState extends State<GuardAiPage> {
         title: const Text('Cómo usar GuardAI'),
         scrollable: true,
         content: const Text(
-          'Elige una sugerencia o escribe un mensaje para avanzar paso a paso. '
-          'GuardAI te guía en la evaluación de tu privacidad y opciones de protección.\n\n'
-          'Puedes abrir un formulario para registrar un caso local cuando decidas dar seguimiento a un hallazgo. '
-          'Evita escribir contraseñas o datos sensibles.\n\n'
-          'La conversación y lo que estés escribiendo se conservan al volver '
-          'al inicio durante esta sesión de la app.',
+          'El servicio de conversación GuardAI aún no está disponible. '
+          'Mientras tanto, revisa los hallazgos de tu escaneo en el panel '
+          'y abre un caso local si deseas darles seguimiento.',
         ),
         actions: [
           TextButton(
@@ -206,8 +203,8 @@ class _GuardAiPageState extends State<GuardAiPage> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Asistente de Privacidad · Orientación confidencial y personalizada '
-              'para proteger tu identidad y resolver incidentes.',
+              'El servicio de conversación estará disponible cuando se conecte '
+              'GuardAI al servidor. No se generan respuestas locales.',
               style: TextStyle(color: colors.onSecondaryContainer),
             ),
           ),
@@ -235,7 +232,9 @@ class _GuardAiPageState extends State<GuardAiPage> {
           StatusNotice(message: controller.status!),
           const SizedBox(height: 12),
         ],
-        if (!controller.isReady && !controller.isLoading)
+        if (!controller.isReady &&
+            !controller.isLoading &&
+            !controller.isUnavailable)
           OutlinedButton.icon(
             onPressed: controller.load,
             icon: const Icon(Icons.refresh),

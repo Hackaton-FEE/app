@@ -8,7 +8,6 @@ import '../../accounts/presentation/identity_profile_controller.dart';
 import '../../accounts/presentation/profile_setup_page.dart';
 import '../../auth/data/backend_auth_repository.dart';
 import '../../auth/presentation/widgets/active_sessions_dialog.dart';
-import '../../auth/presentation/widgets/change_password_dialog.dart';
 import '../../auth/presentation/widgets/scan_capabilities_dialog.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
@@ -18,15 +17,12 @@ import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
 import 'scan_history_controller.dart';
 import 'widgets/dashboard_tour.dart';
+import 'widgets/dashboard_content.dart';
 import 'widgets/footprint_report_navigation.dart';
 import 'widgets/dashboard_spotlight.dart';
-import 'widgets/dashboard_status.dart';
 import 'widgets/footprint_action_bar.dart';
-import 'widgets/footprint_explorer.dart';
 import 'widgets/profile_drawer.dart';
-import 'widgets/exposure_gauge.dart';
 import 'widgets/footprint_detail_sheet.dart';
-import 'widgets/recommendation_card.dart';
 import 'widgets/scan_bottom_sheet.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -143,8 +139,6 @@ class _DashboardPageState extends State<DashboardPage> {
       openFootprintReport(context, widget.casesController, item);
 
   void _openGuardAi() {
-    widget.guardAiController
-        .setContextProfile(widget.footprintController.profile);
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => GuardAiPage(
@@ -172,20 +166,8 @@ class _DashboardPageState extends State<DashboardPage> {
     if (widget.authRepository == null) return;
     showDialog<void>(
       context: context,
-      builder: (_) => ActiveSessionsDialog(
-        authRepository: widget.authRepository!,
-      ),
-    );
-  }
-
-  void _openChangePasswordDialog() {
-    if (widget.authRepository == null) return;
-    showDialog<void>(
-      context: context,
-      builder: (_) => ChangePasswordDialog(
-        authRepository: widget.authRepository!,
-        onPasswordChanged: widget.onManageAccounts,
-      ),
+      builder: (_) =>
+          ActiveSessionsDialog(authRepository: widget.authRepository!),
     );
   }
 
@@ -193,9 +175,8 @@ class _DashboardPageState extends State<DashboardPage> {
     if (widget.authRepository == null) return;
     showDialog<void>(
       context: context,
-      builder: (_) => ScanCapabilitiesDialog(
-        authRepository: widget.authRepository!,
-      ),
+      builder: (_) =>
+          ScanCapabilitiesDialog(authRepository: widget.authRepository!),
     );
   }
 
@@ -306,7 +287,6 @@ class _DashboardPageState extends State<DashboardPage> {
             drawer: ProfileDrawer(
               identity: widget.account.email,
               accountName: widget.account.name,
-              isDemo: widget.account.isDemo,
               onManageAccounts: widget.onManageAccounts,
               historyCount: widget.scanHistoryController?.count ?? 0,
               onViewHistory: widget.scanHistoryController != null
@@ -315,14 +295,9 @@ class _DashboardPageState extends State<DashboardPage> {
               caseCount: widget.casesController.state.cases.length,
               onViewCases: _openAllCases,
               onHelp: _openHelp,
-              onViewSessions:
-                  widget.authRepository != null && !widget.account.isDemo
-                      ? _openSessionsDialog
-                      : null,
-              onChangePassword:
-                  widget.authRepository != null && !widget.account.isDemo
-                      ? _openChangePasswordDialog
-                      : null,
+              onViewSessions: widget.authRepository != null
+                  ? _openSessionsDialog
+                  : null,
               onViewCapabilities: widget.authRepository != null
                   ? _openCapabilitiesDialog
                   : null,
@@ -338,94 +313,20 @@ class _DashboardPageState extends State<DashboardPage> {
               onScan: _openScanSheet,
               onGuardAi: _openGuardAi,
             ),
-            body: SafeArea(
-              bottom: false,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 760),
-                  child: CustomScrollView(
-                    key: const Key('dashboard-scroll'),
-                    controller: _scrollController,
-                    slivers: [
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          24,
-                          8,
-                          24,
-                          FootprintActionBar.contentHeight(context) +
-                              MediaQuery.viewPaddingOf(context).bottom +
-                              32,
-                        ),
-                        sliver: SliverMainAxisGroup(
-                          slivers: [
-                            SliverToBoxAdapter(
-                              child: RepaintBoundary(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    _region(
-                                      DashboardStatus(
-                                        footprint: footprint,
-                                        history: widget.scanHistoryController,
-                                      ),
-                                    ),
-                                    if (_tourStep != null && _tourStep != 1)
-                                      _tourPanel(),
-                                    if (profile != null) ...[
-                                      _region(
-                                        ExposureGauge(
-                                          key: _tourTargets[0],
-                                          profile: profile,
-                                        ),
-                                        0,
-                                      ),
-                                      const SizedBox(height: 20),
-                                      _region(
-                                        RecommendationCard(
-                                          casesController:
-                                              widget.casesController,
-                                          historyCount:
-                                              widget
-                                                  .scanHistoryController
-                                                  ?.count ??
-                                              0,
-                                          onViewHistory:
-                                              widget.scanHistoryController !=
-                                                  null
-                                              ? _openScanHistory
-                                              : null,
-                                          featuredItem: featuredItem,
-                                          onGuardAi: _openGuardAi,
-                                          onViewAllCases: _openAllCases,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 28),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (_tourStep == 1)
-                              SliverToBoxAdapter(child: _tourPanel()),
-                            if (profile != null)
-                              FootprintExplorer(
-                                tourTargetKey: _tourTargets[1],
-                                tourStep: _tourStep,
-                                profile: profile,
-                                visibleItems: footprint.visibleItems,
-                                selectedCategory: footprint.selectedCategory,
-                                onCategorySelected: footprint.setCategoryFilter,
-                                onFindingSelected: _showFindingDetail,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            body: DashboardContent(
+              footprint: footprint,
+              casesController: widget.casesController,
+              history: widget.scanHistoryController,
+              featuredItem: featuredItem,
+              scrollController: _scrollController,
+              region: (child, step) => _region(child, step),
+              tourStep: _tourStep,
+              tourPanel: _tourStep == null ? null : _tourPanel(),
+              tourTargets: _tourTargets,
+              onViewHistory: _openScanHistory,
+              onGuardAi: _openGuardAi,
+              onViewAllCases: _openAllCases,
+              onFindingSelected: _showFindingDetail,
             ),
           ),
         );

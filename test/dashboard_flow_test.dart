@@ -1,3 +1,7 @@
+import 'support/ready_identity_repository.dart';
+import 'support/demo_guard_ai_repository.dart';
+import 'support/demo_account_repository.dart';
+
 import 'package:fee_app/features/cases/presentation/cases_page.dart';
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
@@ -5,7 +9,8 @@ import 'package:fee_app/features/cases/presentation/case_form_page.dart';
 import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
 import 'package:fee_app/features/footprint/presentation/scan_history_page.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
-import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+
+import 'support/mock_footprint_repository.dart';
 
 import 'dart:ui' as ui;
 
@@ -36,6 +41,9 @@ void main() {
 
     await tester.pumpWidget(
       FeeApp(
+        guardAiRepositoryFactory: (_) => DemoGuardAiRepository(),
+        identityProfileRepository: ReadyIdentityRepository(),
+        accountRepository: DemoAccountRepository(),
         repository: LocalCaseRepository(storage: storage),
         footprintRepositoryFactory: (_) => footprintRepo,
         scanHistoryRepositoryFactory: (_) =>

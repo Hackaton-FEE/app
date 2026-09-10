@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/scan_target.dart';
+
 class ScanBottomSheet extends StatefulWidget {
   const ScanBottomSheet({
     required this.initialIdentity,
@@ -87,8 +89,8 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Ingresa un correo o alias para realizar la auditoría de exposición '
-                  'y detectar posibles filtraciones o registros públicos.',
+                  'Ingresa tu correo, alias o teléfono con código de país para revisar tu exposición '
+                  'en fuentes públicas. Al continuar confirmas que auditas tus propios datos.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -103,20 +105,19 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
                   enableSuggestions: false,
                   textInputAction: TextInputAction.go,
                   decoration: const InputDecoration(
-                    labelText: 'Correo o alias (obligatorio)',
-                    hintText: 'nombre.usuario@gmail.com',
+                    labelText: 'Correo, alias o teléfono (obligatorio)',
+                    hintText: 'alias o +52 55 0000 0000',
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     prefixIcon: Icon(Icons.alternate_email_rounded),
                     errorMaxLines: 3,
                   ),
                   validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Ingresa un correo o alias para continuar.';
+                    try {
+                      ScanTarget.parse(value ?? '');
+                      return null;
+                    } on FormatException catch (error) {
+                      return error.message;
                     }
-                    if (value.trim().length < 3) {
-                      return 'Usa al menos 3 caracteres.';
-                    }
-                    return null;
                   },
                   onFieldSubmitted: (_) => _submit(),
                 ),

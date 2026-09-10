@@ -41,13 +41,45 @@ void main() {
     testWidgets('respects explicit isDarkMode override', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: Center(child: AppLogo(size: 32, isDarkMode: true))),
+          home: Scaffold(
+            body: Center(child: AppLogo(size: 32, isDarkMode: true)),
+          ),
         ),
       );
 
       final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
       final loader = svg.bytesLoader as SvgAssetLoader;
       expect(loader.assetName, 'assets/logo/vector/logo_dark_white.svg');
+    });
+
+    testWidgets('loads cropped vector when useOriginalColors is true', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(child: AppLogo(size: 32, useOriginalColors: true)),
+          ),
+        ),
+      );
+
+      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      final loader = svg.bytesLoader as SvgAssetLoader;
+      expect(loader.assetName, 'assets/logo/vector/logo_cropped.svg');
+    });
+
+    testWidgets('calculates dimensions respecting cropped aspect ratio', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: Center(child: AppLogo(height: 100))),
+        ),
+      );
+
+      final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
+      expect(sizedBox.height, 100.0);
+      expect(sizedBox.width, closeTo(100.0 * AppLogo.aspectRatio, 0.01));
     });
 
     testWidgets('exposes accessible semantics when semanticLabel is provided', (

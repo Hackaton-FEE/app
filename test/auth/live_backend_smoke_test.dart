@@ -1,10 +1,10 @@
+import '../support/in_memory_token_storage.dart';
+
 import 'package:fee_app/features/auth/data/auth_api_client.dart';
-import 'package:fee_app/features/auth/data/backend_auth_repository.dart';
-import 'package:fee_app/features/auth/data/passkey_authenticator.dart';
-import 'package:fee_app/features/auth/data/token_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  const live = bool.fromEnvironment('FEE_LIVE_BACKEND_TEST');
   test('Smoke test against live backend server (FastAPI v0.2.0)', () async {
     final tokenStorage = InMemoryTokenStorage();
     final client = AuthApiClient(
@@ -14,10 +14,6 @@ void main() {
 
     // 1. Check health
     final isHealthy = await client.checkHealth();
-    if (!isHealthy) {
-      // Omitir si el entorno de ejecución está sin conexión a Internet o bloqueado por red
-      return;
-    }
     expect(isHealthy, isTrue);
 
     // 2. Passkey registration options (/auth/passkey/registration/options)
@@ -45,38 +41,5 @@ void main() {
     expect(refreshed, isNull);
     expect(tokenStorage.accessToken, isNull);
     expect(await tokenStorage.readRefreshToken(), isNull);
-  });
-
-  test('Full end-to-end Passkey registration, /me, and login on live backend', () async {
-    final tokenStorage = InMemoryTokenStorage();
-    final client = AuthApiClient(
-      baseUrl: 'https://backosisnt.ici-labs.com/api/v1',
-      tokenStorage: tokenStorage,
-    );
-    if (!await client.checkHealth()) return;
-
-    final authenticator = SoftPasskeyAuthenticator();
-    final repo = BackendAuthRepository(
-      apiClient: client,
-      tokenStorage: tokenStorage,
-      authenticator: authenticator,
-    );
-
-    // 1. Registrar una nueva Bóveda con Passkey en vivo
-    final uniqueLabel = 'Demo Bóveda ${DateTime.now().millisecondsSinceEpoch}';
-    final profile = await repo.registerWithPasskey(label: uniqueLabel);
-    expect(profile.id, isNotEmpty);
-    expect(profile.label, uniqueLabel);
-    expect(tokenStorage.accessToken, isNotNull);
-
-    // 2. Consultar perfil con GET /auth/me
-    final me = await repo.getProfile();
-    expect(me.id, profile.id);
-    expect(me.label, uniqueLabel);
-
-    // 3. Simular reinicio de sesión y re-autenticación con la misma Passkey
-    final loginProfile = await repo.loginWithPasskey();
-    expect(loginProfile.id, profile.id);
-    expect(loginProfile.label, uniqueLabel);
-  });
+  }, skip: !live);
 }

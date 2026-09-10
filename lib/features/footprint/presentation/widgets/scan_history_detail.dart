@@ -64,79 +64,93 @@ void showScanHistoryDetail(
           ),
           const Divider(height: 1),
           Expanded(
-            child: ListView.separated(
-              controller: scroll,
-              padding: const EdgeInsets.all(24),
-              itemCount: entry.items.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = entry.items[index];
-                return Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: colors.outlineVariant.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                item.platform,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: colors.primary,
-                                  fontWeight: FontWeight.w600,
+            child: !entry.hasBackendReport
+                ? ListView(
+                    controller: scroll,
+                    padding: const EdgeInsets.all(24),
+                    children: const [
+                      Text(
+                        'Este registro de una versión anterior no permite verificar '
+                        'el origen de sus resultados. Se conserva en el historial, '
+                        'pero sus hallazgos no se muestran ni se cargan en el panel. '
+                        'Realiza un nuevo escaneo para consultar resultados del servidor.',
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    controller: scroll,
+                    padding: const EdgeInsets.all(24),
+                    itemCount: entry.items.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = entry.items[index];
+                      return Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: colors.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.platform,
+                                      style: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            color: colors.primary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ),
+                                  ScanHistoryRiskBadge(risk: item.riskLevel),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                item.title,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                            ScanHistoryRiskBadge(risk: item.riskLevel),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          item.title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          item.description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                        if (item.exposedData.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: item.exposedData.map((d) {
-                              return Chip(
-                                label: Text(
-                                  d,
-                                  style: theme.textTheme.labelSmall,
+                              const SizedBox(height: 6),
+                              Text(
+                                item.description,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant,
                                 ),
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                              );
-                            }).toList(),
+                              ),
+                              if (item.exposedData.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: item.exposedData.map((d) {
+                                    return Chip(
+                                      label: Text(
+                                        d,
+                                        style: theme.textTheme.labelSmall,
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
-          if (onSelectProfile != null)
+          if (onSelectProfile != null && entry.hasBackendReport)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
               child: SizedBox(

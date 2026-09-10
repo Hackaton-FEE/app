@@ -48,12 +48,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     final profile = widget.identityController.profile;
     final initialId = profile?.mainIdentifier.isNotEmpty == true
         ? profile!.mainIdentifier
-        : (widget.account.name.isNotEmpty
-            ? widget.account.name
-            : widget.account.email);
-    final initialName =
-        profile?.fullName ??
-        (widget.account.name.isNotEmpty ? widget.account.name : '');
+        : widget.account.email;
+    final initialName = profile?.fullName ?? '';
 
     _identifierController = TextEditingController(text: initialId);
     _nameController = TextEditingController(text: initialName);
@@ -141,11 +137,17 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       _errorMessage = null;
     });
 
-    final defaultId = widget.account.name.isNotEmpty
-        ? widget.account.name
-        : widget.account.email;
-    await widget.identityController.skipOnboarding(identifier: defaultId);
+    final saved = await widget.identityController.skipOnboarding(
+      identifier: _identifierController.text.trim(),
+    );
     if (!mounted) return;
+    if (!saved) {
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = widget.identityController.error;
+      });
+      return;
+    }
     widget.onCompleted?.call();
     if (mounted) {
       setState(() => _isSubmitting = false);
@@ -203,8 +205,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     controller: _identifierController,
                     decoration: const InputDecoration(
                       labelText: 'Nombre o identificador principal *',
-                      helperText:
-                          'Tu nombre, alias o identificador más utilizado en tus cuentas.',
+                      helperText: 'Tu nombre, alias o identificador más utilizado en tus cuentas.',
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                     keyboardType: TextInputType.text,
@@ -220,8 +221,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     controller: _nameController,
                     decoration: const InputDecoration(
                       labelText: 'Nombre completo (opcional)',
-                      helperText:
-                          'Permite correlacionar menciones en directorios y registros.',
+                      helperText: 'Permite correlacionar menciones en directorios y registros.',
                       prefixIcon: Icon(Icons.badge_outlined),
                     ),
                   ),

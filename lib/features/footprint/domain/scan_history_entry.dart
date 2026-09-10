@@ -1,6 +1,8 @@
 import '../../cases/domain/privacy_case.dart';
 import 'footprint_item.dart';
 import 'footprint_profile.dart';
+import 'osint_report.dart';
+import 'osint_report_codec.dart';
 
 class ScanHistoryEntry {
   ScanHistoryEntry({
@@ -13,6 +15,7 @@ class ScanHistoryEntry {
     required this.mediumRiskCount,
     required this.lowRiskCount,
     required Iterable<FootprintItem> items,
+    this.osintReport,
   }) : items = List.unmodifiable(items);
 
   factory ScanHistoryEntry.fromProfile({
@@ -30,6 +33,7 @@ class ScanHistoryEntry {
       mediumRiskCount: profile.mediumRiskCount,
       lowRiskCount: profile.lowRiskCount,
       items: profile.items,
+      osintReport: profile.osintReport,
     );
   }
 
@@ -42,8 +46,12 @@ class ScanHistoryEntry {
   final int mediumRiskCount;
   final int lowRiskCount;
   final List<FootprintItem> items;
+  final OsintReport? osintReport;
 
   int get findingsCount => items.length;
+
+  // Los registros anteriores no distinguían resultados del backend y ejemplos.
+  bool get hasBackendReport => osintReport?.scanId.trim().isNotEmpty ?? false;
 
   static const maxRetention = Duration(days: 3);
 
@@ -60,10 +68,16 @@ class ScanHistoryEntry {
   }
 
   FootprintProfile toProfile() {
+    if (!hasBackendReport) {
+      throw const FormatException(
+        'Este registro no tiene una referencia verificable del escaneo.',
+      );
+    }
     return FootprintProfile(
       targetIdentity: targetIdentity,
       items: items,
       lastScannedAt: scannedAt.toLocal(),
+      osintReport: osintReport,
     );
   }
 
@@ -72,6 +86,7 @@ class ScanHistoryEntry {
 
   Map<String, dynamic> toJson() => {
     'schemaVersion': 1,
+    if (osintReport != null) 'osintReport': encodeOsintReport(osintReport!),
     'id': id,
     'targetIdentity': targetIdentity,
     'scannedAt': scannedAt.toIso8601String(),
@@ -148,6 +163,9 @@ class ScanHistoryEntry {
       mediumRiskCount: (json['mediumRiskCount'] as num).toInt(),
       lowRiskCount: (json['lowRiskCount'] as num).toInt(),
       items: items,
+      osintReport: json['osintReport'] == null
+          ? null
+          : decodeOsintReport(json['osintReport'] as Map<String, dynamic>),
     );
   }
 }
