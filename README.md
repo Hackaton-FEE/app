@@ -18,7 +18,7 @@ La [revisión de literatura y comparativa](docs/research/accessibility-and-user-
 
 Los estados **borrador** y **archivado** solo organizan información local: no indican que una plataforma recibió una solicitud ni retiró contenido. Los casos no se sincronizan ni se envían como reportes; tampoco se reciben imágenes. Las categorías sirven para ordenar los casos; seleccionar contenido íntimo no procesa imágenes ni determina una infracción.
 
-GuardAI, el catálogo de proveedores y la administración de sesiones muestran indisponibilidad mientras no exista su contrato en el backend. No hay datos ni respuestas de demostración en producción; los dobles viven en tests. Las cuentas antiguas con credenciales de software necesitan una transición del servidor para volver a autenticar: actualizar el cliente no las convierte en llaves nativas. Consulta [passkeys nativas](docs/native-passkeys.md).
+GuardAI, el catálogo de proveedores y la administración de sesiones muestran indisponibilidad mientras no exista su contrato en el backend. No hay datos ni respuestas de demostración en producción; los dobles viven en tests. Tras retirar las credenciales de software antiguas y revocar sus sesiones, el acceso empieza desde **Crear cuenta**, con una cuenta y una llave nativa nuevas. No hay migración ni vinculación automática con las cuentas anteriores. Consulta [passkeys nativas](docs/native-passkeys.md).
 
 Los casos del dispositivo se comparten entre sesiones y no tienen bloqueo adicional, sincronización, exportación ni recuperación garantizada desde backups. Tampoco es una arquitectura de conocimiento cero. La configuración y sus límites están en [arquitectura](docs/architecture.md); usa información ficticia para pruebas.
 
@@ -99,7 +99,7 @@ El [servidor](https://github.com/Hackaton-FEE/server) es independiente. La app c
 ## Siguientes entregas
 
 1. Recibir enlaces desde Compartir en Android y una Share Extension de iOS, reutilizando la validación y definiendo cómo coordinar escrituras entre procesos.
-2. Completar la transición de credenciales antiguas y configurar la asociación y firma de Apple cuando se retome iOS.
+2. Configurar la asociación y firma de Apple cuando se retome iOS.
 3. Acordar el contrato de casos con el servidor e integrar sincronización, conflictos y errores, conservando la diferencia entre estados locales y resultados externos.
 4. Preparar una solicitud revisable para un canal concreto. El envío y su seguimiento requieren una integración y evidencia propias.
 
