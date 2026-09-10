@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../help/presentation/help_button.dart';
 import 'accounts_controller.dart';
 import 'widgets/account_product_overview.dart';
 
@@ -16,14 +15,6 @@ class AccountPickerPage extends StatefulWidget {
 class _AccountPickerPageState extends State<AccountPickerPage> {
   final _marketing = GlobalKey();
 
-  Future<void> _addDemoAccount() async {
-    final number = widget.controller.accounts.length + 1;
-    await widget.controller.addAccount(
-      name: 'Cuenta de ejemplo $number',
-      email: 'demo.$number@example.invalid',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -34,7 +25,6 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
           "Osisn't",
           style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1),
         ),
-        actions: const [HelpButton(), SizedBox(width: 8)],
       ),
       body: SafeArea(
         bottom: false,
@@ -105,18 +95,11 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                           onRetry: controller.load,
                         )
                       else ...[
-                        if (controller.accounts.isEmpty) ...[
-                          const Text(
-                            'Aún no tienes cuentas. Crea una para comenzar.',
+                        if (controller.accounts.isEmpty)
+                          _AccountError(
+                            message: 'La cuenta no está disponible. Intenta cargarla de nuevo.',
+                            onRetry: controller.load,
                           ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            key: const Key('account-create'),
-                            onPressed: busy ? null : _addDemoAccount,
-                            icon: const Icon(Icons.person_add_alt_1_outlined),
-                            label: const Text('Crear una cuenta'),
-                          ),
-                        ],
                         for (final account in controller.accounts)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 12),
@@ -169,27 +152,10 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                               ),
                             ),
                           ),
-                        const SizedBox(height: 4),
-                        TextButton.icon(
-                          key: const Key('account-add-existing'),
-                          onPressed: busy ? null : _addDemoAccount,
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 52),
-                          ),
-                          icon: const Icon(Icons.person_add_alt_1_outlined),
-                          label: Text(
-                            busy ? 'Preparando cuenta…' : 'Usar otra cuenta',
-                          ),
-                        ),
-                        if (controller.actionError != null)
-                          _AccountError(
-                            message: controller.actionError!,
-                            onRetry: _addDemoAccount,
-                          ),
                       ],
                       const SizedBox(height: 12),
                       Text(
-                        'Vista previa con cuentas de ejemplo. Entra con un toque, sin contraseña.',
+                        'Vista previa con una cuenta de ejemplo. Entra con un toque, sin contraseña.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,

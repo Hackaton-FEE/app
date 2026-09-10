@@ -9,10 +9,10 @@ import '../../cases/presentation/case_details_page.dart';
 import '../../cases/presentation/case_form_page.dart';
 import '../../cases/presentation/cases_controller.dart';
 import '../../cases/presentation/cases_page.dart';
-import '../../help/presentation/help_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
-import 'widgets/dashboard_help_menu.dart';
+import 'widgets/dashboard_tour.dart';
+import 'widgets/dashboard_status.dart';
 import 'widgets/footprint_action_bar.dart';
 import 'widgets/footprint_explorer.dart';
 import 'widgets/profile_drawer.dart';
@@ -43,16 +43,46 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   final _scrollController = ScrollController();
+  final _tourAnchor = GlobalKey();
+  final _helpFocus = FocusNode();
+  final _tourFocus = FocusNode();
+  int? _tourStep;
+
+  void _setTourStep(int? step) {
+    setState(() => _tourStep = step);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (step == null) {
+        _helpFocus.requestFocus();
+      } else if (_tourAnchor.currentContext case final target?) {
+        _tourFocus.requestFocus();
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.05,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
+        );
+      }
+    });
+  }
+
+  Widget _tourPanel() => DashboardTourPanel(
+    key: _tourAnchor,
+    step: _tourStep!,
+    focusNode: _tourFocus,
+    onStep: _setTourStep,
+  );
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _helpFocus.dispose();
+    _tourFocus.dispose();
     super.dispose();
   }
 
-  void _openHelp() =>
-      Navigator.of(context)
-          .push<void>(MaterialPageRoute(builder: (_) => const HelpPage()));
+  void _openHelp() => _setTourStep(0);
 
   @override
   void initState() {
@@ -140,7 +170,6 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge([
         widget.footprintController,
@@ -167,16 +196,29 @@ class _DashboardPageState extends State<DashboardPage> {
               builder: (context) => IconButton(
                 key: const Key('dashboard-profile-button'),
                 tooltip: 'Abrir perfil',
+                style: _tourStep == 4
+                    ? IconButton.styleFrom(
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .primaryContainer,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 2,
+                        ),
+                      )
+                    : null,
                 onPressed: () => Scaffold.of(context).openDrawer(),
-                icon: const Icon(Icons.menu_rounded),
+                icon: Icon(
+                  _tourStep == 4 ? Icons.person_pin : Icons.menu_rounded,
+                ),
               ),
             ),
             actions: [
-              DashboardHelpMenu(
-                onHelp: _openHelp,
-                onScan: _openScanSheet,
-                onGuardAi: _openGuardAi,
-                onCases: _openAllCases,
+              IconButton(
+                focusNode: _helpFocus,
+                tooltip: 'Ayuda de uso',
+                onPressed: _openHelp,
+                icon: const Icon(Icons.help_outline),
               ),
             ],
           ),
@@ -190,6 +232,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           bottomNavigationBar: FootprintActionBar(
             scanning: footprint.isLoading,
+            tourStep: _tourStep,
             onScan: _openScanSheet,
             onGuardAi: _openGuardAi,
           ),
@@ -219,98 +262,9 @@ class _DashboardPageState extends State<DashboardPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Semantics(
-                                    header: true,
-                                    child: Text(
-                                      'Tu huella digital',
-                                      style: theme.textTheme.headlineLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -1.2,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Entiende qué compartes. Decide qué cambiar.',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 18,
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          profile?.targetIdentity ??
-                                              'Sin identidad evaluada',
-                                          key: const Key(
-                                            'dashboard-target-identity',
-                                          ),
-                                          style: theme.textTheme.bodyMedium,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'VISTA DE EJEMPLO · Datos simulados',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      letterSpacing: 0.7,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  if (footprint.isLoading)
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 20,
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              footprint.scanningStage ??
-                                                  'Cargando ejemplo…',
-                                            ),
-                                            const SizedBox(height: 12),
-                                            const LinearProgressIndicator(),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  if (footprint.error != null)
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Card(
-                                        color: theme.colorScheme.errorContainer,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(footprint.error!),
-                                              TextButton(
-                                                onPressed: footprint.isLoading
-                                                    ? null
-                                                    : footprint.retry,
-                                                child: const Text('Reintentar'),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                  DashboardStatus(footprint: footprint),
+                                  if (_tourStep != null && _tourStep != 1)
+                                    _tourPanel(),
                                   if (profile != null) ...[
                                     ExposureGauge(profile: profile),
                                     const SizedBox(height: 20),
@@ -326,6 +280,8 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                             ),
                           ),
+                          if (_tourStep == 1)
+                            SliverToBoxAdapter(child: _tourPanel()),
                           if (profile != null)
                             FootprintExplorer(
                               profile: profile,

@@ -94,41 +94,38 @@ void main() {
     expect(cases.records, isEmpty);
   });
 
-  testWidgets('using another account adds a demo profile and enters directly', (
-    tester,
-  ) async {
-    await start(tester);
-    await revealAndTap(tester, find.byKey(const Key('account-add-existing')));
-    expect(find.byType(DashboardPage), findsOneWidget);
-    expect(find.byType(TextField), findsNothing);
-    final profiles = await accounts.listAccounts();
-    expect(profiles, hasLength(3));
-    final added = profiles.singleWhere(
-      (profile) => profile.id != _first.id && profile.id != _second.id,
-    );
-
-    await returnToPicker(tester);
-    expect(find.byKey(Key('account-${added.id}')), findsOneWidget);
-    await select(tester, _first);
-    expect(find.byType(DashboardPage), findsOneWidget);
-  });
-
   testWidgets(
-    'an empty picker creates a demo profile without asking for data',
+    'default landing offers only the configured account and no help',
     (tester) async {
-      accounts = DemoAccountRepository(initialAccounts: []);
+      accounts = DemoAccountRepository();
       await start(tester);
-      expect(find.byType(AccountPickerPage), findsOneWidget);
-      await revealAndTap(tester, find.byKey(const Key('account-create')));
-      expect(find.byType(DashboardPage), findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
+      expect(find.text('pedro.demo@gmail.com'), findsOneWidget);
+      expect(find.byKey(const Key('account-demo-other')), findsNothing);
+      expect(find.byKey(const Key('account-add-existing')), findsNothing);
+      expect(find.byKey(const Key('account-create')), findsNothing);
+      expect(find.byTooltip('Ayuda de uso'), findsNothing);
+      expect(find.text('Así funciona'), findsNothing);
+      await select(tester, (await accounts.listAccounts()).single);
+      expect(find.text('pedro.demo@gmail.com'), findsOneWidget);
+      await returnToPicker(tester);
       expect(await accounts.listAccounts(), hasLength(1));
     },
   );
 
+  testWidgets('an empty picker offers retry without creating a profile', (
+    tester,
+  ) async {
+    accounts = DemoAccountRepository(initialAccounts: []);
+    await start(tester);
+    await revealAndTap(tester, find.text('Reintentar'));
+    expect(find.byType(AccountPickerPage), findsOneWidget);
+    expect(await accounts.listAccounts(), isEmpty);
+    expect(find.byKey(const Key('account-create')), findsNothing);
+  });
+
   testWidgets('recreating the app asks for a profile again', (tester) async {
     await start(tester);
-    await revealAndTap(tester, find.byKey(const Key('account-add-existing')));
+    await select(tester, _first);
     expect(find.byType(DashboardPage), findsOneWidget);
     final profiles = await accounts.listAccounts();
 

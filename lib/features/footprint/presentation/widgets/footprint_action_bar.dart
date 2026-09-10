@@ -8,12 +8,14 @@ class FootprintActionBar extends StatelessWidget {
     required this.onScan,
     required this.onGuardAi,
     this.scanning = false,
+    this.tourStep,
     super.key,
   });
 
   final VoidCallback onScan;
   final VoidCallback onGuardAi;
   final bool scanning;
+  final int? tourStep;
 
   static TextStyle _labelStyle(BuildContext context) =>
       Theme.of(context).textTheme.labelLarge!
@@ -89,6 +91,7 @@ class FootprintActionBar extends StatelessWidget {
                       Expanded(
                         child: _ActionPill(
                           actionKey: const Key('dashboard-scan-fab'),
+                          highlighted: tourStep == 2,
                           label: scanning ? 'Analizando' : 'Escanear',
                           icon: Icons.radar_rounded,
                           onPressed: scanning ? null : onScan,
@@ -103,6 +106,7 @@ class FootprintActionBar extends StatelessWidget {
                       Expanded(
                         child: _ActionPill(
                           actionKey: const Key('dashboard-guardai-fab'),
+                          highlighted: tourStep == 3,
                           label: 'GuardAI',
                           icon: Icons.auto_awesome_outlined,
                           onPressed: onGuardAi,
@@ -126,6 +130,7 @@ class FootprintActionBar extends StatelessWidget {
 class _ActionPill extends StatelessWidget {
   const _ActionPill({
     required this.actionKey,
+    required this.highlighted,
     required this.label,
     required this.icon,
     required this.onPressed,
@@ -135,6 +140,7 @@ class _ActionPill extends StatelessWidget {
   });
 
   final Key actionKey;
+  final bool highlighted;
   final String label;
   final IconData icon;
   final VoidCallback? onPressed;
@@ -183,6 +189,7 @@ class _ActionPill extends StatelessWidget {
           minimumSize: Size(double.infinity, largeText ? 96 : 64),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           textStyle: FootprintActionBar._labelStyle(context),
+          side: highlighted ? BorderSide(color: foreground, width: 3) : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(largeText ? 28 : 32),
           ),

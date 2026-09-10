@@ -71,6 +71,59 @@ void main() {
     await expectLater(tester, meetsGuideline(textContrastGuideline));
   }
 
+  for (final scale in [1.0, 2.0]) {
+    testWidgets('inline tour is reachable and dismissible at ${scale}x text', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await start(
+          tester,
+          size: const Size(320, 640),
+          textScale: scale,
+          reduceMotion: true,
+        );
+        await tester.tap(find.byTooltip('Ayuda de uso'));
+        await tester.pumpAndSettle();
+        for (var step = 1; step <= 5; step++) {
+          final heading = find.textContaining('Paso $step de 5');
+          expect(heading, findsOneWidget);
+          expect(
+            tester
+                .getSemantics(heading)
+                .getSemanticsData()
+                .flagsCollection
+                .isHeader,
+            isTrue,
+          );
+          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(PopupMenuButton<String>), findsNothing);
+          expect(tester.takeException(), isNull);
+          await checkGuidelines(tester);
+          final next = find.text(step == 5 ? 'Finalizar' : 'Siguiente');
+          await reveal(tester, next);
+          await checkGuidelines(tester);
+          await tester.tap(next);
+          await tester.pumpAndSettle();
+        }
+        expect(find.textContaining('Paso 5 de 5'), findsNothing);
+        final help = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.help_outline),
+        );
+        expect(help.focusNode!.hasFocus, isTrue);
+        await tester.tap(find.byTooltip('Ayuda de uso'));
+        await tester.pumpAndSettle();
+        await reveal(tester, find.text('Salir del recorrido'));
+        await tester.tap(find.text('Salir del recorrido'));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('Paso 1 de 5'), findsNothing);
+        expect(tester.takeException(), isNull);
+      } finally {
+        semantics.dispose();
+      }
+    });
+  }
+
   testWidgets('dashboard meets visible guidelines at a normal mobile size', (
     tester,
   ) async {
