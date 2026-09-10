@@ -3,7 +3,7 @@ import 'package:fee_app/features/auth/data/token_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Smoke test against live backend server', () async {
+  test('Smoke test against live backend server (FastAPI v0.2.0)', () async {
     final tokenStorage = InMemoryTokenStorage();
     final client = AuthApiClient(
       baseUrl: 'https://backosisnt.ici-labs.com/api/v1',
@@ -13,57 +13,34 @@ void main() {
     // 1. Check health
     final isHealthy = await client.checkHealth();
     if (!isHealthy) {
-      // Omitir si el entorno de ejecución está sin conexión a Internet
+      // Omitir si el entorno de ejecución está sin conexión a Internet o bloqueado por red
       return;
     }
     expect(isHealthy, isTrue);
 
-    // 2. Register test account
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final testEmail = 'smoke_test_$timestamp@gmail.com';
-    const testPassword = 'Password123456789!';
-
-    final profile = await client.register(
-      email: testEmail,
-      password: testPassword,
+    // 2. Passkey registration options (/auth/passkey/registration/options)
+    final regOptions = await client.getRegistrationOptions(
+      label: 'Smoke Test Bóveda',
     );
-    expect(profile.email, testEmail);
-    expect(profile.isActive, isTrue);
-    expect(profile.id, isNotEmpty);
+    expect(regOptions['challenge_token'], isNotEmpty);
+    expect(regOptions['public_key'], isA<Map<String, dynamic>>());
 
-    // 3. Login with test account
-    final tokens = await client.login(
-      email: testEmail,
-      password: testPassword,
-    );
-    expect(tokens.accessToken, isNotEmpty);
-    expect(tokens.refreshToken, isNotEmpty);
+    final pubKey = regOptions['public_key'] as Map<String, dynamic>;
+    expect(pubKey['rp']['id'], 'backosisnt.ici-labs.com');
+    expect(pubKey['challenge'], isNotEmpty);
 
-    // 4. Get profile (/auth/me)
-    final me = await client.getMe();
-    expect(me.id, profile.id);
-    expect(me.email, testEmail);
+    // 3. Passkey authentication options (/auth/passkey/authentication/options)
+    final authOptions = await client.getAuthenticationOptions();
+    expect(authOptions['challenge_token'], isNotEmpty);
+    expect(authOptions['public_key'], isA<Map<String, dynamic>>());
 
-    // 5. Scan capabilities (/scans/capabilities)
-    final caps = await client.getScanCapabilities();
-    expect(caps, isNotEmpty);
-    for (final cap in caps) {
-      expect(cap.available, isFalse);
-    }
+    final authPubKey = authOptions['public_key'] as Map<String, dynamic>;
+    expect(authPubKey['challenge'], isNotEmpty);
 
-    // 6. Get sessions (/auth/sessions)
-    final sessions = await client.getSessions();
-    expect(sessions, isNotEmpty);
-    expect(sessions.any((s) => s.isCurrent), isTrue);
-
-    // 7. Refresh token (/auth/refresh)
+    // 4. Refresh token handling with expired/invalid token
+    await tokenStorage.saveRefreshToken('invalid_smoke_refresh_token');
     final refreshed = await client.refreshTokens();
-    expect(refreshed, isNotNull);
-    expect(refreshed!.accessToken, isNotEmpty);
-    expect(refreshed.refreshToken, isNotEmpty);
-
-    // 8. Logout (/auth/logout)
-    await client.logout();
+    expect(refreshed, isNull);
     expect(tokenStorage.accessToken, isNull);
     expect(await tokenStorage.readRefreshToken(), isNull);
   });

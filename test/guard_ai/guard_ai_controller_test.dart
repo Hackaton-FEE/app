@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fee_app/features/footprint/domain/footprint_item.dart';
+import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
 import 'package:fee_app/features/guard_ai/data/demo_guard_ai_repository.dart';
 import 'package:fee_app/features/guard_ai/domain/guard_ai_repository.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
@@ -194,6 +196,41 @@ void main() {
       expect(await pending, isFalse);
     },
   );
+
+  test('DemoGuardAiRepository answers contextual footprint queries when profile is set', () async {
+    final repo = DemoGuardAiRepository();
+    final profile = FootprintProfile(
+      targetIdentity: 'test.user',
+      items: [
+        FootprintItem(
+          id: 'item-1',
+          platform: 'Twitter',
+          category: FootprintCategory.socialProfile,
+          riskLevel: FootprintRisk.high,
+          title: 'Cuenta pública',
+          description: 'Desc',
+          exposedData: ['Usuario: test.user', 'Ubicación: CDMX, México'],
+          sourceUrl: 'https://twitter.com/test.user',
+          recommendedAction: 'Ajustar privacidad',
+          rawDetails: const {'location': 'CDMX, México'},
+        ),
+      ],
+      lastScannedAt: DateTime.now(),
+    );
+
+    repo.setFootprintContext(profile);
+
+    final summaryReply = await repo.reply(GuardAiInput('¿Qué encontraron sobre mí?'));
+    expect(summaryReply.messages.last.text, contains('test.user'));
+    expect(summaryReply.messages.last.text, contains('Twitter'));
+
+    final locationReply = await repo.reply(GuardAiInput('¿Dónde aparece mi ubicación?'));
+    expect(locationReply.messages.last.text, contains('Twitter'));
+    expect(locationReply.messages.last.text, contains('ubicación geográfica'));
+
+    final riskReply = await repo.reply(GuardAiInput('¿Cuáles son mis riesgos?'));
+    expect(riskReply.messages.last.text, contains('riesgo alto'));
+  });
 }
 
 class ControlledRepository implements GuardAiRepository {

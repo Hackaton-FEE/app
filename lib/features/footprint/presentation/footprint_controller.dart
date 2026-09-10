@@ -45,6 +45,12 @@ class FootprintController extends ChangeNotifier {
     _notify();
   }
 
+  void updateStage(String stage) {
+    if (_disposed || !_isLoading) return;
+    _scanningStage = stage;
+    _notify();
+  }
+
   void setProfile(FootprintProfile profile) {
     if (_disposed || _isLoading) return;
     _profile = profile;

@@ -14,9 +14,11 @@ import '../features/cases/data/local_case_repository.dart';
 import '../features/cases/domain/case_repository.dart';
 import '../features/cases/presentation/cases_controller.dart';
 import '../features/cases/presentation/cases_page.dart';
+import '../features/footprint/data/backend_footprint_repository.dart';
 import '../features/footprint/data/flutter_secure_scan_storage.dart';
 import '../features/footprint/data/local_scan_history_repository.dart';
 import '../features/footprint/data/mock_footprint_repository.dart';
+import '../features/footprint/data/osint_client.dart';
 import '../features/footprint/domain/footprint_repository.dart';
 import '../features/footprint/domain/scan_history_repository.dart';
 import '../features/footprint/presentation/dashboard_page.dart';
@@ -87,12 +89,37 @@ class _FeeAppState extends State<FeeApp> {
               ),
             );
         final history = ScanHistoryController(scanHistoryRepo);
-        return _AccountSession(
-          footprint: FootprintController(
-            widget.footprintRepositoryFactory?.call(account) ??
+
+        FootprintController? footprintController;
+        FootprintRepository footprintRepo;
+
+        if (widget.footprintRepositoryFactory != null) {
+          footprintRepo = widget.footprintRepositoryFactory!(account);
+        } else if (!account.isDemo &&
+            _accounts.authRepository is BackendAuthRepository) {
+          final backendAuth = _accounts.authRepository! as BackendAuthRepository;
+          final token = backendAuth.tokenStorage.accessToken ?? '';
+          footprintRepo = BackendFootprintRepository(
+            client: OsintClient(accessToken: token),
+            fallbackRepository:
                 MockFootprintRepository(targetIdentity: account.email),
-            onScanCompleted: history.recordScan,
-          ),
+            onProgressUpdate: (stage, _) {
+              footprintController?.updateStage(stage);
+            },
+          );
+        } else {
+          footprintRepo =
+              MockFootprintRepository(targetIdentity: account.email);
+        }
+
+        final footprint = FootprintController(
+          footprintRepo,
+          onScanCompleted: history.recordScan,
+        );
+        footprintController = footprint;
+
+        return _AccountSession(
+          footprint: footprint,
           guardAi: GuardAiController(DemoGuardAiRepository()),
           scanHistory: history,
         );

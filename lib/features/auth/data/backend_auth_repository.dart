@@ -2,10 +2,18 @@ import '../domain/scan_capability.dart';
 import '../domain/session_info.dart';
 import '../domain/user_profile.dart';
 import 'auth_api_client.dart';
+import 'passkey_authenticator.dart';
 import 'token_storage.dart';
 
 abstract interface class AuthRepository {
   Future<bool> checkHealth();
+  Future<UserProfile> registerWithPasskey({
+    String label = 'Mi Bóveda FEE',
+    PasskeyAuthenticator? authenticator,
+  });
+  Future<UserProfile> loginWithPasskey({
+    PasskeyAuthenticator? authenticator,
+  });
   Future<UserProfile> register({
     required String email,
     required String password,
@@ -30,20 +38,59 @@ class BackendAuthRepository implements AuthRepository {
   BackendAuthRepository({
     AuthApiClient? apiClient,
     TokenStorage? tokenStorage,
+    PasskeyAuthenticator? authenticator,
   }) : _storage = tokenStorage ?? SecureTokenStorage(),
        _client = apiClient ??
            AuthApiClient(
              tokenStorage: tokenStorage ?? SecureTokenStorage(),
-           );
+           ),
+       _authenticator = authenticator ?? SoftPasskeyAuthenticator();
 
   final TokenStorage _storage;
   final AuthApiClient _client;
+  final PasskeyAuthenticator _authenticator;
 
   AuthApiClient get apiClient => _client;
   TokenStorage get tokenStorage => _storage;
+  PasskeyAuthenticator get authenticator => _authenticator;
 
   @override
   Future<bool> checkHealth() => _client.checkHealth();
+
+  @override
+  Future<UserProfile> registerWithPasskey({
+    String label = 'Mi Bóveda FEE',
+    PasskeyAuthenticator? authenticator,
+  }) async {
+    final effectiveAuth = authenticator ?? _authenticator;
+    final options = await _client.getRegistrationOptions(label: label);
+    final challengeToken = options['challenge_token'] as String;
+    final publicKey = options['public_key'] as Map<String, dynamic>;
+
+    final credential = await effectiveAuth.createCredential(publicKey);
+    await _client.verifyRegistration(
+      challengeToken: challengeToken,
+      credential: credential,
+    );
+    return _client.getMe();
+  }
+
+  @override
+  Future<UserProfile> loginWithPasskey({
+    PasskeyAuthenticator? authenticator,
+  }) async {
+    final effectiveAuth = authenticator ?? _authenticator;
+    final options = await _client.getAuthenticationOptions();
+    final challengeToken = options['challenge_token'] as String;
+    final publicKey = options['public_key'] as Map<String, dynamic>;
+
+    final credential = await effectiveAuth.getCredential(publicKey);
+    await _client.verifyAuthentication(
+      challengeToken: challengeToken,
+      credential: credential,
+    );
+    return _client.getMe();
+  }
 
   @override
   Future<UserProfile> register({

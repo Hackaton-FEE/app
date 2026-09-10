@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../auth/data/auth_api_client.dart';
 import '../../auth/data/backend_auth_repository.dart';
+import '../../auth/data/passkey_authenticator.dart';
 import '../domain/account_repository.dart';
 import '../domain/local_account.dart';
 
@@ -124,6 +125,66 @@ class AccountsController extends ChangeNotifier {
     } finally {
       if (!_disposed) {
         _isLoading = false;
+        _notify();
+      }
+    }
+  }
+
+  Future<bool> signInWithPasskey({PasskeyAuthenticator? authenticator}) async {
+    final auth = authRepository;
+    if (auth == null) {
+      _actionError = 'El servicio de autenticación no está disponible.';
+      _notify();
+      return false;
+    }
+    if (_disposed || _isSaving) return false;
+    _isSaving = true;
+    _actionError = null;
+    _notify();
+    try {
+      final profile = await auth.loginWithPasskey(authenticator: authenticator);
+      if (_disposed) return false;
+      _activeAccount = profile.toLocalAccount();
+      return true;
+    } catch (error) {
+      if (!_disposed) _actionError = _errorMessage(error);
+      return false;
+    } finally {
+      if (!_disposed) {
+        _isSaving = false;
+        _notify();
+      }
+    }
+  }
+
+  Future<bool> registerWithPasskey({
+    String label = 'Mi Bóveda FEE',
+    PasskeyAuthenticator? authenticator,
+  }) async {
+    final auth = authRepository;
+    if (auth == null) {
+      _actionError = 'El servicio de autenticación no está disponible.';
+      _notify();
+      return false;
+    }
+    if (_disposed || _isSaving) return false;
+    _isSaving = true;
+    _actionError = null;
+    _notify();
+    try {
+      final profile = await auth.registerWithPasskey(
+        label: label,
+        authenticator: authenticator,
+      );
+      if (_disposed) return false;
+      _activeAccount = profile.toLocalAccount();
+      return true;
+    } catch (error) {
+      if (!_disposed) _actionError = _errorMessage(error);
+      return false;
+    } finally {
+      if (!_disposed) {
+        _isSaving = false;
         _notify();
       }
     }

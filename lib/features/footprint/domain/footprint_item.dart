@@ -16,6 +16,8 @@ class FootprintItem {
     required this.sourceUrl,
     required this.recommendedAction,
     this.suggestedCaseCategory = CaseCategory.personalData,
+    this.rawDetails = const {},
+    this.confidence = 80,
   }) : exposedData = List.unmodifiable(exposedData);
 
   final String id;
@@ -28,4 +30,6 @@ class FootprintItem {
   final String sourceUrl;
   final String recommendedAction;
   final CaseCategory suggestedCaseCategory;
+  final Map<String, dynamic> rawDetails;
+  final int confidence;
 }

@@ -46,12 +46,23 @@ class _AuthCardState extends State<AuthCard> {
     );
   }
 
+  Future<void> _submitPasskeyLogin() async {
+    await widget.controller.signInWithPasskey();
+  }
+
   Future<void> _submitRegister() async {
     if (!_registerFormKey.currentState!.validate()) return;
     await widget.controller.register(
       email: _registerEmailController.text.trim(),
       password: _registerPasswordController.text,
     );
+  }
+
+  Future<void> _submitPasskeyRegister() async {
+    final label = _registerEmailController.text.trim().isNotEmpty
+        ? _registerEmailController.text.trim()
+        : 'Mi Bóveda FEE';
+    await widget.controller.registerWithPasskey(label: label);
   }
 
   @override
@@ -137,6 +148,39 @@ class _AuthCardState extends State<AuthCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          OutlinedButton(
+            key: const Key('auth-passkey-login-button'),
+            onPressed: busy ? null : _submitPasskeyLogin,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.fingerprint_rounded),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Acceder con Passkey',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              'o con credenciales',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           TextFormField(
             key: const Key('auth-email-field'),
             controller: _loginEmailController,
@@ -224,6 +268,39 @@ class _AuthCardState extends State<AuthCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          OutlinedButton(
+            key: const Key('auth-passkey-register-button'),
+            onPressed: busy ? null : _submitPasskeyRegister,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.fingerprint_rounded),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Crear Bóveda con Passkey',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              'o con credenciales',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           TextFormField(
             key: const Key('auth-register-email-field'),
             controller: _registerEmailController,

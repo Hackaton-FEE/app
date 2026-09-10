@@ -1,11 +1,19 @@
 import 'package:flutter/foundation.dart';
 
+import '../../footprint/domain/footprint_profile.dart';
+import '../data/demo_guard_ai_repository.dart';
 import '../domain/guard_ai_repository.dart';
 
 class GuardAiController extends ChangeNotifier {
   GuardAiController(this._repository);
 
   final GuardAiRepository _repository;
+
+  void setContextProfile(FootprintProfile? profile) {
+    if (_repository is DemoGuardAiRepository) {
+      _repository.setFootprintContext(profile);
+    }
+  }
   GuardAiConversation _conversation = GuardAiConversation();
   String _draft = '';
   String? _error;

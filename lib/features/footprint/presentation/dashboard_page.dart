@@ -137,14 +137,18 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _openNewReport(FootprintItem item) =>
       openFootprintReport(context, widget.casesController, item);
 
-  void _openGuardAi() => Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => GuardAiPage(
-        controller: widget.guardAiController,
-        casesController: widget.casesController,
+  void _openGuardAi() {
+    widget.guardAiController
+        .setContextProfile(widget.footprintController.profile);
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => GuardAiPage(
+          controller: widget.guardAiController,
+          casesController: widget.casesController,
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   void _openAllCases() => Navigator.of(context).push<void>(
     MaterialPageRoute(

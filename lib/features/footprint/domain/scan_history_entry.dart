@@ -93,6 +93,8 @@ class ScanHistoryEntry {
             'sourceUrl': item.sourceUrl,
             'recommendedAction': item.recommendedAction,
             'suggestedCaseCategory': item.suggestedCaseCategory.name,
+            'rawDetails': item.rawDetails,
+            'confidence': item.confidence,
           },
         )
         .toList(),
@@ -131,6 +133,8 @@ class ScanHistoryEntry {
         suggestedCaseCategory: CaseCategory.values.byName(
           map['suggestedCaseCategory'] as String,
         ),
+        rawDetails: (map['rawDetails'] as Map<String, dynamic>?) ?? const {},
+        confidence: (map['confidence'] as num?)?.toInt() ?? 80,
       );
     }).toList();
 

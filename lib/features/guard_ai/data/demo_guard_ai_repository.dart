@@ -1,7 +1,15 @@
+import '../../footprint/domain/footprint_item.dart';
+import '../../footprint/domain/footprint_profile.dart';
 import '../domain/guard_ai_repository.dart';
 
 /// A deterministic conversation held only in memory, without network or AI.
 class DemoGuardAiRepository implements GuardAiRepository {
+  FootprintProfile? _footprintContext;
+
+  void setFootprintContext(FootprintProfile? profile) {
+    _footprintContext = profile;
+  }
+
   GuardAiConversation _conversation = GuardAiConversation(
     messages: const [
       GuardAiMessage(
@@ -52,10 +60,65 @@ class DemoGuardAiRepository implements GuardAiRepository {
     } else if (_step == 0) {
       _topic = _recognizeTopic(text);
       if (_topic == null) {
-        response =
-            'Para orientarte mejor, por favor selecciona uno de los temas '
-            'sugeridos o describe si buscas revisar datos expuestos, auditar un perfil o preparar un caso.';
-        suggestions = _startingSuggestions;
+        if (_footprintContext != null &&
+            (text.contains('huella') ||
+                text.contains('escaneo') ||
+                text.contains('encontraron') ||
+                text.contains('encontraste') ||
+                text.contains('diagnóstico') ||
+                text.contains('diagnostico') ||
+                text.contains('ubicaci') ||
+                text.contains('donde') ||
+                text.contains('dónde') ||
+                text.contains('riesgo') ||
+                text.contains('resumen'))) {
+          final profile = _footprintContext!;
+          if (text.contains('ubicaci') || text.contains('donde') || text.contains('dónde')) {
+            final locs = profile.items
+                .where((i) => i.exposedData.any((d) => d.startsWith('Ubicación:')))
+                .toList();
+            if (locs.isNotEmpty) {
+              final platforms = locs.map((e) => e.platform).join(', ');
+              response =
+                  'En tu auditoría para "${profile.targetIdentity}", se detectó ubicación geográfica pública en: $platforms. Te sugerimos revisar o restringir la información de ubicación en dichos perfiles.';
+            } else {
+              response =
+                  'En tu auditoría para "${profile.targetIdentity}" no se detectó una ubicación física precisa expuesta en las cuentas analizadas.';
+            }
+          } else if (text.contains('riesgo')) {
+            final high = profile.items
+                .where((i) => i.riskLevel == FootprintRisk.high)
+                .toList();
+            if (high.isNotEmpty) {
+              final names = high.map((e) => e.platform).join(', ');
+              response =
+                  'Tienes ${high.length} hallazgo(s) de riesgo alto en: $names. Te recomendamos priorizar la auditoría de esas cuentas.';
+            } else {
+              response =
+                  'No se identificaron hallazgos de severidad crítica o alta para "${profile.targetIdentity}". El estado general es estable.';
+            }
+          } else {
+            final riskLabel = profile.overallRisk == FootprintRisk.high
+                ? 'Alto'
+                : profile.overallRisk == FootprintRisk.medium
+                    ? 'Medio'
+                    : 'Bajo';
+            final samplePlats =
+                profile.items.take(3).map((e) => e.platform).join(', ');
+            response =
+                'Para "${profile.targetIdentity}", tu Nivel de Exposición es de ${profile.exposureScore}/100 (Riesgo $riskLabel). Detectamos ${profile.items.length} presencias públicas, incluyendo $samplePlats. ¿Deseas preparar un reporte para mitigar alguna?';
+          }
+          suggestions = [
+            'Quiero preparar un reporte',
+            'Revisar mis datos',
+            'Empezar otro tema',
+          ];
+        } else {
+          response =
+              'Para orientarte mejor, por favor selecciona uno de los temas '
+              'sugeridos o describe si buscas revisar datos expuestos, auditar un perfil o preparar un caso.';
+          suggestions = _startingSuggestions;
+        }
       } else {
         _step = 1;
         response = switch (_topic!) {

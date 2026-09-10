@@ -292,5 +292,122 @@ void main() {
       expect(capabilities[1].providerId, 'holehe');
       expect(capabilities[1].available, isFalse);
     });
+
+    test('getRegistrationOptions requests options and returns challenge', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/auth/passkey/registration/options');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['label'], 'Bóveda Test');
+        return http.Response(
+          jsonEncode({
+            'challenge_token': 'chal-token-123',
+            'public_key': {'challenge': 'chal-bytes', 'rp': {'id': 'example.com'}},
+          }),
+          200,
+        );
+      });
+
+      final client = AuthApiClient(
+        baseUrl: 'https://example.com/api/v1',
+        tokenStorage: tokenStorage,
+        httpClient: mockClient,
+      );
+
+      final res = await client.getRegistrationOptions(label: 'Bóveda Test');
+      expect(res['challenge_token'], 'chal-token-123');
+      expect(res['public_key']['challenge'], 'chal-bytes');
+    });
+
+    test('verifyRegistration sends credential and stores tokens', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/auth/passkey/registration/verify');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['challenge_token'], 'chal-token-123');
+        expect(body['credential']['id'], 'cred-123');
+        return http.Response(
+          jsonEncode({
+            'access_token': 'new-jwt',
+            'refresh_token': 'new-refresh',
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'user': {'id': 'usr-1', 'label': 'Mi Bóveda'},
+          }),
+          201,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final client = AuthApiClient(
+        baseUrl: 'https://example.com/api/v1',
+        tokenStorage: tokenStorage,
+        httpClient: mockClient,
+      );
+
+      final tokens = await client.verifyRegistration(
+        challengeToken: 'chal-token-123',
+        credential: {'id': 'cred-123'},
+      );
+
+      expect(tokens.accessToken, 'new-jwt');
+      expect(tokenStorage.accessToken, 'new-jwt');
+      expect(await tokenStorage.readRefreshToken(), 'new-refresh');
+    });
+
+    test('getAuthenticationOptions requests options for login', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/auth/passkey/authentication/options');
+        return http.Response(
+          jsonEncode({
+            'challenge_token': 'auth-token-999',
+            'public_key': {'challenge': 'auth-challenge'},
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final client = AuthApiClient(
+        baseUrl: 'https://example.com/api/v1',
+        tokenStorage: tokenStorage,
+        httpClient: mockClient,
+      );
+
+      final res = await client.getAuthenticationOptions();
+      expect(res['challenge_token'], 'auth-token-999');
+    });
+
+    test('verifyAuthentication validates credential and stores tokens', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/v1/auth/passkey/authentication/verify');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['challenge_token'], 'auth-token-999');
+        return http.Response(
+          jsonEncode({
+            'access_token': 'auth-jwt',
+            'refresh_token': 'auth-refresh',
+            'token_type': 'bearer',
+            'expires_in': 3600,
+            'user': {'id': 'usr-1', 'label': 'Mi Bóveda'},
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final client = AuthApiClient(
+        baseUrl: 'https://example.com/api/v1',
+        tokenStorage: tokenStorage,
+        httpClient: mockClient,
+      );
+
+      final tokens = await client.verifyAuthentication(
+        challengeToken: 'auth-token-999',
+        credential: {'id': 'cred-auth'},
+      );
+
+      expect(tokens.accessToken, 'auth-jwt');
+      expect(tokenStorage.accessToken, 'auth-jwt');
+      expect(await tokenStorage.readRefreshToken(), 'auth-refresh');
+    });
   });
 }

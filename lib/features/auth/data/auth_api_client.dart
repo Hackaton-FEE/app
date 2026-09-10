@@ -107,6 +107,104 @@ class AuthApiClient {
     throw _parseError(response);
   }
 
+  /// Solicita opciones de registro FIDO2 en `POST /auth/passkey/registration/options`.
+  Future<Map<String, dynamic>> getRegistrationOptions({
+    String label = 'Mi Bóveda FEE',
+  }) async {
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/passkey/registration/options'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'User-Agent': 'fee_app/0.1.0',
+          },
+          body: jsonEncode({'label': label}),
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode == 200) {
+      return _decodeBody(response) as Map<String, dynamic>;
+    }
+    throw _parseError(response);
+  }
+
+  /// Valida la credencial creada por el autenticador en `POST /auth/passkey/registration/verify`.
+  Future<AuthTokens> verifyRegistration({
+    required String challengeToken,
+    required Map<String, dynamic> credential,
+  }) async {
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/passkey/registration/verify'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'User-Agent': 'fee_app/0.1.0',
+          },
+          body: jsonEncode({
+            'challenge_token': challengeToken,
+            'credential': credential,
+          }),
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = _decodeBody(response) as Map<String, dynamic>;
+      final tokens = AuthTokens.fromJson(data);
+      tokenStorage.accessToken = tokens.accessToken;
+      await tokenStorage.saveRefreshToken(tokens.refreshToken);
+      return tokens;
+    }
+    throw _parseError(response);
+  }
+
+  /// Solicita el reto para inicio de sesión en `POST /auth/passkey/authentication/options`.
+  Future<Map<String, dynamic>> getAuthenticationOptions() async {
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/passkey/authentication/options'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'User-Agent': 'fee_app/0.1.0',
+          },
+          body: jsonEncode({}),
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode == 200) {
+      return _decodeBody(response) as Map<String, dynamic>;
+    }
+    throw _parseError(response);
+  }
+
+  /// Valida la aserción y firma biométrica en `POST /auth/passkey/authentication/verify`.
+  Future<AuthTokens> verifyAuthentication({
+    required String challengeToken,
+    required Map<String, dynamic> credential,
+  }) async {
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/passkey/authentication/verify'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'User-Agent': 'fee_app/0.1.0',
+          },
+          body: jsonEncode({
+            'challenge_token': challengeToken,
+            'credential': credential,
+          }),
+        )
+        .timeout(_timeout);
+
+    if (response.statusCode == 200) {
+      final data = _decodeBody(response) as Map<String, dynamic>;
+      final tokens = AuthTokens.fromJson(data);
+      tokenStorage.accessToken = tokens.accessToken;
+      await tokenStorage.saveRefreshToken(tokens.refreshToken);
+      return tokens;
+    }
+    throw _parseError(response);
+  }
+
   /// Renueva los tokens de sesión de manera atómica y serializada.
   /// Si múltiples peticiones coinciden, comparten una única llamada
   /// para evitar reutilizar y revocar el refresh_token.
@@ -125,13 +223,30 @@ class AuthApiClient {
         return null;
       }
 
-      final response = await _client
+      // En v0.2.0 la ruta es /auth/token/refresh; con fallback a /auth/refresh para compatibilidad
+      var response = await _client
           .post(
-            Uri.parse('$baseUrl/auth/refresh'),
-            headers: {'Content-Type': 'application/json; charset=utf-8'},
+            Uri.parse('$baseUrl/auth/token/refresh'),
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+              'User-Agent': 'fee_app/0.1.0',
+            },
             body: jsonEncode({'refresh_token': currentRefresh}),
           )
           .timeout(_timeout);
+
+      if (response.statusCode == 404) {
+        response = await _client
+            .post(
+              Uri.parse('$baseUrl/auth/refresh'),
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'User-Agent': 'fee_app/0.1.0',
+              },
+              body: jsonEncode({'refresh_token': currentRefresh}),
+            )
+            .timeout(_timeout);
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes))
@@ -171,15 +286,19 @@ class AuthApiClient {
   Future<void> logout() async {
     try {
       final token = tokenStorage.accessToken;
-      if (token != null && token.isNotEmpty) {
-        await _client.post(
-          Uri.parse('$baseUrl/auth/logout'),
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Authorization': 'Bearer $token',
-          },
-        ).timeout(_timeout);
-      }
+      final refresh = await tokenStorage.readRefreshToken();
+      final headers = {
+        'Content-Type': 'application/json; charset=utf-8',
+        'User-Agent': 'fee_app/0.1.0',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      };
+      await _client
+          .post(
+            Uri.parse('$baseUrl/auth/logout'),
+            headers: headers,
+            body: jsonEncode({'refresh_token': refresh ?? ''}),
+          )
+          .timeout(_timeout);
     } catch (_) {
       // Ignorar errores de red para asegurar limpieza local
     } finally {
@@ -299,6 +418,7 @@ class AuthApiClient {
     final uri = Uri.parse('$baseUrl$path');
     final headers = {
       'Content-Type': 'application/json; charset=utf-8',
+      'User-Agent': 'fee_app/0.1.0',
       'Authorization': 'Bearer $token',
     };
 
@@ -316,9 +436,17 @@ class AuthApiClient {
     }
   }
 
+  dynamic _decodeBody(http.Response response) {
+    try {
+      return jsonDecode(utf8.decode(response.bodyBytes));
+    } catch (_) {
+      return jsonDecode(response.body);
+    }
+  }
+
   AuthApiException _parseError(http.Response response) {
     try {
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      final decoded = _decodeBody(response);
       if (decoded is Map<String, dynamic>) {
         final detail = decoded['detail'];
         if (detail is Map<String, dynamic>) {

@@ -7,6 +7,7 @@ import 'package:fee_app/features/auth/domain/scan_capability.dart';
 import 'package:fee_app/features/auth/domain/session_info.dart';
 import 'package:fee_app/features/auth/domain/user_profile.dart';
 import 'package:fee_app/features/auth/presentation/widgets/auth_card.dart';
+import 'package:fee_app/features/auth/data/passkey_authenticator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,35 @@ class FakeAuthRepository implements AuthRepository {
 
   @override
   Future<bool> checkHealth() async => true;
+
+  @override
+  Future<UserProfile> registerWithPasskey({
+    String label = 'Mi Bóveda FEE',
+    PasskeyAuthenticator? authenticator,
+  }) async {
+    registeredEmail = label;
+    return UserProfile(
+      id: 'test-uuid-passkey-registered',
+      label: label,
+      email: label,
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<UserProfile> loginWithPasskey({
+    PasskeyAuthenticator? authenticator,
+  }) async {
+    loggedInEmail = 'passkey-user';
+    return UserProfile(
+      id: 'test-uuid-passkey-loggedin',
+      label: 'Passkey User',
+      email: 'passkey-user@fee.local',
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+  }
 
   @override
   Future<UserProfile> register({
