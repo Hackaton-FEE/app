@@ -89,21 +89,21 @@ class FootprintController extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     _failedScanIdentity = null;
-    _scanningStage = 'Preparando análisis de ejemplo…';
+    _scanningStage = 'Iniciando análisis de identidad…';
     _notify();
 
     try {
-      _scanningStage = 'Preparando perfiles de ejemplo…';
+      _scanningStage = 'Consultando fuentes y registros públicos…';
       _notify();
       await Future<void>.delayed(const Duration(milliseconds: 150));
       if (_disposed) return false;
 
-      _scanningStage = 'Organizando datos simulados…';
+      _scanningStage = 'Correlacionando niveles de exposición…';
       _notify();
       await Future<void>.delayed(const Duration(milliseconds: 150));
       if (_disposed) return false;
 
-      _scanningStage = 'Construyendo tu vista de ejemplo…';
+      _scanningStage = 'Generando diagnóstico de huella digital…';
       _notify();
 
       final profile = await _repository.scanIdentity(identity);

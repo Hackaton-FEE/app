@@ -140,7 +140,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(selected, FootprintCategory.exposedContact);
       expect(find.byType(FootprintMap), findsNothing);
-      expect(find.text('1 hallazgos de ejemplo'), findsOneWidget);
+      expect(find.text('1 hallazgos detectados'), findsOneWidget);
       expect(
         tester
             .widget<SegmentedButton<bool>>(find.byType(SegmentedButton<bool>))
@@ -154,7 +154,7 @@ void main() {
       await tester.ensureVisible(breaches);
       await tester.tap(breaches);
       await tester.pumpAndSettle();
-      expect(find.text('0 hallazgos de ejemplo'), findsOneWidget);
+      expect(find.text('0 hallazgos detectados'), findsOneWidget);
       expect(find.text('No hay hallazgos en esta categoría.'), findsOneWidget);
       expect(find.byType(FindingCard), findsNothing);
       expect(tester.takeException(), isNull);

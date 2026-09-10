@@ -16,7 +16,7 @@ class DashboardTourPanel extends StatelessWidget {
   static const _steps = [
     (
       'Conoce tu exposición',
-      'El indicador de abajo resume tu huella de ejemplo. No es una probabilidad de daño.',
+      'El indicador resume el nivel general de exposición estimado para tu identidad.',
       Icons.fingerprint_rounded,
       'Revisa el indicador',
     ),
@@ -27,14 +27,14 @@ class DashboardTourPanel extends StatelessWidget {
       'Prueba los filtros y el mapa',
     ),
     (
-      'Prueba un escaneo',
-      'Toca Escanear en la barra inferior para cambiar el correo o alias del análisis de ejemplo. Los datos son simulados.',
+      'Realiza un escaneo',
+      'Toca Escanear en la barra inferior para analizar un correo o alias y detectar exposición digital.',
       Icons.radar_rounded,
       'Escanear · botón inferior izquierdo',
     ),
     (
       'Conversa con GuardAI',
-      'Toca GuardAI para explorar una duda paso a paso. Al volver, puedes continuar aquí. Las respuestas son ejemplos locales.',
+      'Toca GuardAI para consultar dudas sobre privacidad y recibir asistencia guiada paso a paso.',
       Icons.auto_awesome_outlined,
       'GuardAI · botón inferior derecho',
     ),

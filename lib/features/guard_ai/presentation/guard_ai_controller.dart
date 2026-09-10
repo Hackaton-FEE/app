@@ -62,14 +62,14 @@ class GuardAiController extends ChangeNotifier {
     }
     _isSending = true;
     _error = null;
-    _status = 'Preparando respuesta de ejemplo…';
+    _status = 'Analizando consulta…';
     _emit();
     try {
       final conversation = await _repository.reply(input);
       if (_disposed) return false;
       _conversation = conversation;
       _draft = '';
-      _status = 'Respuesta de ejemplo lista.';
+      _status = 'Respuesta lista.';
       return true;
     } catch (_) {
       _error =

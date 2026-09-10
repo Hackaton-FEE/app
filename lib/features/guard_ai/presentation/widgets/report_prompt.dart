@@ -61,7 +61,7 @@ class ReportPrompt extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Revisa los detalles en un formulario flotante. Se guarda como caso local; no se envía desde esta demostración.',
+              'Revisa los detalles en el formulario y regístralo como caso local en tu dispositivo para seguimiento y resolución.',
             ),
             const SizedBox(height: 16),
             FilledButton.icon(

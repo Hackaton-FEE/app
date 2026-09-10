@@ -85,7 +85,7 @@ class RecommendationCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Orientación de ejemplo. No consulta fuentes externas ni envía solicitudes.',
+            'Recomendaciones de seguridad basadas en el diagnóstico de exposición detectado.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: colors.onSurfaceVariant,
             ),

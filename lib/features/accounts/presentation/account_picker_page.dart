@@ -104,7 +104,7 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'O prueba en modo demostración',
+                            'O continúa con tu cuenta local',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colors.onSurfaceVariant,
@@ -174,7 +174,7 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                       ],
                       const SizedBox(height: 12),
                       Text(
-                        'Vista previa con una cuenta de ejemplo. Entra con un toque, sin contraseña.',
+                        'Acceso rápido configurado en este dispositivo. Entra directamente con un toque.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,

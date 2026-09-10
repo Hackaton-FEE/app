@@ -141,7 +141,7 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
                   Semantics(
                     liveRegion: true,
                     child: Text(
-                      '${items.length} hallazgos de ejemplo',
+                      '${items.length} hallazgos detectados',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -181,8 +181,7 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                'Ejemplo actualizado ${_formatTimeAgo(widget.profile.lastScannedAt)}. '
-                'No se han consultado fuentes externas.',
+                'Última actualización ${_formatTimeAgo(widget.profile.lastScannedAt)}.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

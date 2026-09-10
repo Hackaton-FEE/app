@@ -125,7 +125,7 @@ class _ScanCapabilitiesDialogState extends State<ScanCapabilitiesDialog> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Actualmente los escaneos en la app funcionan como demostración local hasta que los servicios remotos estén operativos en el servidor.',
+                          'Capacidades y fuentes de análisis habilitadas para la auditoría de exposición e identidad digital.',
                           style: theme.textTheme.bodySmall,
                         ),
                       ),

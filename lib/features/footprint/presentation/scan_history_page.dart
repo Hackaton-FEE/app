@@ -96,7 +96,7 @@ class ScanHistoryPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Escaneos de ejemplo guardados en este dispositivo. Al cargar o guardar el historial se eliminan los registros con más de 72 horas. No hay borrado en segundo plano.',
+                          'Historial de escaneos guardados localmente en este dispositivo. Los registros con más de 72 horas se depuran automáticamente al actualizar.',
                         ),
                         if (controller.isLoading) ...[
                           const SizedBox(height: 16),

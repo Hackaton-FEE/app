@@ -224,7 +224,7 @@ class AccountsController extends ChangeNotifier {
     if (error is AccountRepositoryException) {
       return switch (error.reason) {
         AccountRepositoryExceptionReason.unavailable =>
-          'No pudimos cargar las cuentas de ejemplo. Inténtalo de nuevo.',
+          'No pudimos cargar las cuentas disponibles. Inténtalo de nuevo.',
         AccountRepositoryExceptionReason.duplicateEmail => 'Ya agregaste una cuenta con ese correo. Puedes elegirla en la lista.',
       };
     }

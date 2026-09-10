@@ -56,11 +56,11 @@ void main() {
   });
 
   test(
-    'unrecognized queries disclose demo limits and allow recovery',
+    'unrecognized queries guide user to privacy topics and allow recovery',
     () async {
       final repository = DemoGuardAiRepository();
       final answer = await repository.reply(GuardAiInput('Dime el clima'));
-      expect(answer.messages.last.text, contains('respuestas predefinidas'));
+      expect(answer.messages.last.text, contains('Para orientarte mejor'));
       expect(answer.suggestions, contains('Revisar mis datos'));
       final next = await repository.reply(GuardAiInput('Revisar mis datos'));
       expect(next.messages.last.text, contains('dónde aparecen'));

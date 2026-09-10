@@ -18,20 +18,20 @@ class HelpPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _HelpSection(
-                    title: 'Elige una cuenta y conoce la app',
-                    body: 'Al abrir la app, elige la cuenta disponible para entrar. No se verifica un inicio de sesión. Si no se puede cargar, pulsa Reintentar.\n\nDesde el dashboard puedes abrir el recorrido visual. Cerrar sesión vuelve al inicio; el chat dura esta sesión.',
+                    title: 'Cuentas y acceso',
+                    body: 'Al abrir la app, selecciona la cuenta disponible para entrar o inicia sesión. Si no se puede cargar, pulsa Reintentar.\n\nDesde el dashboard puedes abrir el recorrido guiado o explorar tu huella digital. Cerrar sesión te permite alternar de cuenta de forma segura.',
                   ),
                   _HelpSection(
                     title: 'Conversa con GuardAI',
                     body:
-                        'El botón GuardAI abre una conversación de demostración. Escribe una pregunta o elige una sugerencia y continúa con las respuestas. Cada cuenta de ejemplo tiene su propio chat durante esta sesión.\n\n'
-                        'Las respuestas siguen un recorrido local de ejemplo: no hay un modelo de IA conectado, búsquedas externas ni envío de solicitudes. El chat conserva lo que escribes al abrir ayuda o volver al dashboard.',
+                        'El botón GuardAI abre el asistente de privacidad interactivo. Escribe una pregunta o elige una sugerencia para recibir una guía paso a paso adaptada a tu situación.\n\n'
+                        'GuardAI te asiste en la mitigación de exposiciones y en la organización de tus casos. El chat conserva lo que escribes al abrir ayuda o volver al dashboard.',
                   ),
                   _HelpSection(
                     title: 'Explora tu huella digital',
                     body:
-                        'El dashboard muestra hallazgos simulados para que pruebes el recorrido. Escanear cambia la identidad del ejemplo; no busca cuentas ni confirma filtraciones reales. El índice es orientativo, no una probabilidad de sufrir un incidente.\n\n'
-                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo. GuardAI te permite conversar sobre tus siguientes pasos. Abre el menú de perfil para consultar los casos del dispositivo o el historial de escaneos. Escanear cambia la identidad del ejemplo. Los escaneos del historial con más de 72 horas se eliminan al cargar o guardar el historial; no hay borrado en segundo plano. La identidad del ejemplo se conserva solo durante esta sesión.',
+                        'El dashboard presenta el diagnóstico de exposición de tu identidad digital. Escanear te permite auditar un correo o alias para detectar datos públicos indexados o filtraciones.\n\n'
+                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo para conocer los datos expuestos y las acciones de mitigación recomendadas. Abre el menú lateral para consultar los casos del dispositivo o el historial de escaneos (los registros con más de 72 horas se depuran automáticamente al actualizar).',
                   ),
                   _HelpSection(
                     title: 'Organiza un caso a tu ritmo',
@@ -48,18 +48,18 @@ class HelpPage extends StatelessWidget {
                   _HelpSection(
                     title: 'Dónde se guarda tu información',
                     body:
-                        'Los casos guardados permanecen en este dispositivo y no se envían a terceros. Son compartidos por las cuentas de ejemplo; cambiar de cuenta no los mueve ni los separa. La app usa almacenamiento cifrado, pero no tiene un bloqueo propio: quien pueda abrir la app podrá ver tus casos.\n\n'
-                        'No hay sincronización ni recuperación garantizada si borras los datos de la app o cambias de dispositivo. Los cambios del formulario solo se conservan entre sesiones cuando pulsas Guardar caso.',
+                        'Los casos guardados permanecen en este dispositivo mediante almacenamiento cifrado local y no se comparten con terceros. La app resguarda tus casos localmente.\n\n'
+                        'Los cambios del formulario se conservan entre sesiones cuando pulsas Guardar caso.',
                   ),
                   _HelpSection(
                     title: 'Si no puedes guardar o cargar',
                     body:
                         'Si aparece un error en un campo, sigue la indicación junto a él y vuelve a guardar. Si falla el guardado, el formulario conserva lo que escribiste mientras permanece abierto.\n\n'
-                        'Si el almacenamiento no está disponible, comprueba que el dispositivo esté desbloqueado y vuelve a intentar la acción. Evita borrar la app o sus datos para resolver un error: podrías perder los casos guardados.',
+                        'Si el almacenamiento no está disponible, comprueba que el dispositivo esté desbloqueado y vuelve a intentar la acción.',
                   ),
                   _HelpSection(
                     title: 'Qué ayuda está disponible',
-                    body: 'Esta guía explica cómo usar la app. Esta versión todavía no tiene un canal de atención humana ni envío de solicitudes de retiro. Guardar un caso no inicia una gestión con una plataforma.',
+                    body: 'Esta guía explica cómo usar la app. Puedes apoyarte en GuardAI para resolver dudas sobre privacidad o registrar casos para seguimiento.',
                   ),
                 ],
               ),

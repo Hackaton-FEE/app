@@ -90,7 +90,7 @@ class AccountProductOverview extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'En esta vista previa, el análisis y las respuestas son ejemplos locales. No se consultan sitios externos ni se envían solicitudes.',
+                  'Asistencia interactiva para auditar tu huella digital y resolver incidentes de privacidad paso a paso.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

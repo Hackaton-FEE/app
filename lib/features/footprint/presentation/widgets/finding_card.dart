@@ -24,7 +24,7 @@ class FindingCard extends StatelessWidget {
 
     return Semantics(
       button: true,
-      hint: 'Abrir el ejemplo y sus pasos sugeridos',
+      hint: 'Abrir el hallazgo y sus pasos sugeridos',
       child: Material(
         color: Colors.transparent,
         child: InkWell(

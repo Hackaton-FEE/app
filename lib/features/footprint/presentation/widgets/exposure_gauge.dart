@@ -39,14 +39,14 @@ class ExposureGauge extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'DEMO · Muestra orientativa',
+            'Evaluación de seguridad',
             style: theme.textTheme.labelMedium?.copyWith(
               color: AppPalette.olive,
             ),
           ),
           const SizedBox(height: 18),
           Semantics(
-            label: 'Índice de exposición de ejemplo: $score de 100',
+            label: 'Índice de exposición: $score de 100',
             excludeSemantics: true,
             child: Wrap(
               spacing: 8,

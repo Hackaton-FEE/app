@@ -14,7 +14,7 @@ class MockFootprintRepository implements FootprintRepository {
 
   static FootprintProfile _createDefaultProfile(String? targetIdentity) {
     return FootprintProfile(
-      targetIdentity: targetIdentity ?? 'usuario@ejemplo.com',
+      targetIdentity: targetIdentity ?? 'pedro.gomez@gmail.com',
       lastScannedAt: DateTime.now().subtract(const Duration(hours: 3)),
       items: [
         FootprintItem(
@@ -29,7 +29,7 @@ class MockFootprintRepository implements FootprintRepository {
             'Rango de edad',
             'Registros públicos',
           ],
-          sourceUrl: 'https://radaris.com/p/ejemplo',
+          sourceUrl: 'https://radaris.com/p/pedro-gomez',
           recommendedAction: 'Solicitar el retiro y desindexación formal de datos amparado en normativas de privacidad.',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
@@ -53,7 +53,7 @@ class MockFootprintRepository implements FootprintRepository {
           title: 'Teléfono parcialmente deducible',
           description: 'El flujo de recuperación de contraseña revela que tu cuenta está vinculada a un número telefónico que termina en 89.',
           exposedData: ['Últimos 2 dígitos del teléfono', 'Usuario de X'],
-          sourceUrl: 'https://x.com/usuario_ejemplo',
+          sourceUrl: 'https://x.com/pedrogomez_',
           recommendedAction: 'Desactivar en configuración la opción "Permitir que otros me encuentren por teléfono".',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
@@ -65,7 +65,7 @@ class MockFootprintRepository implements FootprintRepository {
           title: 'Perfil público indexado en Google',
           description: 'Tus fotos, biografía y contactos son visibles para cualquier motor de búsqueda sin necesidad de tener cuenta.',
           exposedData: ['Fotografías', 'Nombre completo', 'Biografía'],
-          sourceUrl: 'https://instagram.com/usuario_ejemplo',
+          sourceUrl: 'https://instagram.com/pedrogomez_',
           recommendedAction: 'Cambiar la cuenta a privada y eliminar información sensible de la biografía pública.',
           suggestedCaseCategory: CaseCategory.personalData,
         ),
@@ -77,7 +77,7 @@ class MockFootprintRepository implements FootprintRepository {
           title: 'Correo personal visible en commits públicos',
           description: 'Tu dirección de correo electrónico personal se encuentra en los metadatos de aportaciones públicas de código.',
           exposedData: ['Correo electrónico personal'],
-          sourceUrl: 'https://github.com/usuario_ejemplo',
+          sourceUrl: 'https://github.com/pedrogomez',
           recommendedAction: 'Habilitar la opción "Keep my email address private" en la configuración de GitHub.',
           suggestedCaseCategory: CaseCategory.other,
         ),
@@ -131,7 +131,8 @@ class MockFootprintRepository implements FootprintRepository {
           title: 'Teléfono asociado detectable',
           description: 'Servicios de mensajería asocian este correo con un número de móvil.',
           exposedData: ['Dígitos parciales de teléfono'],
-          sourceUrl: 'https://example.com/check',
+          sourceUrl:
+              'https://security.google.com/settings/security/secureaccount',
           recommendedAction:
               'Ocultar número en perfiles de recuperación pública.',
           suggestedCaseCategory: CaseCategory.personalData,

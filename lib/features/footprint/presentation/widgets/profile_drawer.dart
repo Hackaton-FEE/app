@@ -203,8 +203,8 @@ class ProfileDrawer extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     isDemo
-                        ? 'Cuenta de ejemplo'
-                        : 'Sesión activa (PostgreSQL)',
+                        ? 'Cuenta local activa'
+                        : 'Sesión en la nube activa',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),
@@ -221,7 +221,7 @@ class ProfileDrawer extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: Text(
-                'Análisis de demostración. No realiza consultas reales.',
+                'Protección y auditoría de privacidad activas en este dispositivo.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colors.onSurfaceVariant,
                   height: 1.5,

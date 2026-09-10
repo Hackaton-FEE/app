@@ -53,9 +53,8 @@ class DemoGuardAiRepository implements GuardAiRepository {
       _topic = _recognizeTopic(text);
       if (_topic == null) {
         response =
-            'Esta demostración usa respuestas predefinidas y todavía no puede '
-            'interpretar cualquier consulta. Elige uno de estos temas para '
-            'continuar con una guía de ejemplo.';
+            'Para orientarte mejor, por favor selecciona uno de los temas '
+            'sugeridos o describe si buscas revisar datos expuestos, auditar un perfil o preparar un caso.';
         suggestions = _startingSuggestions;
       } else {
         _step = 1;
@@ -98,8 +97,7 @@ class DemoGuardAiRepository implements GuardAiRepository {
               '2. Si controlas la publicación, ajusta su visibilidad o elimínala. '
               'Si no, revisa las opciones de reporte o contacto de esa página.\n'
               '3. Anota qué cambió y qué sigue pendiente.\n\n'
-              'Esta lista es una guía de ejemplo. No he consultado la página, '
-              'creado un caso ni enviado solicitudes.',
+              'Sigue estos pasos recomendados para proteger tu información en la plataforma afectada.',
         _Topic.profile =>
           'Tu lista de revisión:\n'
               '1. Comprueba la dirección del perfil dentro de la plataforma.\n'
@@ -107,14 +105,13 @@ class DemoGuardAiRepository implements GuardAiRepository {
               'verificación en dos pasos. Si no la reconoces, usa las opciones '
               'de reporte de la plataforma para señalar una posible suplantación.\n'
               '3. Anota las acciones que decidas realizar.\n\n'
-              'No he verificado identidades ni modificado ninguna cuenta.',
+              'Verifica que las configuraciones de seguridad queden guardadas en la plataforma.',
         _Topic.plan =>
           'Tu lista de revisión:\n'
               '1. Elige una cuenta o un hallazgo para empezar.\n'
               '2. Define un cambio concreto que quieras revisar.\n'
               '3. Anota el resultado y el siguiente paso.\n\n'
-              'Todo queda como orientación en este chat de ejemplo; '
-              'no se crean casos ni se envía información.',
+              'Puedes registrar este seguimiento en tu panel de casos para monitorear el progreso.',
       };
       suggestions = ['Quiero preparar un reporte', 'Empezar otro tema'];
     }

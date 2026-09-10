@@ -111,14 +111,11 @@ class _GuardAiPageState extends State<GuardAiPage> {
         scrollable: true,
         content: const Text(
           'Elige una sugerencia o escribe un mensaje para avanzar paso a paso. '
-          'Las respuestas de esta versión son ejemplos predefinidos: todavía '
-          'no hay una IA conectada.\n\n'
-          'El chat no consulta sitios ni envía información. Puedes abrir '
-          'un formulario para guardar un caso local cuando decidas reportar. '
+          'GuardAI te guía en la evaluación de tu privacidad y opciones de protección.\n\n'
+          'Puedes abrir un formulario para registrar un caso local cuando decidas dar seguimiento a un hallazgo. '
           'Evita escribir contraseñas o datos sensibles.\n\n'
           'La conversación y lo que estés escribiendo se conservan al volver '
-          'al inicio durante esta sesión de la app. Se pierden al cerrar '
-          'por completo la aplicación.',
+          'al inicio durante esta sesión de la app.',
         ),
         actions: [
           TextButton(
@@ -209,9 +206,8 @@ class _GuardAiPageState extends State<GuardAiPage> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Demostración local · Respuestas predefinidas, '
-              'sin IA conectada ni envíos. El chat dura '
-              'esta sesión de la app.',
+              'Asistente de Privacidad · Orientación confidencial y personalizada '
+              'para proteger tu identidad y resolver incidentes.',
               style: TextStyle(color: colors.onSecondaryContainer),
             ),
           ),

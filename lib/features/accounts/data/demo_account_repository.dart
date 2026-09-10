@@ -13,7 +13,7 @@ class DemoAccountRepository implements AccountRepository {
     LocalAccount(
       id: 'demo-personal',
       name: 'Cuenta personal',
-      email: 'pedro.demo@gmail.com',
+      email: 'pedro.gomez@gmail.com',
       isDemo: true,
     ),
   ];

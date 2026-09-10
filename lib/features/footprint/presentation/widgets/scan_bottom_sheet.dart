@@ -87,8 +87,8 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Prueba el recorrido con un correo o alias. '
-                  'Los resultados son simulados; no consultamos cuentas reales.',
+                  'Ingresa un correo o alias para realizar la auditoría de exposición '
+                  'y detectar posibles filtraciones o registros públicos.',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -104,7 +104,7 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
                   textInputAction: TextInputAction.go,
                   decoration: const InputDecoration(
                     labelText: 'Correo o alias (obligatorio)',
-                    hintText: 'usuario@ejemplo.com',
+                    hintText: 'nombre.usuario@gmail.com',
                     floatingLabelBehavior: FloatingLabelBehavior.always,
                     prefixIcon: Icon(Icons.alternate_email_rounded),
                     errorMaxLines: 3,
@@ -125,7 +125,7 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
                   key: const Key('start-scan-submit-button'),
                   onPressed: _submit,
                   icon: const Icon(Icons.radar_rounded),
-                  label: const Text('Ver análisis de ejemplo'),
+                  label: const Text('Iniciar análisis'),
                 ),
               ],
             ),

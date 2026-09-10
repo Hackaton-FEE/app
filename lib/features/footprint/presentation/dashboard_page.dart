@@ -115,7 +115,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (widget.footprintController.isLoading) return;
     final currentTarget =
         widget.footprintController.profile?.targetIdentity ??
-        'usuario@ejemplo.com';
+        widget.account.email;
 
     showModalBottomSheet<void>(
       context: context,

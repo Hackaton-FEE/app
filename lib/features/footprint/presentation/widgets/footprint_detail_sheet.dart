@@ -36,7 +36,7 @@ class FootprintDetailSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Ejemplo de hallazgo',
+                      'Detalle del hallazgo',
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
@@ -87,7 +87,7 @@ class FootprintDetailSheet extends StatelessWidget {
               const SizedBox(height: 22),
               Text(item.description, style: theme.textTheme.bodyLarge),
               const SizedBox(height: 24),
-              const _SectionTitle(title: 'Datos del ejemplo'),
+              const _SectionTitle(title: 'Datos expuestos'),
               const SizedBox(height: 8),
               ...item.exposedData.map(
                 (data) => Padding(

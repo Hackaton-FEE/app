@@ -11,7 +11,7 @@ void main() {
 
       expect(accounts, hasLength(1));
       expect(accounts.map((account) => account.name), ['Cuenta personal']);
-      expect(accounts.single.email == 'pedro.demo@gmail.com', isTrue);
+      expect(accounts.single.email == 'pedro.gomez@gmail.com', isTrue);
       expect(() => accounts.clear(), throwsUnsupportedError);
     },
   );
@@ -53,7 +53,7 @@ void main() {
       await expectLater(
         repository.addAccount(
           name: 'Nombre distinto',
-          email: ' PEDRO.DEMO@GMAIL.COM ',
+          email: ' PEDRO.GOMEZ@GMAIL.COM ',
         ),
         throwsA(
           isA<AccountRepositoryException>().having(

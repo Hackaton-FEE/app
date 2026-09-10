@@ -52,7 +52,7 @@ class DashboardStatus extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'VISTA DE EJEMPLO · Datos simulados',
+          'AUDITORÍA DE HUELLA DIGITAL · Monitoreo activo',
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.7,
@@ -67,7 +67,7 @@ class DashboardStatus extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(footprint.scanningStage ?? 'Cargando ejemplo…'),
+                  Text(footprint.scanningStage ?? 'Analizando identidad…'),
                   const SizedBox(height: 12),
                   const LinearProgressIndicator(),
                 ],

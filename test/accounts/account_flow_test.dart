@@ -105,14 +105,14 @@ void main() {
     (tester) async {
       accounts = DemoAccountRepository();
       await start(tester);
-      expect(find.text('pedro.demo@gmail.com'), findsOneWidget);
+      expect(find.text('pedro.gomez@gmail.com'), findsOneWidget);
       expect(find.byKey(const Key('account-demo-other')), findsNothing);
       expect(find.byKey(const Key('account-add-existing')), findsNothing);
       expect(find.byKey(const Key('account-create')), findsNothing);
       expect(find.byTooltip('Ayuda de uso'), findsNothing);
       expect(find.text('Así funciona'), findsNothing);
       await select(tester, (await accounts.listAccounts()).single);
-      expect(find.text('pedro.demo@gmail.com'), findsOneWidget);
+      expect(find.text('pedro.gomez@gmail.com'), findsOneWidget);
       await returnToPicker(tester);
       expect(await accounts.listAccounts(), hasLength(1));
     },

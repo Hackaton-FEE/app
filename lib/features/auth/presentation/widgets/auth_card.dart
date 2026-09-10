@@ -145,7 +145,7 @@ class _AuthCardState extends State<AuthCard> {
             enabled: !busy,
             decoration: const InputDecoration(
               labelText: 'Correo electrónico',
-              hintText: 'ejemplo@correo.com',
+              hintText: 'usuario@correo.com',
               prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
             validator: (value) {
@@ -232,7 +232,7 @@ class _AuthCardState extends State<AuthCard> {
             enabled: !busy,
             decoration: const InputDecoration(
               labelText: 'Correo electrónico',
-              hintText: 'ejemplo@correo.com',
+              hintText: 'usuario@correo.com',
               prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
             validator: (value) {
