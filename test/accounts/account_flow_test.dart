@@ -183,6 +183,12 @@ void main() {
     await tester.ensureVisible(input);
     await tester.enterText(input, message);
     await revealAndTap(tester, find.byKey(const Key('guard-ai-send')));
+    await tester.scrollUntilVisible(
+      find.text(message),
+      -160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
     expect(find.text(message), findsOneWidget);
     await tester.ensureVisible(input);
     await tester.enterText(input, draft);

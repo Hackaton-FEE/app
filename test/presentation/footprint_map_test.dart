@@ -1,3 +1,4 @@
+import 'package:fee_app/app/theme.dart';
 import 'package:fee_app/features/footprint/domain/footprint_item.dart';
 import 'package:fee_app/features/footprint/presentation/widgets/footprint_map.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
+              theme: buildAppTheme(),
               home: MediaQuery(
                 data: MediaQueryData(
                   size: size,

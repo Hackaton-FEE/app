@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../app/palette.dart';
+
 /// Persistent feedback that does not take keyboard focus or read case content.
 class StatusNotice extends StatelessWidget {
-  const StatusNotice({required this.message, this.isError = false, super.key});
+  const StatusNotice({
+    required this.message,
+    this.isError = false,
+    this.isSuccess = false,
+    super.key,
+  });
 
   final String message;
   final bool isError;
+  final bool isSuccess;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +23,16 @@ class StatusNotice extends StatelessWidget {
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isError ? colors.errorContainer : colors.secondaryContainer,
+          color: isError
+              ? AppPalette.errorContainer
+              : isSuccess
+              ? AppPalette.successContainer
+              : colors.primaryContainer,
+          border: isError || isSuccess
+              ? Border.all(
+                  color: isError ? AppPalette.error : AppPalette.success,
+                )
+              : null,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
@@ -23,9 +40,9 @@ class StatusNotice extends StatelessWidget {
           child: Text(
             message,
             style: TextStyle(
-              color: isError
-                  ? colors.onErrorContainer
-                  : colors.onSecondaryContainer,
+              color: isError || isSuccess
+                  ? AppPalette.textPrimary
+                  : colors.onPrimaryContainer,
             ),
           ),
         ),

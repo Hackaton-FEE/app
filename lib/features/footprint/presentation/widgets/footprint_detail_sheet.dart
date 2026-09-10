@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/palette.dart';
 import '../../domain/footprint_item.dart';
 import '../footprint_labels.dart';
 
@@ -66,10 +67,21 @@ class FootprintDetailSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                item.riskLevel.priorityLabel,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: item.riskLevel.color,
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: item.riskLevel.containerColor,
+                  border: Border.all(color: item.riskLevel.color),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  item.riskLevel.priorityLabel,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: AppPalette.textPrimary,
+                  ),
                 ),
               ),
               const SizedBox(height: 22),

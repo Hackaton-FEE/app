@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/palette.dart';
 import '../../../shared/presentation/status_notice.dart';
 import '../../help/presentation/help_button.dart';
 import '../domain/case_input.dart';
@@ -107,6 +108,10 @@ class _CaseFormPageState extends State<CaseFormPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              backgroundColor: AppPalette.errorContainer,
+              foregroundColor: AppPalette.textPrimary,
+            ),
             child: const Text('Descartar cambios'),
           ),
           FilledButton(
@@ -272,10 +277,15 @@ class _CaseFormPageState extends State<CaseFormPage> {
                           FilledButton.icon(
                             key: const Key('save-case'),
                             onPressed: state.canSave ? _save : null,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppPalette.success,
+                              foregroundColor: AppPalette.black,
+                            ),
                             icon: saving
                                 ? const SizedBox.square(
                                     dimension: 18,
                                     child: CircularProgressIndicator(
+                                      color: AppPalette.black,
                                       strokeWidth: 2,
                                       semanticsLabel: 'Guardando caso',
                                     ),

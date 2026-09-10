@@ -67,6 +67,24 @@ Esta comprobación manual completa la prueba de integración. Instala una vez el
 
 No desinstales, reinstales ni uses **Borrar almacenamiento/datos** entre los pasos: esas acciones no simulan reinicio y pueden eliminar los registros. Hot reload tampoco sustituye esta comprobación. Opcionalmente reinicia el dispositivo manteniendo la instalación para verificar ese escenario por separado.
 
+## Rendimiento del dashboard
+
+La prueba de widgets `test/footprint/footprint_action_bar_test.dart` verifica que desplazar la lista no reconstruya ni mueva sus botones y que el estado de escaneo siga actualizándose. No mide FPS ni tiempo de GPU.
+
+Para medir en un dispositivo físico, usa `profile`, no el APK `debug`. El benchmark inicia cuentas y casos ficticios en memoria, hace una pasada de calentamiento y cuatro recorridos de ida y vuelta con el mismo desplazamiento programado. No lee ni modifica los casos persistidos. La instalación de prueba reemplaza temporalmente el ejecutable de la app, no su almacenamiento.
+
+```sh
+flutter drive --profile --no-dds -d <device-id> \
+  --driver=test_driver/dashboard_performance.dart \
+  --target=integration_test/dashboard_scroll_performance_test.dart
+```
+
+El resultado queda en `build/performance/dashboard_scroll.json`. Conserva copias separadas antes/después con el mismo dispositivo y ajustes. `frame_build_times` y `frame_rasterizer_times` están en microsegundos: contrasta cada etapa con aproximadamente **8,333 µs para 120 Hz**, no solo con los contadores de presupuesto predeterminados del resumen. La frecuencia indicada por `display_refresh_rate_hz` no demuestra por sí sola 120 FPS sostenidos. Estos tiempos tampoco certifican la latencia táctil ni el comportamiento de todos los dispositivos. Registra modo, frecuencia, cantidad de frames y percentiles; no fuerces ajustes globales del teléfono.
+
+Después de medir, vuelve a instalar/ejecutar la app normal con `flutter run --profile -d <device-id>` para no dejar el benchmark como pantalla de inicio. No desinstales ni borres datos. iOS requiere su propia medición en macOS con un iPhone compatible.
+
+Medición del 10 de septiembre de 2026 en Pixel 10 Pro XL, Android 17, `profile`, pantalla reportada a 120 Hz: 1,669 frames, media de construcción 0.624 ms y de rasterizado 2.980 ms; percentil 99 de 1.441 ms y 7.750 ms respectivamente. Ninguna construcción y 10 rasterizados excedieron 8.333 ms (máximo de rasterizado 19.255 ms). Es una ejecución sintética posterior al cambio, no una comparación A/B ni una garantía de 120 FPS sostenidos. La medición previa no concluyó y no se utiliza como evidencia. No se midió iOS.
+
 ## Fallos y evidencia del PR
 
 Los dobles de prueba permiten simular almacenamiento inaccesible, escritura fallida y JSON inválido o de versión desconocida sin dañar datos del teléfono. Verifica que no se anuncie éxito ni se sustituya el contenido por una colección vacía. Para cambios de validación de texto, incluye emojis y caracteres combinados dentro de los límites visibles, y una entrada que exceda la cota independiente de 24 KiB de metadatos UTF-8. No introduzcas corrupción en un dispositivo con datos de trabajo.

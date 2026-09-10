@@ -9,10 +9,10 @@ import '../../cases/presentation/case_details_page.dart';
 import '../../cases/presentation/case_form_page.dart';
 import '../../cases/presentation/cases_controller.dart';
 import '../../cases/presentation/cases_page.dart';
-import '../../help/presentation/help_button.dart';
 import '../../help/presentation/help_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
+import 'widgets/dashboard_help_menu.dart';
 import 'widgets/footprint_action_bar.dart';
 import 'widgets/footprint_explorer.dart';
 import 'widgets/profile_drawer.dart';
@@ -50,10 +50,9 @@ class _DashboardPageState extends State<DashboardPage> {
     super.dispose();
   }
 
-  void _openHelp() {
-    Navigator.of(context)
-        .push<void>(MaterialPageRoute(builder: (_) => const HelpPage()));
-  }
+  void _openHelp() =>
+      Navigator.of(context)
+          .push<void>(MaterialPageRoute(builder: (_) => const HelpPage()));
 
   @override
   void initState() {
@@ -100,7 +99,6 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
     );
-
     if (id != null && mounted) {
       Navigator.of(context).push<void>(
         MaterialPageRoute(
@@ -111,21 +109,20 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  void _openGuardAi() {
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => GuardAiPage(controller: widget.guardAiController),
+  void _openGuardAi() => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => GuardAiPage(
+        controller: widget.guardAiController,
+        casesController: widget.casesController,
       ),
-    );
-  }
+    ),
+  );
 
-  void _openAllCases() {
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (_) => CasesPage(controller: widget.casesController),
-      ),
-    );
-  }
+  void _openAllCases() => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => CasesPage(controller: widget.casesController),
+    ),
+  );
 
   void _showFindingDetail(FootprintItem item) {
     showModalBottomSheet<void>(
@@ -174,19 +171,24 @@ class _DashboardPageState extends State<DashboardPage> {
                 icon: const Icon(Icons.menu_rounded),
               ),
             ),
-            actions: const [HelpButton(), SizedBox(width: 8)],
+            actions: [
+              DashboardHelpMenu(
+                onHelp: _openHelp,
+                onScan: _openScanSheet,
+                onGuardAi: _openGuardAi,
+                onCases: _openAllCases,
+              ),
+            ],
           ),
           drawer: ProfileDrawer(
             identity: widget.account.email,
             accountName: widget.account.name,
             onManageAccounts: widget.onManageAccounts,
             caseCount: widget.casesController.state.cases.length,
-            onScan: _openScanSheet,
             onViewCases: _openAllCases,
             onHelp: _openHelp,
           ),
           bottomNavigationBar: FootprintActionBar(
-            scrollController: _scrollController,
             scanning: footprint.isLoading,
             onScan: _openScanSheet,
             onGuardAi: _openGuardAi,
@@ -213,113 +215,115 @@ class _DashboardPageState extends State<DashboardPage> {
                       sliver: SliverMainAxisGroup(
                         slivers: [
                           SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Semantics(
-                                  header: true,
-                                  child: Text(
-                                    'Tu huella digital',
-                                    style: theme.textTheme.headlineLarge
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: -1.2,
-                                        ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Entiende qué compartes. Decide qué cambiar.',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.person_outline_rounded,
-                                      size: 18,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        profile?.targetIdentity ??
-                                            'Sin identidad evaluada',
-                                        key: const Key(
-                                          'dashboard-target-identity',
-                                        ),
-                                        style: theme.textTheme.bodyMedium,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'VISTA DE EJEMPLO · Datos simulados',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    letterSpacing: 0.7,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                if (footprint.isLoading)
+                            child: RepaintBoundary(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                                   Semantics(
-                                    liveRegion: true,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 20,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            footprint.scanningStage ??
-                                                'Cargando ejemplo…',
+                                    header: true,
+                                    child: Text(
+                                      'Tu huella digital',
+                                      style: theme.textTheme.headlineLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: -1.2,
                                           ),
-                                          const SizedBox(height: 12),
-                                          const LinearProgressIndicator(),
-                                        ],
-                                      ),
                                     ),
                                   ),
-                                if (footprint.error != null)
-                                  Semantics(
-                                    liveRegion: true,
-                                    child: Card(
-                                      color: theme.colorScheme.errorContainer,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Entiende qué compartes. Decide qué cambiar.',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person_outline_rounded,
+                                        size: 18,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          profile?.targetIdentity ??
+                                              'Sin identidad evaluada',
+                                          key: const Key(
+                                            'dashboard-target-identity',
+                                          ),
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'VISTA DE EJEMPLO · Datos simulados',
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      letterSpacing: 0.7,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  if (footprint.isLoading)
+                                    Semantics(
+                                      liveRegion: true,
                                       child: Padding(
-                                        padding: const EdgeInsets.all(16),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 20,
+                                        ),
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(footprint.error!),
-                                            TextButton(
-                                              onPressed: footprint.isLoading
-                                                  ? null
-                                                  : footprint.retry,
-                                              child: const Text('Reintentar'),
+                                            Text(
+                                              footprint.scanningStage ??
+                                                  'Cargando ejemplo…',
                                             ),
+                                            const SizedBox(height: 12),
+                                            const LinearProgressIndicator(),
                                           ],
                                         ),
                                       ),
                                     ),
-                                  ),
-                                if (profile != null) ...[
-                                  ExposureGauge(profile: profile),
-                                  const SizedBox(height: 20),
-                                  RecommendationCard(
-                                    casesController: widget.casesController,
-                                    featuredItem: featuredItem,
-                                    onGuardAi: _openGuardAi,
-                                    onViewAllCases: _openAllCases,
-                                  ),
-                                  const SizedBox(height: 28),
+                                  if (footprint.error != null)
+                                    Semantics(
+                                      liveRegion: true,
+                                      child: Card(
+                                        color: theme.colorScheme.errorContainer,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(footprint.error!),
+                                              TextButton(
+                                                onPressed: footprint.isLoading
+                                                    ? null
+                                                    : footprint.retry,
+                                                child: const Text('Reintentar'),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  if (profile != null) ...[
+                                    ExposureGauge(profile: profile),
+                                    const SizedBox(height: 20),
+                                    RecommendationCard(
+                                      casesController: widget.casesController,
+                                      featuredItem: featuredItem,
+                                      onGuardAi: _openGuardAi,
+                                      onViewAllCases: _openAllCases,
+                                    ),
+                                    const SizedBox(height: 28),
+                                  ],
                                 ],
-                              ],
+                              ),
                             ),
                           ),
                           if (profile != null)

@@ -56,90 +56,92 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
     return SliverMainAxisGroup(
       slivers: [
         SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  'Explora tu huella',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
+          child: RepaintBoundary(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Semantics(
+                  header: true,
+                  child: Text(
+                    'Explora tu huella',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.4,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(
-                      value: false,
-                      label: Text('Lista'),
-                      icon: Icon(Icons.view_list_outlined),
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      label: Text('Mapa'),
-                      icon: Icon(Icons.hub_outlined),
-                    ),
-                  ],
-                  selected: {_showMap},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (value) =>
-                      setState(() => _showMap = value.first),
-                  style: SegmentedButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                ),
-              ),
-              if (_showMap) ...[
-                const SizedBox(height: 16),
-                FootprintMap(
-                  items: widget.profile.items,
-                  onCategorySelected: (category) {
-                    if (widget.selectedCategory != category) {
-                      widget.onCategorySelected(category);
-                    }
-                    setState(() => _showMap = false);
-                  },
-                ),
-              ],
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final (key, label, category) in _filters)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          key: Key('filter-$key'),
-                          label: Text(
-                            '$label ${category == null ? widget.profile.items.length : counts[category] ?? 0}',
-                          ),
-                          selected: widget.selectedCategory == category,
-                          onSelected: (_) =>
-                              widget.onCategorySelected(category),
-                        ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SegmentedButton<bool>(
+                    segments: const [
+                      ButtonSegment(
+                        value: false,
+                        label: Text('Lista'),
+                        icon: Icon(Icons.view_list_outlined),
                       ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Semantics(
-                liveRegion: true,
-                child: Text(
-                  '${items.length} hallazgos de ejemplo',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                      ButtonSegment(
+                        value: true,
+                        label: Text('Mapa'),
+                        icon: Icon(Icons.hub_outlined),
+                      ),
+                    ],
+                    selected: {_showMap},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (value) =>
+                        setState(() => _showMap = value.first),
+                    style: SegmentedButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
+                if (_showMap) ...[
+                  const SizedBox(height: 16),
+                  FootprintMap(
+                    items: widget.profile.items,
+                    onCategorySelected: (category) {
+                      if (widget.selectedCategory != category) {
+                        widget.onCategorySelected(category);
+                      }
+                      setState(() => _showMap = false);
+                    },
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final (key, label, category) in _filters)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            key: Key('filter-$key'),
+                            label: Text(
+                              '$label ${category == null ? widget.profile.items.length : counts[category] ?? 0}',
+                            ),
+                            selected: widget.selectedCategory == category,
+                            onSelected: (_) =>
+                                widget.onCategorySelected(category),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    '${items.length} hallazgos de ejemplo',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
         if (items.isEmpty)

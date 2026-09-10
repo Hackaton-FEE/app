@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/palette.dart';
 import '../../domain/footprint_item.dart';
 import '../footprint_labels.dart';
 
@@ -68,10 +69,21 @@ class FindingCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
-                      Text(
-                        item.riskLevel.priorityLabel,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: item.riskLevel.color,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: item.riskLevel.containerColor,
+                          border: Border.all(color: item.riskLevel.color),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item.riskLevel.priorityLabel,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppPalette.textPrimary,
+                          ),
                         ),
                       ),
                     ],

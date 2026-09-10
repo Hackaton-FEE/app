@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/palette.dart';
 import '../../domain/footprint_item.dart';
 import '../footprint_labels.dart';
 import '../../domain/footprint_profile.dart';
@@ -21,7 +22,7 @@ class ExposureGauge extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colors.primaryContainer.withValues(alpha: 0.45),
+        color: colors.primaryContainer,
         borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
@@ -40,7 +41,7 @@ class ExposureGauge extends StatelessWidget {
           Text(
             'DEMO · Muestra orientativa',
             style: theme.textTheme.labelMedium?.copyWith(
-              color: colors.onSurfaceVariant,
+              color: AppPalette.olive,
             ),
           ),
           const SizedBox(height: 18),
@@ -66,7 +67,7 @@ class ExposureGauge extends StatelessWidget {
                   child: Text(
                     '/100',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: colors.onSurfaceVariant,
+                      color: AppPalette.olive,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -89,7 +90,7 @@ class ExposureGauge extends StatelessWidget {
           Text(
             risk.exposureLabel,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: riskColor,
+              color: AppPalette.deepOlive,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -97,7 +98,7 @@ class ExposureGauge extends StatelessWidget {
           Text(
             'Empieza por los hallazgos de mayor prioridad.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
+              color: AppPalette.olive,
             ),
           ),
           const SizedBox(height: 20),
@@ -141,10 +142,18 @@ class _PriorityCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      '$count $label',
-      semanticsLabel: '$count hallazgos de prioridad $label',
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(color: color),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ExcludeSemantics(child: Icon(Icons.circle, color: color, size: 8)),
+        const SizedBox(width: 6),
+        Text(
+          '$count $label',
+          semanticsLabel: '$count hallazgos de prioridad $label',
+          style: Theme.of(context).textTheme.labelLarge
+              ?.copyWith(color: AppPalette.deepOlive),
+        ),
+      ],
     );
   }
 }

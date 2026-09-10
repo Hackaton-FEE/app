@@ -7,7 +7,6 @@ class ProfileDrawer extends StatelessWidget {
   const ProfileDrawer({
     required this.identity,
     required this.caseCount,
-    required this.onScan,
     required this.onViewCases,
     required this.onHelp,
     this.accountName,
@@ -19,7 +18,6 @@ class ProfileDrawer extends StatelessWidget {
   final String? accountName;
   final VoidCallback? onManageAccounts;
   final int caseCount;
-  final VoidCallback onScan;
   final VoidCallback onViewCases;
   final VoidCallback onHelp;
 
@@ -27,13 +25,15 @@ class ProfileDrawer extends StatelessWidget {
     Scaffold.of(context).closeDrawer();
     switch (index) {
       case 1:
-        onScan();
-      case 2:
         onViewCases();
+      case 2:
+        if (onManageAccounts != null) {
+          onManageAccounts!();
+        } else {
+          onHelp();
+        }
       case 3:
         onHelp();
-      case 4:
-        onManageAccounts?.call();
     }
   }
 
@@ -56,10 +56,9 @@ class ProfileDrawer extends StatelessWidget {
     );
     final labels = [
       'Mi huella',
-      'Cambiar identidad',
       'Casos del dispositivo ($caseCount)',
+      if (onManageAccounts != null) 'Cerrar sesión',
       'Ayuda',
-      if (onManageAccounts != null) 'Cambiar de cuenta',
     ];
 
     // NavigationDrawer destinations have a fixed height and an unconstrained
@@ -174,26 +173,21 @@ class ProfileDrawer extends StatelessWidget {
               label: destinationLabel(0),
             ),
             NavigationDrawerDestination(
-              key: const Key('profile-change-identity'),
-              icon: const Icon(Icons.manage_search_rounded),
-              label: destinationLabel(1),
-            ),
-            NavigationDrawerDestination(
               key: const Key('profile-cases'),
               icon: const Icon(Icons.folder_outlined),
-              label: destinationLabel(2),
-            ),
-            NavigationDrawerDestination(
-              key: const Key('profile-help'),
-              icon: const Icon(Icons.help_outline_rounded),
-              label: destinationLabel(3),
+              label: destinationLabel(1),
             ),
             if (onManageAccounts != null)
               NavigationDrawerDestination(
                 key: const Key('profile-accounts'),
-                icon: const Icon(Icons.switch_account_outlined),
-                label: destinationLabel(4),
+                icon: const Icon(Icons.logout_rounded),
+                label: destinationLabel(2),
               ),
+            NavigationDrawerDestination(
+              key: const Key('profile-help'),
+              icon: const Icon(Icons.help_outline_rounded),
+              label: destinationLabel(labels.length - 1),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: Text(

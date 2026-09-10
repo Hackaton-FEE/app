@@ -132,76 +132,66 @@ void main() {
     );
   }
 
-  testWidgets(
-    'profile can change identity with 200 percent text and keyboard',
-    (tester) async {
-      final semantics = tester.ensureSemantics();
-      try {
-        await start(tester, size: const Size(320, 640), textScale: 2);
-        await tester.tap(find.byKey(const Key('dashboard-profile-button')));
-        await tester.pumpAndSettle();
-        expect(find.byType(ProfileDrawer), findsOneWidget);
-        expect(tester.takeException(), isNull);
-        await checkGuidelines(tester);
+  testWidgets('scan remains accessible with 200 percent text and keyboard', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await start(tester, size: const Size(320, 640), textScale: 2);
+      await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProfileDrawer), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await checkGuidelines(tester);
 
-        final changeIdentity = find.byKey(const Key('profile-change-identity'));
-        await reveal(
-          tester,
-          changeIdentity,
-          scrollable: find.descendant(
-            of: find.byType(NavigationDrawer),
-            matching: find.byType(Scrollable),
-          ),
-        );
-        await tester.tap(changeIdentity);
-        await tester.pumpAndSettle();
-        expect(find.byType(ScanBottomSheet), findsOneWidget);
-        expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('profile-change-identity')), findsNothing);
+      await tester.tap(find.byTooltip('Cerrar perfil'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dashboard-scan-fab')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ScanBottomSheet), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-        tester.view.viewInsets = const FakeViewPadding(bottom: 260);
-        addTearDown(tester.view.resetViewInsets);
-        final field = find.byKey(const Key('scan-identity-field'));
-        await tester.enterText(field, 'identidad.ficticia@example.invalid');
-        await tester.pumpAndSettle();
-        expect(tester.takeException(), isNull);
-        final input = tester
-            .getSemantics(
-              find.descendant(of: field, matching: find.byType(EditableText)),
+      tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+      addTearDown(tester.view.resetViewInsets);
+      final field = find.byKey(const Key('scan-identity-field'));
+      await tester.enterText(field, 'identidad.ficticia@example.invalid');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      final input = tester
+          .getSemantics(
+            find.descendant(of: field, matching: find.byType(EditableText)),
+          )
+          .getSemanticsData();
+      expect(input.flagsCollection.isTextField, isTrue);
+      expect(input.label, contains('Correo o alias'));
+      expect(input.value, 'identidad.ficticia@example.invalid');
+
+      final submit = find.byKey(const Key('start-scan-submit-button'));
+      await reveal(
+        tester,
+        submit,
+        scrollable: find
+            .descendant(
+              of: find.byType(ScanBottomSheet),
+              matching: find.byType(Scrollable),
             )
-            .getSemanticsData();
-        expect(input.flagsCollection.isTextField, isTrue);
-        expect(input.label, contains('Correo o alias'));
-        expect(input.value, 'identidad.ficticia@example.invalid');
-
-        final submit = find.byKey(const Key('start-scan-submit-button'));
-        await reveal(
-          tester,
-          submit,
-          scrollable: find
-              .descendant(
-                of: find.byType(ScanBottomSheet),
-                matching: find.byType(Scrollable),
-              )
-              .first,
-        );
-        expect(tester.takeException(), isNull);
-        expect(tester.getRect(submit).bottom, lessThanOrEqualTo(640 - 260));
-        await checkGuidelines(tester);
-        await tester.tap(submit);
-        tester.view.resetViewInsets();
-        await tester.pumpAndSettle();
-        expect(find.byType(ScanBottomSheet), findsNothing);
-        await reveal(
-          tester,
-          find.byKey(const Key('dashboard-target-identity')),
-        );
-        expect(find.text('identidad.ficticia@example.invalid'), findsOneWidget);
-        expect(tester.takeException(), isNull);
-      } finally {
-        semantics.dispose();
-      }
-    },
-  );
+            .first,
+      );
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(submit).bottom, lessThanOrEqualTo(640 - 260));
+      await checkGuidelines(tester);
+      await tester.tap(submit);
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+      expect(find.byType(ScanBottomSheet), findsNothing);
+      await reveal(tester, find.byKey(const Key('dashboard-target-identity')));
+      expect(find.text('identidad.ficticia@example.invalid'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    } finally {
+      semantics.dispose();
+    }
+  });
 
   testWidgets('bottom actions avoid lateral system insets in landscape', (
     tester,

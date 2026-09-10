@@ -1,19 +1,16 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 /// A shared bottom surface: the feed scrolls behind its fading edge and pills.
 class FootprintActionBar extends StatelessWidget {
   const FootprintActionBar({
-    required this.scrollController,
     required this.onScan,
     required this.onGuardAi,
     this.scanning = false,
     super.key,
   });
 
-  final ScrollController scrollController;
   final VoidCallback onScan;
   final VoidCallback onGuardAi;
   final bool scanning;
@@ -48,91 +45,80 @@ class FootprintActionBar extends StatelessWidget {
     final theme = Theme.of(context);
     final largeText = MediaQuery.textScalerOf(context).scale(14) > 20;
     final highContrast = MediaQuery.highContrastOf(context);
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final insets = MediaQuery.viewPaddingOf(context);
     final bottom = insets.bottom;
     final height = contentHeight(context);
 
-    return AnimatedBuilder(
-      animation: scrollController,
-      builder: (context, _) {
-        final progress = scrollController.hasClients
-            ? (scrollController.offset / 100).clamp(0.0, 1.0)
-            : 0.0;
-        return SizedBox(
-          key: const Key('dashboard-action-bar'),
-          height: height + bottom,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0, 0.45, 1],
-                      colors: [
-                        theme.scaffoldBackgroundColor.withValues(alpha: 0),
-                        theme.scaffoldBackgroundColor.withValues(alpha: 0.85),
-                        theme.scaffoldBackgroundColor,
-                      ],
-                    ),
+    return RepaintBoundary(
+      child: SizedBox(
+        key: const Key('dashboard-action-bar'),
+        height: height + bottom,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0, 0.45, 1],
+                    colors: [
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0),
+                      theme.scaffoldBackgroundColor.withValues(alpha: 0.85),
+                      theme.scaffoldBackgroundColor,
+                    ],
                   ),
                 ),
               ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    20 + insets.left,
-                    24,
-                    20 + insets.right,
-                    bottom + 12,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Transform.translate(
-                      offset: Offset(0, reduceMotion ? 0 : progress * -3),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _ActionPill(
-                              actionKey: const Key('dashboard-scan-fab'),
-                              label: scanning ? 'Analizando' : 'Escanear',
-                              icon: Icons.radar_rounded,
-                              onPressed: scanning ? null : onScan,
-                              color: theme.colorScheme.surface.withValues(
-                                alpha: highContrast ? 1 : 0.72 + progress * 0.2,
-                              ),
-                              foreground: theme.colorScheme.onSurface,
-                              largeText: largeText,
-                              blur: !highContrast,
-                            ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20 + insets.left,
+                  24,
+                  20 + insets.right,
+                  bottom + 12,
+                ),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _ActionPill(
+                          actionKey: const Key('dashboard-scan-fab'),
+                          label: scanning ? 'Analizando' : 'Escanear',
+                          icon: Icons.radar_rounded,
+                          onPressed: scanning ? null : onScan,
+                          color: theme.colorScheme.surface.withValues(
+                            alpha: highContrast ? 1 : 0.94,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _ActionPill(
-                              actionKey: const Key('dashboard-guardai-fab'),
-                              label: 'GuardAI',
-                              icon: Icons.auto_awesome_outlined,
-                              onPressed: onGuardAi,
-                              color: theme.colorScheme.primary,
-                              foreground: theme.colorScheme.onPrimary,
-                              largeText: largeText,
-                            ),
-                          ),
-                        ],
+                          foreground: theme.colorScheme.onSurface,
+                          largeText: largeText,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionPill(
+                          actionKey: const Key('dashboard-guardai-fab'),
+                          label: 'GuardAI',
+                          icon: Icons.auto_awesome_outlined,
+                          onPressed: onGuardAi,
+                          color: theme.colorScheme.primary,
+                          foreground: theme.colorScheme.onPrimary,
+                          largeText: largeText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -146,7 +132,6 @@ class _ActionPill extends StatelessWidget {
     required this.color,
     required this.foreground,
     required this.largeText,
-    this.blur = false,
   });
 
   final Key actionKey;
@@ -156,7 +141,6 @@ class _ActionPill extends StatelessWidget {
   final Color color;
   final Color foreground;
   final bool largeText;
-  final bool blur;
 
   @override
   Widget build(BuildContext context) {
@@ -188,29 +172,22 @@ class _ActionPill extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(largeText ? 28 : 32),
-        child: BackdropFilter(
-          enabled: blur,
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: TextButton(
-            key: actionKey,
-            onPressed: onPressed,
-            style: TextButton.styleFrom(
-              foregroundColor: foreground,
-              backgroundColor: color,
-              disabledBackgroundColor: color,
-              disabledForegroundColor: foreground,
-              minimumSize: Size(double.infinity, largeText ? 96 : 64),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              textStyle: FootprintActionBar._labelStyle(context),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(largeText ? 28 : 32),
-              ),
-            ),
-            child: content,
+      child: TextButton(
+        key: actionKey,
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          foregroundColor: foreground,
+          backgroundColor: color,
+          disabledBackgroundColor: color,
+          disabledForegroundColor: foreground,
+          minimumSize: Size(double.infinity, largeText ? 96 : 64),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          textStyle: FootprintActionBar._labelStyle(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(largeText ? 28 : 32),
           ),
         ),
+        child: content,
       ),
     );
   }

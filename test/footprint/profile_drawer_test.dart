@@ -23,7 +23,7 @@ void main() {
           drawer: ProfileDrawer(
             identity: null,
             caseCount: 2,
-            onScan: () => recordAction('scan'),
+            onManageAccounts: () => recordAction('logout'),
             onViewCases: () => recordAction('cases'),
             onHelp: () => recordAction('help'),
           ),
@@ -32,11 +32,7 @@ void main() {
       ),
     );
 
-    for (final key in [
-      'profile-change-identity',
-      'profile-cases',
-      'profile-help',
-    ]) {
+    for (final key in ['profile-cases', 'profile-accounts', 'profile-help']) {
       scaffoldKey.currentState!.openDrawer();
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byKey(Key(key)));
@@ -44,14 +40,20 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Dashboard'), findsOneWidget);
     }
-    expect(actions, ['scan', 'cases', 'help']);
+    expect(actions, ['cases', 'logout', 'help']);
 
     scaffoldKey.currentState!.openDrawer();
     await tester.pumpAndSettle();
+    expect(find.text('Cambiar identidad'), findsNothing);
+    expect(find.text('Cerrar sesión'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Ayuda')).dy,
+      greaterThan(tester.getTopLeft(find.text('Cerrar sesión')).dy),
+    );
     await tester.tap(find.text('Mi huella'));
     await tester.pumpAndSettle();
     expect(scaffoldKey.currentState!.isDrawerOpen, isFalse);
-    expect(actions, ['scan', 'cases', 'help']);
+    expect(actions, ['cases', 'logout', 'help']);
   });
 
   testWidgets('supports a long identity at 320 px and 200 percent text', (
@@ -77,7 +79,6 @@ void main() {
           drawer: ProfileDrawer(
             identity: identity,
             caseCount: 123,
-            onScan: () {},
             onViewCases: () {},
             onHelp: () => helpOpened = true,
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/palette.dart';
 import '../../../shared/presentation/status_notice.dart';
 import '../../help/presentation/help_button.dart';
 import '../domain/privacy_case.dart';
@@ -87,6 +88,10 @@ class _CaseDetailsPageState extends State<CaseDetailsPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppPalette.error,
+              foregroundColor: AppPalette.black,
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -191,6 +196,7 @@ class _CaseDetailsPageState extends State<CaseDetailsPage> {
                                   key: _noticeKey,
                                   message: _message!,
                                   isError: _isError,
+                                  isSuccess: !_isError,
                                 ),
                                 const SizedBox(height: 16),
                               ],
@@ -234,7 +240,8 @@ class _CaseDetailsPageState extends State<CaseDetailsPage> {
                                 icon: const Icon(Icons.delete_outline),
                                 label: const Text('Eliminar caso'),
                                 style: TextButton.styleFrom(
-                                  foregroundColor: theme.colorScheme.error,
+                                  backgroundColor: AppPalette.errorContainer,
+                                  foregroundColor: AppPalette.textPrimary,
                                 ),
                               ),
                             ],

@@ -7,11 +7,18 @@ import '../../../shared/presentation/status_notice.dart';
 import '../domain/guard_ai_repository.dart';
 import 'guard_ai_controller.dart';
 import 'widgets/guard_ai_history.dart';
+import '../../cases/presentation/cases_controller.dart';
+import 'widgets/report_prompt.dart';
 
 class GuardAiPage extends StatefulWidget {
-  const GuardAiPage({required this.controller, super.key});
+  const GuardAiPage({
+    required this.controller,
+    this.casesController,
+    super.key,
+  });
 
   final GuardAiController controller;
+  final CasesController? casesController;
 
   @override
   State<GuardAiPage> createState() => _GuardAiPageState();
@@ -106,7 +113,8 @@ class _GuardAiPageState extends State<GuardAiPage> {
           'Elige una sugerencia o escribe un mensaje para avanzar paso a paso. '
           'Las respuestas de esta versión son ejemplos predefinidos: todavía '
           'no hay una IA conectada.\n\n'
-          'El chat no consulta sitios, no crea casos y no envía información. '
+          'El chat no consulta sitios ni envía información. Puedes abrir '
+          'un formulario para guardar un caso local cuando decidas reportar. '
           'Evita escribir contraseñas o datos sensibles.\n\n'
           'La conversación y lo que estés escribiendo se conservan al volver '
           'al inicio durante esta sesión de la app. Se pierden al cerrar '
@@ -238,6 +246,12 @@ class _GuardAiPageState extends State<GuardAiPage> {
             label: const Text('Volver a abrir el chat'),
           ),
         if (controller.isReady) ...[
+          if (controller.conversation.canPrepareReport &&
+              widget.casesController != null)
+            ReportPrompt(
+              controller: widget.casesController!,
+              enabled: !controller.isSending,
+            ),
           for (final suggestion
               in controller.draft.isEmpty
                   ? controller.conversation.suggestions

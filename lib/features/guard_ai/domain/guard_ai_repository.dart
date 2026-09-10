@@ -13,11 +13,13 @@ class GuardAiConversation {
   GuardAiConversation({
     Iterable<GuardAiMessage> messages = const [],
     Iterable<String> suggestions = const [],
+    this.canPrepareReport = false,
   }) : messages = List.unmodifiable(messages),
        suggestions = List.unmodifiable(suggestions);
 
   final List<GuardAiMessage> messages;
   final List<String> suggestions;
+  final bool canPrepareReport;
 }
 
 class GuardAiInput {

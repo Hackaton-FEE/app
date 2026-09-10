@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/palette.dart';
 import '../../domain/footprint_item.dart';
 
 /// An accessible overview of the categories in the current footprint.
@@ -18,29 +19,29 @@ class FootprintMap extends StatelessWidget {
       category: FootprintCategory.socialProfile,
       label: 'Redes',
       icon: Icons.people_outline_rounded,
-      foreground: Color(0xFF386B68),
-      background: Color(0xFFE6F0EA),
+      accent: AppPalette.social,
+      background: AppPalette.socialContainer,
     ),
     _MapCategory(
       category: FootprintCategory.exposedContact,
       label: 'Contacto',
       icon: Icons.alternate_email_rounded,
-      foreground: Color(0xFF526F83),
-      background: Color(0xFFEAF0F3),
+      accent: AppPalette.olive,
+      background: AppPalette.paleCream,
     ),
     _MapCategory(
       category: FootprintCategory.dataBroker,
       label: 'Directorios',
       icon: Icons.manage_search_rounded,
-      foreground: Color(0xFF7B6943),
-      background: Color(0xFFF3EEDF),
+      accent: AppPalette.deepOlive,
+      background: AppPalette.sandGold,
     ),
     _MapCategory(
       category: FootprintCategory.dataBreach,
       label: 'Filtraciones',
       icon: Icons.lock_reset_rounded,
-      foreground: Color(0xFF875746),
-      background: Color(0xFFF4E9E1),
+      accent: AppPalette.breaches,
+      background: AppPalette.breachesContainer,
     ),
   ];
 
@@ -176,18 +177,18 @@ class _CategoryNode extends StatelessWidget {
       entry.label,
       textAlign: compact ? TextAlign.start : TextAlign.center,
       style: theme.textTheme.labelLarge?.copyWith(
-        color: entry.foreground,
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w600,
       ),
     );
     final countLabel = Text(
       '$count',
       style: theme.textTheme.titleMedium?.copyWith(
-        color: entry.foreground,
+        color: AppPalette.textPrimary,
         fontWeight: FontWeight.w700,
       ),
     );
-    final icon = Icon(entry.icon, size: 22, color: entry.foreground);
+    final icon = Icon(entry.icon, size: 22, color: entry.accent);
 
     return Semantics(
       button: true,
@@ -248,14 +249,14 @@ class _MapCategory {
     required this.category,
     required this.label,
     required this.icon,
-    required this.foreground,
+    required this.accent,
     required this.background,
   });
 
   final FootprintCategory category;
   final String label;
   final IconData icon;
-  final Color foreground;
+  final Color accent;
   final Color background;
 }
 

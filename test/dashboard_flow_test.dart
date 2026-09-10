@@ -108,6 +108,38 @@ void main() {
     expect(find.text('nuevo_objetivo@gmail.com'), findsOneWidget);
   });
 
+  testWidgets('help offers a tour with navigation and live feature actions', (
+    tester,
+  ) async {
+    await startDashboard(tester);
+    await tester.tap(find.byTooltip('Ayuda de uso'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('¿Quieres un recorrido interactivo?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 1 de 5'), findsOneWidget);
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anterior'));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 1 de 5'), findsOneWidget);
+    for (var step = 0; step < 3; step++) {
+      await tester.tap(find.text('Siguiente'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Abrir GuardAI'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GuardAiPage), findsOneWidget);
+    await tester.tap(find.byType(BackButtonIcon));
+    await tester.pumpAndSettle();
+    expect(find.text('Paso 4 de 5'), findsOneWidget);
+    await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finalizar'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byKey(const Key('dashboard-action-bar')), findsOneWidget);
+  });
+
   testWidgets('GuardAI action opens the chat and returns to the dashboard', (
     tester,
   ) async {

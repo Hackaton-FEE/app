@@ -21,6 +21,7 @@ class DemoGuardAiRepository implements GuardAiRepository {
     'Revisar mis datos',
     'Revisar un perfil',
     'Organizar próximos pasos',
+    'Quiero preparar un reporte',
   ];
 
   @override
@@ -32,7 +33,18 @@ class DemoGuardAiRepository implements GuardAiRepository {
     late final String response;
     late final List<String> suggestions;
 
-    if (text == 'empezar otro tema') {
+    final wantsReport =
+        !text.contains(RegExp(r'\b(no|sin|evitar)\b')) &&
+        text.contains(RegExp(r'\b(quiero|necesito|deseo|ayúdame|ayudame)\b')) &&
+        text.contains(RegExp(r'\b(reporte|reportar)\b'));
+    if (wantsReport) {
+      response =
+          'Vamos a organizar lo que encontraste. Abre el formulario '
+          'de abajo para añadir título, enlace, categoría y notas opcionales. '
+          'Podrás revisarlo antes de guardarlo como caso local. '
+          'Todavía no lo enviamos a ninguna plataforma ni autoridad.';
+      suggestions = ['Empezar otro tema'];
+    } else if (text == 'empezar otro tema') {
       _step = 0;
       _topic = null;
       response = 'Podemos empezar por otro tema. ¿Qué te gustaría revisar?';
@@ -73,21 +85,27 @@ class DemoGuardAiRepository implements GuardAiRepository {
     } else if (_step == 1) {
       _step = 2;
       response = _nextStep(_topic!, text);
-      suggestions = ['Preparar una lista', 'Empezar otro tema'];
+      suggestions = [
+        'Preparar una lista',
+        'Quiero preparar un reporte',
+        'Empezar otro tema',
+      ];
     } else {
       response = switch (_topic!) {
         _Topic.personalData =>
           'Tu lista de revisión:\n'
               '1. Identifica la página original y qué datos muestra.\n'
-              '2. Revisa las opciones de privacidad o contacto de esa página.\n'
+              '2. Si controlas la publicación, ajusta su visibilidad o elimínala. '
+              'Si no, revisa las opciones de reporte o contacto de esa página.\n'
               '3. Anota qué cambió y qué sigue pendiente.\n\n'
               'Esta lista es una guía de ejemplo. No he consultado la página, '
               'creado un caso ni enviado solicitudes.',
         _Topic.profile =>
           'Tu lista de revisión:\n'
               '1. Comprueba la dirección del perfil dentro de la plataforma.\n'
-              '2. Si es tu cuenta, revisa su visibilidad y opciones de acceso. '
-              'Si no la reconoces, consulta la ayuda de la plataforma.\n'
+              '2. Si es tu cuenta, revisa su visibilidad, sesiones abiertas y '
+              'verificación en dos pasos. Si no la reconoces, usa las opciones '
+              'de reporte de la plataforma para señalar una posible suplantación.\n'
               '3. Anota las acciones que decidas realizar.\n\n'
               'No he verificado identidades ni modificado ninguna cuenta.',
         _Topic.plan =>
@@ -98,7 +116,7 @@ class DemoGuardAiRepository implements GuardAiRepository {
               'Todo queda como orientación en este chat de ejemplo; '
               'no se crean casos ni se envía información.',
       };
-      suggestions = ['Empezar otro tema'];
+      suggestions = ['Quiero preparar un reporte', 'Empezar otro tema'];
     }
 
     _conversation = GuardAiConversation(
@@ -108,6 +126,7 @@ class DemoGuardAiRepository implements GuardAiRepository {
         GuardAiMessage(role: GuardAiRole.assistant, text: response),
       ],
       suggestions: suggestions,
+      canPrepareReport: wantsReport,
     );
     return _conversation;
   }

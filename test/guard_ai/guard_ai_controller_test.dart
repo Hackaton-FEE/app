@@ -6,6 +6,23 @@ import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'report intent enables a form without creating or sending a case',
+    () async {
+      final repository = DemoGuardAiRepository();
+      expect((await repository.loadConversation()).canPrepareReport, isFalse);
+      final reply = await repository.reply(
+        GuardAiInput('Quiero preparar un reporte'),
+      );
+      expect(reply.canPrepareReport, isTrue);
+      expect(reply.messages.last.text, contains('caso local'));
+      final restarted = await repository.reply(
+        GuardAiInput('Empezar otro tema'),
+      );
+      expect(restarted.canPrepareReport, isFalse);
+      expect(restarted.suggestions, contains('Quiero preparar un reporte'));
+    },
+  );
   test('demo follows answers and keeps prior turns', () async {
     final repository = DemoGuardAiRepository();
     final initial = await repository.loadConversation();
@@ -56,6 +73,28 @@ void main() {
     expect(GuardAiInput('👩🏽‍💻' * 1000).text, isNotEmpty);
     expect(() => GuardAiInput('a' * 1001), throwsFormatException);
   });
+
+  test(
+    'report intent accepts free text but not negation or a question',
+    () async {
+      final repository = DemoGuardAiRepository();
+      for (final text in [
+        'No quiero hacer un reporte',
+        '¿Qué es un reporte?',
+      ]) {
+        expect(
+          (await repository.reply(GuardAiInput(text))).canPrepareReport,
+          isFalse,
+        );
+      }
+      expect(
+        (await repository.reply(
+          GuardAiInput('Necesito meter un reporte a través de ustedes'),
+        )).canPrepareReport,
+        isTrue,
+      );
+    },
+  );
 
   test('waits for repository and rejects duplicate sends', () async {
     final repository = ControlledRepository();
