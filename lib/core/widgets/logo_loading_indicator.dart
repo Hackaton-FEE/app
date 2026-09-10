@@ -51,10 +51,8 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..addListener(_onAnimationTick);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(_onAnimationTick);
 
     if (widget.useFrames) {
       _controller.repeat();
@@ -96,7 +94,8 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final dark = widget.isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
+    final dark =
+        widget.isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
     final ColorFilter? filter = widget.colorOverride != null
@@ -107,7 +106,8 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
 
     if (widget.useFrames && !reduceMotion) {
       final folder = dark ? 'frames_120_white' : 'frames_120';
-      final framePath = 'assets/logo/$folder/frame_${_formatFrame(_currentFrame)}.svg';
+      final framePath =
+          'assets/logo/$folder/frame_${_formatFrame(_currentFrame)}.svg';
 
       loaderWidget = SizedBox(
         width: widget.size,
@@ -136,10 +136,7 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
     }
 
     if (widget.message == null) {
-      return Semantics(
-        label: 'Cargando contenido...',
-        child: loaderWidget,
-      );
+      return Semantics(label: 'Cargando contenido...', child: loaderWidget);
     }
 
     final textColor = dark ? Colors.white : const Color(0xFF0F172A);

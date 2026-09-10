@@ -41,7 +41,9 @@ void main() {
     testWidgets('respects explicit isDarkMode override', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(body: Center(child: AppLogo(size: 32, isDarkMode: true))),
+          home: Scaffold(
+            body: Center(child: AppLogo(size: 32, isDarkMode: true)),
+          ),
         ),
       );
 

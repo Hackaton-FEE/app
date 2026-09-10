@@ -30,7 +30,8 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
+    final dark =
+        isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
     final assetPath = dark
         ? 'assets/logo/vector/logo_dark_white.svg'
         : 'assets/logo/vector/logo_monochrome.svg';
@@ -53,10 +54,6 @@ class AppLogo extends StatelessWidget {
       return ExcludeSemantics(child: logoWidget);
     }
 
-    return Semantics(
-      label: semanticLabel,
-      image: true,
-      child: logoWidget,
-    );
+    return Semantics(label: semanticLabel, image: true, child: logoWidget);
   }
 }
