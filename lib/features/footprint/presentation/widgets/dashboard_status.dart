@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../footprint_controller.dart';
+import '../scan_history_controller.dart';
 
 class DashboardStatus extends StatelessWidget {
-  const DashboardStatus({required this.footprint, super.key});
+  const DashboardStatus({required this.footprint, this.history, super.key});
   final FootprintController footprint;
+  final ScanHistoryController? history;
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +72,20 @@ class DashboardStatus extends StatelessWidget {
                   const LinearProgressIndicator(),
                 ],
               ),
+            ),
+          ),
+        if (history?.error != null)
+          Semantics(
+            liveRegion: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(history!.error!),
+                OutlinedButton(
+                  onPressed: history!.isLoading ? null : history!.retry,
+                  child: const Text('Reintentar historial'),
+                ),
+              ],
             ),
           ),
         if (footprint.error != null)

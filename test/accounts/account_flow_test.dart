@@ -1,3 +1,7 @@
+import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
+
+import '../footprint/fake_scan_history_storage.dart';
+
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/accounts/data/demo_account_repository.dart';
 import 'package:fee_app/features/accounts/domain/local_account.dart';
@@ -38,6 +42,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       FeeApp(
+        scanHistoryRepositoryFactory: (_) =>
+            LocalScanHistoryRepository(storage: FakeScanHistoryStorage()),
         accountRepository: accounts,
         repository: LocalCaseRepository(storage: cases),
         footprintRepositoryFactory: (account) =>

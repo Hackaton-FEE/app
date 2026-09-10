@@ -19,9 +19,7 @@ class HelpPage extends StatelessWidget {
                 children: [
                   _HelpSection(
                     title: 'Elige una cuenta y conoce la app',
-                    body:
-                        'Al abrir la app, elige una cuenta de ejemplo para entrar directamente. Usar otra cuenta agrega un ejemplo y abre su espacio. Si la lista está vacía, pulsa Crear una cuenta. No se piden contraseñas ni se verifica un inicio de sesión.\n\n'
-                        'Desliza hacia abajo en el inicio para conocer Osisn’t y cómo funciona. Desde el perfil puedes cambiar de cuenta. Las cuentas agregadas y las conversaciones duran mientras la app permanece abierta; al reiniciarla se recuperan los ejemplos iniciales.',
+                    body: 'Al abrir la app, elige la cuenta disponible para entrar. No se verifica un inicio de sesión. Si no se puede cargar, pulsa Reintentar.\n\nDesde el dashboard puedes abrir el recorrido visual. Cerrar sesión vuelve al inicio; el chat dura esta sesión.',
                   ),
                   _HelpSection(
                     title: 'Conversa con GuardAI',
@@ -33,7 +31,7 @@ class HelpPage extends StatelessWidget {
                     title: 'Explora tu huella digital',
                     body:
                         'El dashboard muestra hallazgos simulados para que pruebes el recorrido. Escanear cambia la identidad del ejemplo; no busca cuentas ni confirma filtraciones reales. El índice es orientativo, no una probabilidad de sufrir un incidente.\n\n'
-                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo. GuardAI te permite conversar sobre tus siguientes pasos. Abre el menú de perfil para cambiar la identidad del análisis o consultar los casos del dispositivo. La identidad del ejemplo se conserva solo durante esta sesión.',
+                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo. GuardAI te permite conversar sobre tus siguientes pasos. Abre el menú de perfil para consultar los casos del dispositivo o el historial de escaneos. Escanear cambia la identidad del ejemplo. Los escaneos del historial con más de 72 horas se eliminan al cargar o guardar el historial; no hay borrado en segundo plano. La identidad del ejemplo se conserva solo durante esta sesión.',
                   ),
                   _HelpSection(
                     title: 'Organiza un caso a tu ritmo',

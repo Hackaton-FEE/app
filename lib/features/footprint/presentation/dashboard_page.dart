@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import '../../accounts/domain/local_account.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
-import '../../cases/presentation/case_details_page.dart';
-import '../../cases/presentation/case_form_page.dart';
 import '../../cases/presentation/cases_controller.dart';
 import '../../cases/presentation/cases_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
+import 'scan_history_controller.dart';
 import 'widgets/dashboard_tour.dart';
+import 'widgets/footprint_report_navigation.dart';
 import 'widgets/dashboard_spotlight.dart';
 import 'widgets/dashboard_status.dart';
 import 'widgets/footprint_action_bar.dart';
@@ -27,6 +27,7 @@ class DashboardPage extends StatefulWidget {
     required this.footprintController,
     required this.casesController,
     required this.guardAiController,
+    this.scanHistoryController,
     required this.account,
     required this.onManageAccounts,
     super.key,
@@ -35,9 +36,9 @@ class DashboardPage extends StatefulWidget {
   final FootprintController footprintController;
   final CasesController casesController;
   final GuardAiController guardAiController;
+  final ScanHistoryController? scanHistoryController;
   final LocalAccount account;
   final VoidCallback onManageAccounts;
-
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
@@ -82,7 +83,6 @@ class _DashboardPageState extends State<DashboardPage> {
     focusNode: _tourFocus,
     onStep: _setTourStep,
   );
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -92,13 +92,15 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   void _openHelp() => _setTourStep(0);
-
   @override
   void initState() {
     super.initState();
     if (widget.footprintController.profile == null &&
         !widget.footprintController.isLoading) {
       unawaited(widget.footprintController.loadProfile());
+    }
+    if (widget.scanHistoryController?.error == null) {
+      unawaited(widget.scanHistoryController?.load());
     }
   }
 
@@ -125,28 +127,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<void> _openNewReport(FootprintItem sourceItem) async {
-    final id = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => CaseFormPage(
-          controller: widget.casesController,
-          initialTitle: 'Retiro de datos: ${sourceItem.platform}',
-          initialSourceUrl: sourceItem.sourceUrl,
-          initialCategory: sourceItem.suggestedCaseCategory,
-          initialNotes:
-              'Origen: Hallazgo de demostración de Huella Digital\n${sourceItem.description}\n\nDatos expuestos: ${sourceItem.exposedData.join(', ')}',
-        ),
-      ),
-    );
-    if (id != null && mounted) {
-      Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) =>
-              CaseDetailsPage(controller: widget.casesController, caseId: id),
-        ),
-      );
-    }
-  }
+  Future<void> _openNewReport(FootprintItem item) =>
+      openFootprintReport(context, widget.casesController, item);
 
   void _openGuardAi() => Navigator.of(context).push<void>(
     MaterialPageRoute(
@@ -161,6 +143,13 @@ class _DashboardPageState extends State<DashboardPage> {
     MaterialPageRoute(
       builder: (_) => CasesPage(controller: widget.casesController),
     ),
+  );
+
+  void _openScanHistory() => openScanHistory(
+    context,
+    widget.scanHistoryController,
+    widget.footprintController,
+    _openScanSheet,
   );
 
   void _showFindingDetail(FootprintItem item) {
@@ -183,6 +172,7 @@ class _DashboardPageState extends State<DashboardPage> {
       listenable: Listenable.merge([
         widget.footprintController,
         widget.casesController,
+        if (widget.scanHistoryController != null) widget.scanHistoryController!,
       ]),
       builder: (context, _) {
         final footprint = widget.footprintController;
@@ -246,6 +236,10 @@ class _DashboardPageState extends State<DashboardPage> {
               identity: widget.account.email,
               accountName: widget.account.name,
               onManageAccounts: widget.onManageAccounts,
+              historyCount: widget.scanHistoryController?.count ?? 0,
+              onViewHistory: widget.scanHistoryController != null
+                  ? _openScanHistory
+                  : null,
               caseCount: widget.casesController.state.cases.length,
               onViewCases: _openAllCases,
               onHelp: _openHelp,
@@ -286,7 +280,10 @@ class _DashboardPageState extends State<DashboardPage> {
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     _region(
-                                      DashboardStatus(footprint: footprint),
+                                      DashboardStatus(
+                                        footprint: footprint,
+                                        history: widget.scanHistoryController,
+                                      ),
                                     ),
                                     if (_tourStep != null && _tourStep != 1)
                                       _tourPanel(),
@@ -303,6 +300,16 @@ class _DashboardPageState extends State<DashboardPage> {
                                         RecommendationCard(
                                           casesController:
                                               widget.casesController,
+                                          historyCount:
+                                              widget
+                                                  .scanHistoryController
+                                                  ?.count ??
+                                              0,
+                                          onViewHistory:
+                                              widget.scanHistoryController !=
+                                                  null
+                                              ? _openScanHistory
+                                              : null,
                                           featuredItem: featuredItem,
                                           onGuardAi: _openGuardAi,
                                           onViewAllCases: _openAllCases,

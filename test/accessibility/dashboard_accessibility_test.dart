@@ -1,3 +1,7 @@
+import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
+
+import '../footprint/fake_scan_history_storage.dart';
+
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
@@ -30,6 +34,8 @@ void main() {
 
     await tester.pumpWidget(
       FeeApp(
+        scanHistoryRepositoryFactory: (_) =>
+            LocalScanHistoryRepository(storage: FakeScanHistoryStorage()),
         repository: LocalCaseRepository(storage: FakeCaseStorage()),
         footprintRepositoryFactory: (_) => MockFootprintRepository(),
       ),

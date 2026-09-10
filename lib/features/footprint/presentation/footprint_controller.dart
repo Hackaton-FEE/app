@@ -7,7 +7,9 @@ import '../domain/footprint_profile.dart';
 import '../domain/footprint_repository.dart';
 
 class FootprintController extends ChangeNotifier {
-  FootprintController(this._repository);
+  FootprintController(this._repository, {this.onScanCompleted});
+
+  final Future<void> Function(FootprintProfile)? onScanCompleted;
 
   final FootprintRepository _repository;
 
@@ -40,6 +42,15 @@ class FootprintController extends ChangeNotifier {
     } else {
       _selectedCategory = category;
     }
+    _notify();
+  }
+
+  void setProfile(FootprintProfile profile) {
+    if (_disposed || _isLoading) return;
+    _profile = profile;
+    _error = null;
+    _failedScanIdentity = null;
+    _selectedCategory = null;
     _notify();
   }
 
@@ -98,7 +109,8 @@ class FootprintController extends ChangeNotifier {
       final profile = await _repository.scanIdentity(identity);
       if (_disposed) return false;
       _profile = profile;
-      return true;
+      await onScanCompleted?.call(profile);
+      return !_disposed;
     } catch (e) {
       if (!_disposed) {
         _failedScanIdentity = identity;
