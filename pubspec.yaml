@@ -13,6 +13,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   flutter_secure_storage: 10.3.2
+  flutter_svg: ^2.3.0
   http: ^1.6.0
   uuid: ^4.6.0
 
@@ -25,3 +26,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo/vector/
+    - assets/logo/standalone/
+    - assets/logo/frames_120/
+    - assets/logo/frames_120_white/
