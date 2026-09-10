@@ -1,20 +1,30 @@
+import 'package:fee_app/features/cases/presentation/cases_page.dart';
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:fee_app/features/cases/presentation/case_form_page.dart';
-import 'package:fee_app/features/cases/presentation/cases_page.dart';
+import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
+import 'package:fee_app/features/footprint/presentation/scan_history_page.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
 import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:fee_app/features/footprint/presentation/widgets/dashboard_spotlight.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'data/fake_case_storage.dart';
+import 'footprint/fake_scan_history_storage.dart';
 
 void main() {
   late FakeCaseStorage storage;
+  late FakeScanHistoryStorage scanStorage;
   late MockFootprintRepository footprintRepo;
 
   setUp(() {
     storage = FakeCaseStorage();
+    scanStorage = FakeScanHistoryStorage();
     footprintRepo = MockFootprintRepository();
   });
 
@@ -28,6 +38,8 @@ void main() {
       FeeApp(
         repository: LocalCaseRepository(storage: storage),
         footprintRepositoryFactory: (_) => footprintRepo,
+        scanHistoryRepositoryFactory: (_) =>
+            LocalScanHistoryRepository(storage: scanStorage),
       ),
     );
     await tester.pumpAndSettle();
@@ -106,7 +118,67 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('nuevo_objetivo@gmail.com'), findsOneWidget);
+    expect(await scanStorage.readAll(), hasLength(1));
   });
+
+  testWidgets(
+    'spotlight darkens the background but preserves the active target',
+    (tester) async {
+      await startDashboard(tester);
+      Future<List<int>> pixelsAt(List<Offset> points) async {
+        final widget = tester.widget<DashboardSpotlight>(
+          find.byType(DashboardSpotlight),
+        );
+        final boundary =
+            widget.surfaceKey.currentContext!.findRenderObject()!
+                as RenderRepaintBoundary;
+        return (await tester.runAsync(() async {
+          final image = await boundary.toImage();
+          final bytes = (await image.toByteData(
+            format: ui.ImageByteFormat.rawRgba,
+          ))!;
+          final pixels = points
+              .map(
+                (point) => bytes.getUint32(
+                  (point.dy.floor() * image.width + point.dx.floor()) * 4,
+                ),
+              )
+              .toList();
+          image.dispose();
+          return pixels;
+        }))!;
+      }
+
+      Offset targetPoint() {
+        final widget = tester.widget<DashboardSpotlight>(
+          find.byType(DashboardSpotlight),
+        );
+        final rect = tester.getRect(find.byKey(widget.targetKey));
+        return Offset(rect.center.dx, rect.top + 16);
+      }
+
+      final before = await pixelsAt([const Offset(5, 100), targetPoint()]);
+      await tester.tap(find.byTooltip('Ayuda de uso'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dashboard-spotlight')), findsOneWidget);
+      final after = await pixelsAt([const Offset(5, 100), targetPoint()]);
+      expect(after.first >> 24, lessThan((before.first >> 24) ~/ 2));
+      expect(after.last, before.last);
+      await tester.tap(
+        find.byKey(const Key('dashboard-scan-fab')),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scan-identity-field')), findsNothing);
+      await tester.ensureVisible(find.text('Salir del recorrido'));
+      await tester.tap(find.text('Salir del recorrido'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dashboard-spotlight')), findsNothing);
+      await tester.tap(find.byKey(const Key('dashboard-scan-fab')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('scan-identity-field')), findsOneWidget);
+    },
+  );
 
   testWidgets('help offers a tour with navigation and live feature actions', (
     tester,
@@ -114,25 +186,35 @@ void main() {
     await startDashboard(tester);
     await tester.tap(find.byTooltip('Ayuda de uso'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('¿Quieres un recorrido interactivo?'));
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.byType(PopupMenuButton<String>), findsNothing);
+    expect(find.textContaining('Paso 1 de 5'), findsOneWidget);
+    await tester.ensureVisible(find.text('Siguiente'));
     await tester.pumpAndSettle();
-    expect(find.text('Paso 1 de 5'), findsOneWidget);
     await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Anterior'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Anterior'));
     await tester.pumpAndSettle();
-    expect(find.text('Paso 1 de 5'), findsOneWidget);
+    expect(find.textContaining('Paso 1 de 5'), findsOneWidget);
     for (var step = 0; step < 3; step++) {
+      await tester.ensureVisible(find.text('Siguiente'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Siguiente'));
       await tester.pumpAndSettle();
     }
-    await tester.tap(find.text('Abrir GuardAI'));
+    await tester.tap(find.byKey(const Key('dashboard-guardai-fab')));
     await tester.pumpAndSettle();
     expect(find.byType(GuardAiPage), findsOneWidget);
     await tester.tap(find.byType(BackButtonIcon));
     await tester.pumpAndSettle();
-    expect(find.text('Paso 4 de 5'), findsOneWidget);
+    expect(find.textContaining('Paso 4 de 5'), findsOneWidget);
+    await tester.ensureVisible(find.text('Siguiente'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Siguiente'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Finalizar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Finalizar'));
     await tester.pumpAndSettle();
@@ -159,24 +241,25 @@ void main() {
     expect(find.byKey(const Key('dashboard-scan-fab')), findsOneWidget);
   });
 
-  testWidgets('View all cases button navigates to CasesPage and can return', (
-    tester,
-  ) async {
-    await startDashboard(tester);
+  testWidgets(
+    'Scan history button navigates to ScanHistoryPage and can return',
+    (tester) async {
+      await startDashboard(tester);
 
-    await scrollAndTap(
-      tester,
-      find.byKey(const Key('recommendation-view-cases-button')),
-    );
+      await scrollAndTap(
+        tester,
+        find.byKey(const Key('recommendation-view-history-button')),
+      );
 
-    expect(find.byType(CasesPage), findsOneWidget);
+      expect(find.byType(ScanHistoryPage), findsOneWidget);
 
-    // Back to dashboard
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
+      // Back to dashboard
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
 
-    expect(find.text("Osisn't"), findsOneWidget);
-  });
+      expect(find.text("Osisn't"), findsOneWidget);
+    },
+  );
 
   testWidgets('Tapping finding card opens detail sheet and pre-fills report', (
     tester,
@@ -212,5 +295,33 @@ void main() {
       find.text('Retiro de datos: Radaris / Buscador de Personas'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Sidebar profile-history navigates to ScanHistoryPage', (
+    tester,
+  ) async {
+    await startDashboard(tester);
+
+    await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('profile-history')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('profile-history')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ScanHistoryPage), findsOneWidget);
+    expect(find.text('Historial de escaneos'), findsOneWidget);
+  });
+  testWidgets('cases remain reachable alongside scan history', (tester) async {
+    await startDashboard(tester);
+    await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('profile-history')), findsOneWidget);
+    final cases = find.byKey(const Key('profile-cases'));
+    await tester.ensureVisible(cases);
+    await tester.pumpAndSettle();
+    await tester.tap(cases);
+    await tester.pumpAndSettle();
+    expect(find.byType(CasesPage), findsOneWidget);
   });
 }

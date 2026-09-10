@@ -17,14 +17,14 @@ void main() {
 
       await controller.load();
       expect(controller.isLoading, isFalse);
-      expect(controller.accounts, hasLength(2));
+      expect(controller.accounts, hasLength(1));
       expect(controller.activeAccount, isNull);
       expect(controller.selectAccount(controller.accounts.first), isTrue);
       expect(controller.activeAccount, same(controller.accounts.first));
 
       controller.signOut();
       expect(controller.activeAccount, isNull);
-      expect(controller.accounts, hasLength(2));
+      expect(controller.accounts, hasLength(1));
     },
   );
 
@@ -38,7 +38,7 @@ void main() {
     final reopened = AccountsController(repository);
     addTearDown(reopened.dispose);
     await reopened.load();
-    expect(reopened.accounts, hasLength(2));
+    expect(reopened.accounts, hasLength(1));
     expect(reopened.activeAccount, isNull);
   });
 
@@ -91,7 +91,7 @@ void main() {
     );
     expect(controller.isSaving, isTrue);
     expect(controller.activeAccount, same(original));
-    expect(controller.accounts, hasLength(2));
+    expect(controller.accounts, hasLength(1));
     expect(controller.selectAccount(controller.accounts.last), isFalse);
     controller.signOut();
     expect(controller.activeAccount, same(original));
@@ -109,7 +109,7 @@ void main() {
     expect(await adding, isTrue);
     expect(controller.isSaving, isFalse);
     expect(controller.activeAccount, same(added));
-    expect(controller.accounts, hasLength(3));
+    expect(controller.accounts, hasLength(2));
   });
 
   test('a failed addition keeps the prior session and excludes private exception contents', () async {
@@ -130,7 +130,7 @@ void main() {
     );
     expect(controller.isSaving, isFalse);
     expect(controller.activeAccount, same(original));
-    expect(controller.accounts, hasLength(2));
+    expect(controller.accounts, hasLength(1));
     expect(controller.actionError, isNotNull);
     expect(controller.error, isNot(contains('privado@example.invalid')));
   });
@@ -147,7 +147,7 @@ void main() {
       );
 
       await controller.load();
-      expect(controller.accounts, hasLength(2));
+      expect(controller.accounts, hasLength(1));
       expect(controller.loadError, isNotNull);
       expect(controller.selectAccount(controller.accounts.first), isFalse);
       expect(

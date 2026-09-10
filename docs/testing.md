@@ -90,3 +90,11 @@ Medición del 10 de septiembre de 2026 en Pixel 10 Pro XL, Android 17, `profile`
 Los dobles de prueba permiten simular almacenamiento inaccesible, escritura fallida y JSON inválido o de versión desconocida sin dañar datos del teléfono. Verifica que no se anuncie éxito ni se sustituya el contenido por una colección vacía. Para cambios de validación de texto, incluye emojis y caracteres combinados dentro de los límites visibles, y una entrada que exceda la cota independiente de 24 KiB de metadatos UTF-8. No introduzcas corrupción en un dispositivo con datos de trabajo.
 
 En el PR indica comandos ejecutados, plataforma/destino, resultado del plugin real y si se completó cierre/reapertura. Adjunta capturas con datos ficticios si cambió la UI. No sumes tests de mocks, integración y reinicio manual como si demostraran lo mismo.
+
+## Historial de escaneos
+
+`flutter test test/footprint test/presentation/scan_history_page_test.dart` cubre persistencia recreando el repositorio, conservación ante corrupción, fallos de purga y borrado, reintento de guardado sin duplicados y operaciones en cola. La navegación conserva los accesos independientes a historial y casos; las pruebas de widgets incluyen ancho de 320 px y texto al 200 %.
+
+`flutter test integration_test/scan_history_storage_test.dart -d <device-id>` comprueba el plugin nativo con un espacio de almacenamiento de prueba: persistencia al recrear el repositorio, separación por cuenta, corrupción conservada y purga de registros vencidos. Se ejecutó en Pixel 10 Pro XL con Android 17; no prueba reinicio del proceso, iOS, TalkBack ni VoiceOver.
+
+Referencias inspeccionadas de widgets a 390 × 844: [perfil con historial y casos](images/integrated-profile-history-cases.png) e [historial](images/integrated-scan-history.png).

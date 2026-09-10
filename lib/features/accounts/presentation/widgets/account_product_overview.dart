@@ -62,32 +62,6 @@ class AccountProductOverview extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 36),
-        Semantics(
-          header: true,
-          child: Text(
-            'Así funciona',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const _FeatureStep(
-          number: '01',
-          title: 'Explora tu huella',
-          body: 'Recorre un mapa de perfiles, datos de contacto y otras señales de tu presencia en internet.',
-        ),
-        const _FeatureStep(
-          number: '02',
-          title: 'Dale contexto con GuardAI',
-          body: 'Empieza una conversación. Pregunta, responde y aclara qué quieres revisar, paso a paso.',
-        ),
-        const _FeatureStep(
-          number: '03',
-          title: 'Decide cómo seguir',
-          body: 'Ordena tus dudas y conoce posibles acciones para cuidar lo que compartes.',
-        ),
-        const SizedBox(height: 8),
         Card(
           color: colors.surfaceContainerLow,
           child: Padding(
@@ -134,50 +108,4 @@ class AccountProductOverview extends StatelessWidget {
       ],
     );
   }
-}
-
-class _FeatureStep extends StatelessWidget {
-  const _FeatureStep({
-    required this.number,
-    required this.title,
-    required this.body,
-  });
-  final String number;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 28),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ExcludeSemantics(
-          child: Text(
-            number,
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
-          ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(body),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
 }

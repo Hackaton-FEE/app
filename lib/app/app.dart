@@ -13,10 +13,14 @@ import '../features/cases/data/local_case_repository.dart';
 import '../features/cases/domain/case_repository.dart';
 import '../features/cases/presentation/cases_controller.dart';
 import '../features/cases/presentation/cases_page.dart';
+import '../features/footprint/data/flutter_secure_scan_storage.dart';
+import '../features/footprint/data/local_scan_history_repository.dart';
 import '../features/footprint/data/mock_footprint_repository.dart';
 import '../features/footprint/domain/footprint_repository.dart';
+import '../features/footprint/domain/scan_history_repository.dart';
 import '../features/footprint/presentation/dashboard_page.dart';
 import '../features/footprint/presentation/footprint_controller.dart';
+import '../features/footprint/presentation/scan_history_controller.dart';
 import '../features/guard_ai/data/demo_guard_ai_repository.dart';
 import '../features/guard_ai/presentation/guard_ai_controller.dart';
 import 'theme.dart';
@@ -25,6 +29,7 @@ class FeeApp extends StatefulWidget {
   const FeeApp({
     this.repository,
     this.footprintRepositoryFactory,
+    this.scanHistoryRepositoryFactory,
     this.accountRepository,
     this.showCasesAsHome = false,
     super.key,
@@ -33,6 +38,8 @@ class FeeApp extends StatefulWidget {
   final CaseRepository? repository;
   final FootprintRepository Function(LocalAccount account)?
   footprintRepositoryFactory;
+  final ScanHistoryRepository Function(LocalAccount account)?
+  scanHistoryRepositoryFactory;
   final AccountRepository? accountRepository;
   final bool showCasesAsHome;
 
@@ -59,16 +66,26 @@ class _FeeAppState extends State<FeeApp> {
     if (!widget.showCasesAsHome) unawaited(_accounts.load());
   }
 
-  _AccountSession _sessionFor(LocalAccount account) => _sessions.putIfAbsent(
-    account.id,
-    () => _AccountSession(
-      footprint: FootprintController(
-        widget.footprintRepositoryFactory?.call(account) ??
-            MockFootprintRepository(targetIdentity: account.email),
-      ),
-      guardAi: GuardAiController(DemoGuardAiRepository()),
-    ),
-  );
+  _AccountSession _sessionFor(LocalAccount account) =>
+      _sessions.putIfAbsent(account.id, () {
+        final scanHistoryRepo =
+            widget.scanHistoryRepositoryFactory?.call(account) ??
+            LocalScanHistoryRepository(
+              storage: FlutterSecureScanStorage(
+                prefix: 'fee.scan.${account.id}.v1.',
+              ),
+            );
+        final history = ScanHistoryController(scanHistoryRepo);
+        return _AccountSession(
+          footprint: FootprintController(
+            widget.footprintRepositoryFactory?.call(account) ??
+                MockFootprintRepository(targetIdentity: account.email),
+            onScanCompleted: history.recordScan,
+          ),
+          guardAi: GuardAiController(DemoGuardAiRepository()),
+          scanHistory: history,
+        );
+      });
 
   @override
   void dispose() {
@@ -77,6 +94,7 @@ class _FeeAppState extends State<FeeApp> {
     for (final session in _sessions.values) {
       session.footprint.dispose();
       session.guardAi.dispose();
+      session.scanHistory.dispose();
     }
     super.dispose();
   }
@@ -104,6 +122,7 @@ class _FeeAppState extends State<FeeApp> {
                 footprintController: session.footprint,
                 casesController: _cases,
                 guardAiController: session.guardAi,
+                scanHistoryController: session.scanHistory,
                 account: account,
                 onManageAccounts: _accounts.signOut,
               );
@@ -113,7 +132,12 @@ class _FeeAppState extends State<FeeApp> {
 }
 
 class _AccountSession {
-  const _AccountSession({required this.footprint, required this.guardAi});
+  const _AccountSession({
+    required this.footprint,
+    required this.guardAi,
+    required this.scanHistory,
+  });
   final FootprintController footprint;
   final GuardAiController guardAi;
+  final ScanHistoryController scanHistory;
 }

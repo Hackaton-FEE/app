@@ -2,18 +2,26 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'dashboard_spotlight.dart';
+
 /// A shared bottom surface: the feed scrolls behind its fading edge and pills.
 class FootprintActionBar extends StatelessWidget {
   const FootprintActionBar({
     required this.onScan,
     required this.onGuardAi,
     this.scanning = false,
+    this.tourStep,
+    this.scanKey,
+    this.guardAiKey,
     super.key,
   });
 
   final VoidCallback onScan;
   final VoidCallback onGuardAi;
   final bool scanning;
+  final int? tourStep;
+  final Key? scanKey;
+  final Key? guardAiKey;
 
   static TextStyle _labelStyle(BuildContext context) =>
       Theme.of(context).textTheme.labelLarge!
@@ -87,28 +95,38 @@ class FootprintActionBar extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: _ActionPill(
-                          actionKey: const Key('dashboard-scan-fab'),
-                          label: scanning ? 'Analizando' : 'Escanear',
-                          icon: Icons.radar_rounded,
-                          onPressed: scanning ? null : onScan,
-                          color: theme.colorScheme.surface.withValues(
-                            alpha: highContrast ? 1 : 0.94,
+                        child: SpotlightRegion(
+                          dimmed: tourStep != null && tourStep != 2,
+                          child: _ActionPill(
+                            key: scanKey,
+                            actionKey: const Key('dashboard-scan-fab'),
+                            highlighted: tourStep == 2,
+                            label: scanning ? 'Analizando' : 'Escanear',
+                            icon: Icons.radar_rounded,
+                            onPressed: scanning ? null : onScan,
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: highContrast ? 1 : 0.94,
+                            ),
+                            foreground: theme.colorScheme.onSurface,
+                            largeText: largeText,
                           ),
-                          foreground: theme.colorScheme.onSurface,
-                          largeText: largeText,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _ActionPill(
-                          actionKey: const Key('dashboard-guardai-fab'),
-                          label: 'GuardAI',
-                          icon: Icons.auto_awesome_outlined,
-                          onPressed: onGuardAi,
-                          color: theme.colorScheme.primary,
-                          foreground: theme.colorScheme.onPrimary,
-                          largeText: largeText,
+                        child: SpotlightRegion(
+                          dimmed: tourStep != null && tourStep != 3,
+                          child: _ActionPill(
+                            key: guardAiKey,
+                            actionKey: const Key('dashboard-guardai-fab'),
+                            highlighted: tourStep == 3,
+                            label: 'GuardAI',
+                            icon: Icons.auto_awesome_outlined,
+                            onPressed: onGuardAi,
+                            color: theme.colorScheme.primary,
+                            foreground: theme.colorScheme.onPrimary,
+                            largeText: largeText,
+                          ),
                         ),
                       ),
                     ],
@@ -126,6 +144,8 @@ class FootprintActionBar extends StatelessWidget {
 class _ActionPill extends StatelessWidget {
   const _ActionPill({
     required this.actionKey,
+    required this.highlighted,
+    super.key,
     required this.label,
     required this.icon,
     required this.onPressed,
@@ -135,6 +155,7 @@ class _ActionPill extends StatelessWidget {
   });
 
   final Key actionKey;
+  final bool highlighted;
   final String label;
   final IconData icon;
   final VoidCallback? onPressed;
@@ -183,6 +204,7 @@ class _ActionPill extends StatelessWidget {
           minimumSize: Size(double.infinity, largeText ? 96 : 64),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           textStyle: FootprintActionBar._labelStyle(context),
+          side: highlighted ? BorderSide(color: foreground, width: 3) : null,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(largeText ? 28 : 32),
           ),

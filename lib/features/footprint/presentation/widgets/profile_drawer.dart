@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 class ProfileDrawer extends StatelessWidget {
   const ProfileDrawer({
     required this.identity,
+    this.historyCount = 0,
+    this.onViewHistory,
     required this.caseCount,
     required this.onViewCases,
     required this.onHelp,
@@ -14,6 +16,8 @@ class ProfileDrawer extends StatelessWidget {
     super.key,
   });
 
+  final int historyCount;
+  final VoidCallback? onViewHistory;
   final String? identity;
   final String? accountName;
   final VoidCallback? onManageAccounts;
@@ -21,20 +25,34 @@ class ProfileDrawer extends StatelessWidget {
   final VoidCallback onViewCases;
   final VoidCallback onHelp;
 
+  List<(String, IconData, String, VoidCallback?)> get _destinations => [
+    ('Mi huella', Icons.fingerprint_rounded, 'profile-footprint', null),
+    if (onViewHistory != null)
+      (
+        'Historial de escaneos ($historyCount)',
+        Icons.history,
+        'profile-history',
+        onViewHistory,
+      ),
+    (
+      'Casos del dispositivo ($caseCount)',
+      Icons.folder_outlined,
+      'profile-cases',
+      onViewCases,
+    ),
+    if (onManageAccounts != null)
+      (
+        'Cerrar sesión',
+        Icons.logout_rounded,
+        'profile-accounts',
+        onManageAccounts,
+      ),
+    ('Ayuda', Icons.help_outline_rounded, 'profile-help', onHelp),
+  ];
+
   void _selectDestination(BuildContext context, int index) {
     Scaffold.of(context).closeDrawer();
-    switch (index) {
-      case 1:
-        onViewCases();
-      case 2:
-        if (onManageAccounts != null) {
-          onManageAccounts!();
-        } else {
-          onHelp();
-        }
-      case 3:
-        onHelp();
-    }
+    _destinations[index].$4?.call();
   }
 
   @override
@@ -54,12 +72,7 @@ class ProfileDrawer extends StatelessWidget {
     final labelStyle = theme.textTheme.labelLarge!.copyWith(
       color: colors.onSurface,
     );
-    final labels = [
-      'Mi huella',
-      'Casos del dispositivo ($caseCount)',
-      if (onManageAccounts != null) 'Cerrar sesión',
-      'Ayuda',
-    ];
+    final labels = _destinations.map((item) => item.$1).toList();
 
     // NavigationDrawer destinations have a fixed height and an unconstrained
     // label by default. Measure wrapped labels to retain their full text at
@@ -168,26 +181,12 @@ class ProfileDrawer extends StatelessWidget {
                 ],
               ),
             ),
-            NavigationDrawerDestination(
-              icon: const Icon(Icons.fingerprint_rounded),
-              label: destinationLabel(0),
-            ),
-            NavigationDrawerDestination(
-              key: const Key('profile-cases'),
-              icon: const Icon(Icons.folder_outlined),
-              label: destinationLabel(1),
-            ),
-            if (onManageAccounts != null)
+            for (var index = 0; index < _destinations.length; index++)
               NavigationDrawerDestination(
-                key: const Key('profile-accounts'),
-                icon: const Icon(Icons.logout_rounded),
-                label: destinationLabel(2),
+                key: Key(_destinations[index].$3),
+                icon: Icon(_destinations[index].$2),
+                label: destinationLabel(index),
               ),
-            NavigationDrawerDestination(
-              key: const Key('profile-help'),
-              icon: const Icon(Icons.help_outline_rounded),
-              label: destinationLabel(labels.length - 1),
-            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
               child: Text(

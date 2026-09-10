@@ -5,14 +5,15 @@ import 'package:flutter/material.dart';
 import '../../accounts/domain/local_account.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
-import '../../cases/presentation/case_details_page.dart';
-import '../../cases/presentation/case_form_page.dart';
 import '../../cases/presentation/cases_controller.dart';
 import '../../cases/presentation/cases_page.dart';
-import '../../help/presentation/help_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
-import 'widgets/dashboard_help_menu.dart';
+import 'scan_history_controller.dart';
+import 'widgets/dashboard_tour.dart';
+import 'widgets/footprint_report_navigation.dart';
+import 'widgets/dashboard_spotlight.dart';
+import 'widgets/dashboard_status.dart';
 import 'widgets/footprint_action_bar.dart';
 import 'widgets/footprint_explorer.dart';
 import 'widgets/profile_drawer.dart';
@@ -26,6 +27,7 @@ class DashboardPage extends StatefulWidget {
     required this.footprintController,
     required this.casesController,
     required this.guardAiController,
+    this.scanHistoryController,
     required this.account,
     required this.onManageAccounts,
     super.key,
@@ -34,32 +36,71 @@ class DashboardPage extends StatefulWidget {
   final FootprintController footprintController;
   final CasesController casesController;
   final GuardAiController guardAiController;
+  final ScanHistoryController? scanHistoryController;
   final LocalAccount account;
   final VoidCallback onManageAccounts;
-
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
   final _scrollController = ScrollController();
+  final _tourAnchor = GlobalKey();
+  final _spotlightSurface = GlobalKey();
+  final _tourTargets = List.generate(5, (_) => GlobalKey());
+  bool _drawerOpen = false;
+  final _helpFocus = FocusNode();
+  final _tourFocus = FocusNode();
+  int? _tourStep;
 
+  void _setTourStep(int? step) {
+    setState(() => _tourStep = step);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (step == null) {
+        _helpFocus.requestFocus();
+      } else if (_tourAnchor.currentContext case final target?) {
+        _tourFocus.requestFocus();
+        Scrollable.ensureVisible(
+          target,
+          alignment: 0.05,
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 250),
+        );
+      }
+    });
+  }
+
+  Widget _region(Widget child, [int step = -1]) => SpotlightRegion(
+    dimmed: _tourStep != null && _tourStep != step && !_drawerOpen,
+    child: child,
+  );
+
+  Widget _tourPanel() => DashboardTourPanel(
+    key: _tourAnchor,
+    step: _tourStep!,
+    focusNode: _tourFocus,
+    onStep: _setTourStep,
+  );
   @override
   void dispose() {
     _scrollController.dispose();
+    _helpFocus.dispose();
+    _tourFocus.dispose();
     super.dispose();
   }
 
-  void _openHelp() =>
-      Navigator.of(context)
-          .push<void>(MaterialPageRoute(builder: (_) => const HelpPage()));
-
+  void _openHelp() => _setTourStep(0);
   @override
   void initState() {
     super.initState();
     if (widget.footprintController.profile == null &&
         !widget.footprintController.isLoading) {
       unawaited(widget.footprintController.loadProfile());
+    }
+    if (widget.scanHistoryController?.error == null) {
+      unawaited(widget.scanHistoryController?.load());
     }
   }
 
@@ -86,28 +127,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<void> _openNewReport(FootprintItem sourceItem) async {
-    final id = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) => CaseFormPage(
-          controller: widget.casesController,
-          initialTitle: 'Retiro de datos: ${sourceItem.platform}',
-          initialSourceUrl: sourceItem.sourceUrl,
-          initialCategory: sourceItem.suggestedCaseCategory,
-          initialNotes:
-              'Origen: Hallazgo de demostración de Huella Digital\n${sourceItem.description}\n\nDatos expuestos: ${sourceItem.exposedData.join(', ')}',
-        ),
-      ),
-    );
-    if (id != null && mounted) {
-      Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          builder: (_) =>
-              CaseDetailsPage(controller: widget.casesController, caseId: id),
-        ),
-      );
-    }
-  }
+  Future<void> _openNewReport(FootprintItem item) =>
+      openFootprintReport(context, widget.casesController, item);
 
   void _openGuardAi() => Navigator.of(context).push<void>(
     MaterialPageRoute(
@@ -122,6 +143,13 @@ class _DashboardPageState extends State<DashboardPage> {
     MaterialPageRoute(
       builder: (_) => CasesPage(controller: widget.casesController),
     ),
+  );
+
+  void _openScanHistory() => openScanHistory(
+    context,
+    widget.scanHistoryController,
+    widget.footprintController,
+    _openScanSheet,
   );
 
   void _showFindingDetail(FootprintItem item) {
@@ -140,11 +168,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge([
         widget.footprintController,
         widget.casesController,
+        if (widget.scanHistoryController != null) widget.scanHistoryController!,
       ]),
       builder: (context, _) {
         final footprint = widget.footprintController;
@@ -155,189 +183,161 @@ class _DashboardPageState extends State<DashboardPage> {
                 (item) => item.riskLevel == FootprintRisk.high,
                 orElse: () => profile.items.first,
               );
-        return Scaffold(
-          extendBody: true,
-          appBar: AppBar(
-            toolbarHeight: 72,
-            title: const Text(
-              "Osisn't",
-              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1),
-            ),
-            leading: Builder(
-              builder: (context) => IconButton(
-                key: const Key('dashboard-profile-button'),
-                tooltip: 'Abrir perfil',
-                onPressed: () => Scaffold.of(context).openDrawer(),
-                icon: const Icon(Icons.menu_rounded),
+        return DashboardSpotlight(
+          surfaceKey: _spotlightSurface,
+          panelKey: _tourAnchor,
+          targetKey: _tourTargets[_tourStep ?? 0],
+          scrollController: _scrollController,
+          enabled: _tourStep != null && !_drawerOpen,
+          targetInBody: (_tourStep ?? 0) < 2,
+          bottomInset:
+              FootprintActionBar.contentHeight(context) +
+              MediaQuery.viewPaddingOf(context).bottom,
+          child: Scaffold(
+            onDrawerChanged: (open) => setState(() => _drawerOpen = open),
+            extendBody: _tourStep == null,
+            appBar: AppBar(
+              toolbarHeight: 72,
+              title: _region(
+                const Text(
+                  "Osisn't",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
+                  ),
+                ),
               ),
-            ),
-            actions: [
-              DashboardHelpMenu(
-                onHelp: _openHelp,
-                onScan: _openScanSheet,
-                onGuardAi: _openGuardAi,
-                onCases: _openAllCases,
+              leading: Builder(
+                key: _tourTargets[4],
+                builder: (context) => _region(
+                  IconButton(
+                    key: const Key('dashboard-profile-button'),
+                    tooltip: 'Abrir perfil',
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    icon: Icon(
+                      _tourStep == 4 ? Icons.person_pin : Icons.menu_rounded,
+                    ),
+                  ),
+                  4,
+                ),
               ),
-            ],
-          ),
-          drawer: ProfileDrawer(
-            identity: widget.account.email,
-            accountName: widget.account.name,
-            onManageAccounts: widget.onManageAccounts,
-            caseCount: widget.casesController.state.cases.length,
-            onViewCases: _openAllCases,
-            onHelp: _openHelp,
-          ),
-          bottomNavigationBar: FootprintActionBar(
-            scanning: footprint.isLoading,
-            onScan: _openScanSheet,
-            onGuardAi: _openGuardAi,
-          ),
-          body: SafeArea(
-            bottom: false,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: CustomScrollView(
-                  key: const Key('dashboard-scroll'),
-                  controller: _scrollController,
-                  slivers: [
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        24,
-                        8,
-                        24,
-                        FootprintActionBar.contentHeight(context) +
-                            MediaQuery.viewPaddingOf(context).bottom +
-                            32,
-                      ),
-                      sliver: SliverMainAxisGroup(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: RepaintBoundary(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Semantics(
-                                    header: true,
-                                    child: Text(
-                                      'Tu huella digital',
-                                      style: theme.textTheme.headlineLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -1.2,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Entiende qué compartes. Decide qué cambiar.',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.person_outline_rounded,
-                                        size: 18,
-                                        color: theme.colorScheme.primary,
+              actions: [
+                _region(
+                  IconButton(
+                    focusNode: _helpFocus,
+                    tooltip: 'Ayuda de uso',
+                    onPressed: _openHelp,
+                    icon: const Icon(Icons.help_outline),
+                  ),
+                ),
+              ],
+            ),
+            drawer: ProfileDrawer(
+              identity: widget.account.email,
+              accountName: widget.account.name,
+              onManageAccounts: widget.onManageAccounts,
+              historyCount: widget.scanHistoryController?.count ?? 0,
+              onViewHistory: widget.scanHistoryController != null
+                  ? _openScanHistory
+                  : null,
+              caseCount: widget.casesController.state.cases.length,
+              onViewCases: _openAllCases,
+              onHelp: _openHelp,
+            ),
+            bottomNavigationBar: FootprintActionBar(
+              scanning: footprint.isLoading,
+              tourStep: _tourStep,
+              scanKey: _tourTargets[2],
+              guardAiKey: _tourTargets[3],
+              onScan: _openScanSheet,
+              onGuardAi: _openGuardAi,
+            ),
+            body: SafeArea(
+              bottom: false,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: CustomScrollView(
+                    key: const Key('dashboard-scroll'),
+                    controller: _scrollController,
+                    slivers: [
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          24,
+                          8,
+                          24,
+                          FootprintActionBar.contentHeight(context) +
+                              MediaQuery.viewPaddingOf(context).bottom +
+                              32,
+                        ),
+                        sliver: SliverMainAxisGroup(
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: RepaintBoundary(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    _region(
+                                      DashboardStatus(
+                                        footprint: footprint,
+                                        history: widget.scanHistoryController,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          profile?.targetIdentity ??
-                                              'Sin identidad evaluada',
-                                          key: const Key(
-                                            'dashboard-target-identity',
-                                          ),
-                                          style: theme.textTheme.bodyMedium,
+                                    ),
+                                    if (_tourStep != null && _tourStep != 1)
+                                      _tourPanel(),
+                                    if (profile != null) ...[
+                                      _region(
+                                        ExposureGauge(
+                                          key: _tourTargets[0],
+                                          profile: profile,
+                                        ),
+                                        0,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      _region(
+                                        RecommendationCard(
+                                          casesController:
+                                              widget.casesController,
+                                          historyCount:
+                                              widget
+                                                  .scanHistoryController
+                                                  ?.count ??
+                                              0,
+                                          onViewHistory:
+                                              widget.scanHistoryController !=
+                                                  null
+                                              ? _openScanHistory
+                                              : null,
+                                          featuredItem: featuredItem,
+                                          onGuardAi: _openGuardAi,
+                                          onViewAllCases: _openAllCases,
                                         ),
                                       ),
+                                      const SizedBox(height: 28),
                                     ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'VISTA DE EJEMPLO · Datos simulados',
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      letterSpacing: 0.7,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  if (footprint.isLoading)
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 20,
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              footprint.scanningStage ??
-                                                  'Cargando ejemplo…',
-                                            ),
-                                            const SizedBox(height: 12),
-                                            const LinearProgressIndicator(),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  if (footprint.error != null)
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Card(
-                                        color: theme.colorScheme.errorContainer,
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(footprint.error!),
-                                              TextButton(
-                                                onPressed: footprint.isLoading
-                                                    ? null
-                                                    : footprint.retry,
-                                                child: const Text('Reintentar'),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (profile != null) ...[
-                                    ExposureGauge(profile: profile),
-                                    const SizedBox(height: 20),
-                                    RecommendationCard(
-                                      casesController: widget.casesController,
-                                      featuredItem: featuredItem,
-                                      onGuardAi: _openGuardAi,
-                                      onViewAllCases: _openAllCases,
-                                    ),
-                                    const SizedBox(height: 28),
                                   ],
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                          if (profile != null)
-                            FootprintExplorer(
-                              profile: profile,
-                              visibleItems: footprint.visibleItems,
-                              selectedCategory: footprint.selectedCategory,
-                              onCategorySelected: footprint.setCategoryFilter,
-                              onFindingSelected: _showFindingDetail,
-                            ),
-                        ],
+                            if (_tourStep == 1)
+                              SliverToBoxAdapter(child: _tourPanel()),
+                            if (profile != null)
+                              FootprintExplorer(
+                                tourTargetKey: _tourTargets[1],
+                                tourStep: _tourStep,
+                                profile: profile,
+                                visibleItems: footprint.visibleItems,
+                                selectedCategory: footprint.selectedCategory,
+                                onCategorySelected: footprint.setCategoryFilter,
+                                onFindingSelected: _showFindingDetail,
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

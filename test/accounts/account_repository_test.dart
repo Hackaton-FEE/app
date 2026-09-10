@@ -5,19 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'the preview starts with two fictional profiles and no active session',
+    'the preview starts with one preview profile and no active session',
     () async {
       final accounts = await DemoAccountRepository().listAccounts();
 
-      expect(accounts, hasLength(2));
-      expect(accounts.map((account) => account.name), [
-        'Cuenta personal',
-        'Otra cuenta',
-      ]);
-      expect(
-        accounts.every((account) => account.email.endsWith('@example.invalid')),
-        isTrue,
-      );
+      expect(accounts, hasLength(1));
+      expect(accounts.map((account) => account.name), ['Cuenta personal']);
+      expect(accounts.single.email == 'pedro.demo@gmail.com', isTrue);
       expect(() => accounts.clear(), throwsUnsupportedError);
     },
   );
@@ -33,9 +27,9 @@ void main() {
 
     expect(added.name, 'Cuenta de prueba');
     expect(added.email, 'perfil@example.invalid');
-    expect(previous, hasLength(2));
+    expect(previous, hasLength(1));
     expect(await repository.listAccounts(), contains(added));
-    expect(await repository.listAccounts(), hasLength(3));
+    expect(await repository.listAccounts(), hasLength(2));
   });
 
   test(
@@ -47,8 +41,8 @@ void main() {
         email: 'temporal@example.invalid',
       );
 
-      expect(await repository.listAccounts(), hasLength(3));
-      expect(await DemoAccountRepository().listAccounts(), hasLength(2));
+      expect(await repository.listAccounts(), hasLength(2));
+      expect(await DemoAccountRepository().listAccounts(), hasLength(1));
     },
   );
 
@@ -59,7 +53,7 @@ void main() {
       await expectLater(
         repository.addAccount(
           name: 'Nombre distinto',
-          email: ' DEMO.PERSONAL@EXAMPLE.INVALID ',
+          email: ' PEDRO.DEMO@GMAIL.COM ',
         ),
         throwsA(
           isA<AccountRepositoryException>().having(
@@ -71,7 +65,7 @@ void main() {
       );
 
       final accounts = await repository.listAccounts();
-      expect(accounts, hasLength(2));
+      expect(accounts, hasLength(1));
       expect(accounts.first.name, 'Cuenta personal');
     },
   );
@@ -90,7 +84,7 @@ void main() {
         throwsFormatException,
       );
     }
-    expect(await repository.listAccounts(), hasLength(2));
+    expect(await repository.listAccounts(), hasLength(1));
   });
 
   test(

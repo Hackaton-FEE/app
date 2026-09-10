@@ -93,9 +93,6 @@ void main() {
           await checkGuidelines(tester);
         }
 
-        await reveal(tester, find.byKey(const Key('account-add-existing')));
-        await checkGuidelines(tester);
-
         final discover = find.text("Descubre Osisn't");
         await reveal(tester, discover);
         await tester.tap(discover);
@@ -114,13 +111,7 @@ void main() {
         expect(tester.takeException(), isNull);
         await checkGuidelines(tester);
 
-        for (final text in [
-          'Así funciona',
-          'Explora tu huella',
-          'Dale contexto con GuardAI',
-          'Decide cómo seguir',
-          'Conoce a GuardAI',
-        ]) {
+        for (final text in ['Conoce a GuardAI']) {
           final section = find.text(text);
           await reveal(tester, section);
           expect(
@@ -182,12 +173,12 @@ void main() {
         size: const Size(320, 640),
         textScale: 2,
       );
-      await reveal(tester, find.byKey(const Key('account-create')));
+      await reveal(tester, find.text('Reintentar'));
       await checkGuidelines(tester);
-      await tester.tap(find.byKey(const Key('account-create')));
+      await tester.tap(find.text('Reintentar'));
       await tester.pumpAndSettle();
-      expect(controller.activeAccount, isNotNull);
-      expect(controller.accounts, hasLength(1));
+      expect(controller.activeAccount, isNull);
+      expect(controller.accounts, isEmpty);
       expect(tester.takeException(), isNull);
     } finally {
       semantics.dispose();
@@ -220,7 +211,7 @@ void main() {
         await tester.tap(find.text('Reintentar'));
         await tester.pumpAndSettle();
         expect(controller.loadError, isNull);
-        expect(controller.accounts, hasLength(2));
+        expect(controller.accounts, hasLength(1));
         expect(controller.activeAccount, isNull);
         expect(tester.takeException(), isNull);
         await reveal(
