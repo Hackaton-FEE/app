@@ -61,12 +61,17 @@ cancelación sin registro implícito, error sin datos privados, ausencia de firm
 fallo de persistencia y separación del ID legado. Son pruebas del adaptador;
 no producen ni validan firmas reales.
 
-Para validar el sistema completo en un dispositivo asociado, iniciar sesión
-con una llave ya existente o crearla por decisión explícita de la persona,
-completar biometría/PIN, comprobar `/auth/me`, cerrar sesión y volver a entrar.
+La política vigente para las credenciales de software anteriores es retirarlas
+del servidor y revocar sus sesiones. Después de ese retiro, elegir **Crear
+cuenta** y **Crear con llave de acceso** para registrar una cuenta y una llave
+nativa nuevas. No hay migración de credenciales ni vinculación automática con
+las cuentas anteriores. El retiro conserva usuarios, escaneos, casos e historial;
+esa conservación no transfiere los datos de la cuenta anterior a la nueva.
+
+Para validar el sistema completo en un dispositivo asociado, crear la nueva
+llave mediante esa acción explícita, completar biometría/PIN, comprobar
+`/auth/me`, cerrar sesión y volver a entrar con la llave recién creada.
 No usar el antiguo smoke test de credenciales sintéticas para acreditar FIDO2.
-Las cuentas creadas con ese protocolo anterior no se convierten en passkeys
-por actualizar el cliente: requieren una ruta de transición del servidor.
 
 Referencias primarias: [paquete passkeys](https://pub.dev/packages/passkeys) e
 [implementación Android](https://pub.dev/packages/passkeys_android).
