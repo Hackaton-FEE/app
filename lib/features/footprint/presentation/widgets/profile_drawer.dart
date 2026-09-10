@@ -15,9 +15,7 @@ class ProfileDrawer extends StatelessWidget {
     required this.onHelp,
     this.accountName,
     this.onManageAccounts,
-    this.isDemo = true,
     this.onViewSessions,
-    this.onChangePassword,
     this.onViewCapabilities,
     this.onViewIdentity,
     super.key,
@@ -28,9 +26,7 @@ class ProfileDrawer extends StatelessWidget {
   final String? identity;
   final String? accountName;
   final VoidCallback? onManageAccounts;
-  final bool isDemo;
   final VoidCallback? onViewSessions;
-  final VoidCallback? onChangePassword;
   final VoidCallback? onViewCapabilities;
   final VoidCallback? onViewIdentity;
   final int caseCount;
@@ -65,13 +61,6 @@ class ProfileDrawer extends StatelessWidget {
         Icons.devices_rounded,
         'profile-sessions',
         onViewSessions,
-      ),
-    if (onChangePassword != null)
-      (
-        'Cambiar contraseña',
-        Icons.password_rounded,
-        'profile-password',
-        onChangePassword,
       ),
     if (onViewCapabilities != null)
       (
@@ -215,9 +204,7 @@ class ProfileDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    isDemo
-                        ? 'Cuenta local activa'
-                        : 'Sesión en la nube activa',
+                    'Sesión autenticada',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),

@@ -44,8 +44,9 @@ class _FakeFootprintRepository implements FootprintRepository {
 }
 
 void main() {
-  testWidgets('ProfileSetupPage renders initial onboarding form and fields',
-      (tester) async {
+  testWidgets('ProfileSetupPage renders initial onboarding form and fields', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -53,11 +54,7 @@ void main() {
 
     final storage = _InMemoryStorage();
     final repo = LocalIdentityProfileRepository(storage: storage);
-    final controller = IdentityProfileController(
-      repo,
-      accountId: 'acc-1',
-      isDemo: false,
-    );
+    final controller = IdentityProfileController(repo, accountId: 'acc-1');
     await controller.load();
 
     const account = LocalAccount(
@@ -77,12 +74,10 @@ void main() {
     );
 
     expect(find.text('Configura tu identidad a proteger'), findsOneWidget);
-    expect(find.text('Carlos Ruiz'), findsNWidgets(2));
+    expect(find.text('Carlos Ruiz'), findsNothing);
+    expect(find.text('carlos@example.com'), findsOneWidget);
     expect(find.text('Guardar e Iniciar Auditoría'), findsOneWidget);
-    expect(
-      find.text('Configurar más tarde (iniciar en 0)'),
-      findsOneWidget,
-    );
+    expect(find.text('Configurar más tarde (iniciar en 0)'), findsOneWidget);
   });
 
   testWidgets('Can add and delete associated usernames', (tester) async {
@@ -93,11 +88,7 @@ void main() {
 
     final storage = _InMemoryStorage();
     final repo = LocalIdentityProfileRepository(storage: storage);
-    final controller = IdentityProfileController(
-      repo,
-      accountId: 'acc-1',
-      isDemo: false,
-    );
+    final controller = IdentityProfileController(repo, accountId: 'acc-1');
     await controller.load();
 
     const account = LocalAccount(
@@ -116,8 +107,7 @@ void main() {
       ),
     );
 
-    final inputFinder =
-        find.widgetWithText(TextField, 'Ej. jdoe, pepito_dev');
+    final inputFinder = find.widgetWithText(TextField, 'Ej. jdoe, pepito_dev');
     await tester.enterText(inputFinder, 'anita_dev');
     await tester.tap(find.byIcon(Icons.add_rounded));
     await tester.pump();
@@ -132,65 +122,65 @@ void main() {
   });
 
   testWidgets(
-      'Submitting form saves profile, triggers scan, and calls onCompleted',
-      (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final storage = _InMemoryStorage();
-    final repo = LocalIdentityProfileRepository(storage: storage);
-    final controller = IdentityProfileController(
-      repo,
-      accountId: 'acc-1',
-      isDemo: false,
-    );
-    await controller.load();
+    'Submitting form saves profile, triggers scan, and calls onCompleted',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final storage = _InMemoryStorage();
+      final repo = LocalIdentityProfileRepository(storage: storage);
+      final controller = IdentityProfileController(repo, accountId: 'acc-1');
+      await controller.load();
 
-    final fakeFootprintRepo = _FakeFootprintRepository();
-    final footprint = FootprintController(fakeFootprintRepo);
+      final fakeFootprintRepo = _FakeFootprintRepository();
+      final footprint = FootprintController(fakeFootprintRepo);
 
-    const account = LocalAccount(
-      id: 'acc-1',
-      name: 'Ana López',
-      email: 'ana@empresa.com',
-    );
+      const account = LocalAccount(
+        id: 'acc-1',
+        name: 'Ana López',
+        email: 'ana@empresa.com',
+      );
 
-    var completed = false;
+      var completed = false;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ProfileSetupPage(
-          account: account,
-          identityController: controller,
-          footprintController: footprint,
-          isInitialOnboarding: true,
-          onCompleted: () => completed = true,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ProfileSetupPage(
+            account: account,
+            identityController: controller,
+            footprintController: footprint,
+            isInitialOnboarding: true,
+            onCompleted: () => completed = true,
+          ),
         ),
-      ),
-    );
+      );
 
-    // Add handle
-    final inputFinder =
-        find.widgetWithText(TextField, 'Ej. jdoe, pepito_dev');
-    await tester.enterText(inputFinder, 'analopez');
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pump();
+      // Add handle
+      final inputFinder = find.widgetWithText(
+        TextField,
+        'Ej. jdoe, pepito_dev',
+      );
+      await tester.enterText(inputFinder, 'analopez');
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
 
-    // Tap submit
-    await tester.tap(find.text('Guardar e Iniciar Auditoría'));
-    await tester.pumpAndSettle();
+      // Tap submit
+      await tester.tap(find.text('Guardar e Iniciar Auditoría'));
+      await tester.pumpAndSettle();
 
-    expect(completed, isTrue);
-    expect(controller.needsOnboarding, isFalse);
-    expect(controller.profile?.mainIdentifier, 'Ana López');
-    expect(controller.profile?.associatedUsernames, ['analopez']);
-    expect(fakeFootprintRepo.lastScannedIdentity, 'Ana López');
-    expect(fakeFootprintRepo.lastUsernames, ['analopez']);
-  });
+      expect(completed, isTrue);
+      expect(controller.needsOnboarding, isFalse);
+      expect(controller.profile?.mainIdentifier, 'ana@empresa.com');
+      expect(controller.profile?.associatedUsernames, ['analopez']);
+      expect(fakeFootprintRepo.lastScannedIdentity, 'ana@empresa.com');
+      expect(fakeFootprintRepo.lastUsernames, ['analopez']);
+    },
+  );
 
-  testWidgets('Skip button satisfies onboarding with default zero-state',
-      (tester) async {
+  testWidgets('Skip button satisfies onboarding with default zero-state', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -198,11 +188,7 @@ void main() {
 
     final storage = _InMemoryStorage();
     final repo = LocalIdentityProfileRepository(storage: storage);
-    final controller = IdentityProfileController(
-      repo,
-      accountId: 'acc-2',
-      isDemo: false,
-    );
+    final controller = IdentityProfileController(repo, accountId: 'acc-2');
     await controller.load();
 
     const account = LocalAccount(
@@ -229,6 +215,88 @@ void main() {
 
     expect(completed, isTrue);
     expect(controller.needsOnboarding, isFalse);
-    expect(controller.profile?.mainIdentifier, 'David');
+    expect(controller.profile?.mainIdentifier, 'david@test.com');
+    expect(controller.profile?.consentSelfAudit, isFalse);
   });
+
+  testWidgets(
+    'failed skip preserves corrupt profile and never completes onboarding',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final storage = _InMemoryStorage();
+      await storage.write('acc-corrupt', '{broken');
+      final controller = IdentityProfileController(
+        LocalIdentityProfileRepository(storage: storage),
+        accountId: 'acc-corrupt',
+      );
+      addTearDown(controller.dispose);
+      await controller.load();
+      var completed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ProfileSetupPage(
+            account: const LocalAccount(
+              id: 'acc-corrupt',
+              name: 'Etiqueta',
+              email: '',
+            ),
+            identityController: controller,
+            onCompleted: () => completed = true,
+          ),
+        ),
+      );
+      await tester.tap(find.text('Configurar más tarde (iniciar en 0)'));
+      await tester.pumpAndSettle();
+      expect(completed, isFalse);
+      expect(controller.needsOnboarding, isFalse);
+      expect(await storage.read('acc-corrupt'), '{broken');
+      expect(
+        find.text('El perfil de identidad almacenado no es válido.'),
+        findsOneWidget,
+      );
+      expect(find.byType(ProfileSetupPage), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'an account label never pre-fills personal identity or grants scan consent',
+    (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final storage = _InMemoryStorage();
+      final controller = IdentityProfileController(
+        LocalIdentityProfileRepository(storage: storage),
+        accountId: 'label-only',
+      );
+      addTearDown(controller.dispose);
+      await controller.load();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ProfileSetupPage(
+            account: const LocalAccount(
+              id: 'label-only',
+              name: 'Etiqueta privada',
+              email: '',
+            ),
+            identityController: controller,
+          ),
+        ),
+      );
+      for (final field in tester.widgetList<TextFormField>(
+        find.byType(TextFormField),
+      )) {
+        expect(field.controller!.text, isEmpty);
+      }
+      await tester.tap(find.text('Configurar más tarde (iniciar en 0)'));
+      await tester.pumpAndSettle();
+      expect(controller.profile?.mainIdentifier, isEmpty);
+      expect(controller.profile?.fullName, isNull);
+      expect(controller.profile?.consentSelfAudit, isFalse);
+    },
+  );
 }

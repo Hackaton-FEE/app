@@ -1,3 +1,8 @@
+import '../test/support/mock_footprint_repository.dart';
+import '../test/support/ready_identity_repository.dart';
+import '../test/support/demo_guard_ai_repository.dart';
+import '../test/support/demo_account_repository.dart';
+
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +17,13 @@ void main() {
 
   testWidgets('dashboard scroll frame timings', (tester) async {
     await tester.pumpWidget(
-      FeeApp(repository: LocalCaseRepository(storage: FakeCaseStorage())),
+      FeeApp(
+        guardAiRepositoryFactory: (_) => DemoGuardAiRepository(),
+        identityProfileRepository: ReadyIdentityRepository(),
+        accountRepository: DemoAccountRepository(),
+        footprintRepositoryFactory: (_) => MockFootprintRepository(),
+        repository: LocalCaseRepository(storage: FakeCaseStorage()),
+      ),
     );
     await tester.pumpAndSettle();
     final account = find.byKey(const Key('account-demo-personal'));

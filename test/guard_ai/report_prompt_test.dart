@@ -2,7 +2,9 @@ import 'package:fee_app/app/theme.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:fee_app/features/cases/presentation/case_form_page.dart';
 import 'package:fee_app/features/cases/presentation/cases_controller.dart';
-import 'package:fee_app/features/guard_ai/data/demo_guard_ai_repository.dart';
+
+import '../support/demo_guard_ai_repository.dart';
+
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
 import 'package:flutter/material.dart';

@@ -11,40 +11,37 @@ abstract interface class AuthRepository {
     String label = 'Mi Bóveda FEE',
     PasskeyAuthenticator? authenticator,
   });
-  Future<UserProfile> loginWithPasskey({
-    PasskeyAuthenticator? authenticator,
-  });
-  Future<UserProfile> register({
-    required String email,
-    required String password,
-  });
-  Future<UserProfile> login({
-    required String email,
-    required String password,
-  });
+  Future<UserProfile> loginWithPasskey({PasskeyAuthenticator? authenticator});
   Future<UserProfile?> restoreSession();
   Future<void> logout();
   Future<UserProfile> getProfile();
   Future<List<SessionInfo>> getSessions();
   Future<void> revokeSession(String sessionId);
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  });
   Future<List<ScanCapabilityProvider>> getScanCapabilities();
 }
 
 class BackendAuthRepository implements AuthRepository {
-  BackendAuthRepository({
+  factory BackendAuthRepository({
     AuthApiClient? apiClient,
     TokenStorage? tokenStorage,
     PasskeyAuthenticator? authenticator,
-  }) : _storage = tokenStorage ?? SecureTokenStorage(),
-       _client = apiClient ??
-           AuthApiClient(
-             tokenStorage: tokenStorage ?? SecureTokenStorage(),
-           ),
-       _authenticator = authenticator ?? SoftPasskeyAuthenticator();
+  }) {
+    final effectiveStorage =
+        tokenStorage ?? apiClient?.tokenStorage ?? SecureTokenStorage();
+    final effectiveClient =
+        apiClient ?? AuthApiClient(tokenStorage: effectiveStorage);
+    return BackendAuthRepository._(
+      storage: effectiveStorage,
+      client: effectiveClient,
+      authenticator: authenticator ?? NativePasskeyAuthenticator(),
+    );
+  }
+
+  BackendAuthRepository._({
+    required this._storage,
+    required this._client,
+    required this._authenticator,
+  });
 
   final TokenStorage _storage;
   final AuthApiClient _client;
@@ -93,36 +90,10 @@ class BackendAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<UserProfile> register({
-    required String email,
-    required String password,
-  }) async {
-    // El backend v0.2.0 opera exclusivamente con Passkeys FIDO2.
-    // Para compatibilidad total con la UI y pruebas, enlazamos el registro
-    // a la creación de una bóveda passkey etiquetada con el correo/alias.
-    return registerWithPasskey(label: email);
-  }
-
-  @override
-  Future<UserProfile> login({
-    required String email,
-    required String password,
-  }) async {
-    // El backend v0.2.0 opera con credenciales descubribles FIDO2.
-    // Enlazamos el login tradicional al desafío passkey de la bóveda.
-    return loginWithPasskey();
-  }
-
-  @override
   Future<UserProfile?> restoreSession() async {
-    try {
-      final tokens = await _client.refreshTokens();
-      if (tokens == null) return null;
-      return await _client.getMe();
-    } catch (_) {
-      await _storage.clearAll();
-      return null;
-    }
+    final tokens = await _client.refreshTokens();
+    if (tokens == null) return null;
+    return _client.getMe();
   }
 
   @override
@@ -139,16 +110,22 @@ class BackendAuthRepository implements AuthRepository {
       _client.revokeSession(sessionId);
 
   @override
-  Future<void> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) =>
-      _client.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      );
-
-  @override
   Future<List<ScanCapabilityProvider>> getScanCapabilities() =>
       _client.getScanCapabilities();
+
+  /// Renueva una sesión existente. El acceso nativo requiere una acción explícita.
+  Future<String> ensureAccessToken({bool forceRefresh = false}) async {
+    final current = _storage.accessToken;
+    if (!forceRefresh && current != null && current.isNotEmpty) return current;
+    _storage.accessToken = null;
+    final restored = await restoreSession();
+    final refreshed = _storage.accessToken;
+    if (restored != null && refreshed != null && refreshed.isNotEmpty) {
+      return refreshed;
+    }
+    throw const AuthApiException(
+      message: 'Tu sesión venció. Inicia sesión con tu llave de acceso.',
+      code: 'auth_required',
+    );
+  }
 }

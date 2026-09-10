@@ -76,7 +76,7 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                       Semantics(
                         header: true,
                         child: Text(
-                          'Elige tu cuenta',
+                          controllerTitle(widget.controller),
                           style: theme.textTheme.headlineLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             letterSpacing: -1,
@@ -107,25 +107,11 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                       else ...[
                         if (controller.authRepository != null) ...[
                           AuthCard(controller: controller),
-                          const SizedBox(height: 16),
-                          Divider(
-                            color: colors.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'O continúa con tu cuenta local',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
                         ],
                         if (controller.accounts.isEmpty &&
                             controller.authRepository == null)
                           _AccountError(
-                            message:
-                                'La cuenta no está disponible. Intenta cargarla de nuevo.',
+                            message: 'La cuenta no está disponible. Intenta cargarla de nuevo.',
                             onRetry: controller.load,
                           ),
                         for (final account in controller.accounts)
@@ -183,7 +169,8 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                       ],
                       const SizedBox(height: 12),
                       Text(
-                        'Acceso rápido configurado en este dispositivo. Entra directamente con un toque.',
+                        'Tu sesión y los resultados provienen del servidor. '
+                        'Tus casos se guardan en este dispositivo.',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colors.onSurfaceVariant,
@@ -242,3 +229,8 @@ class _AccountError extends StatelessWidget {
     ),
   );
 }
+
+String controllerTitle(AccountsController controller) =>
+    controller.authRepository == null
+    ? 'Elige tu cuenta'
+    : 'Accede a tu cuenta';

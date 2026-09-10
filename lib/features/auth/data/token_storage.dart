@@ -46,11 +46,7 @@ class SecureTokenStorage implements TokenStorage {
 
   @override
   Future<String?> readRefreshToken() async {
-    try {
-      return await _storage.read(key: refreshKey);
-    } catch (_) {
-      return null;
-    }
+    return _storage.read(key: refreshKey);
   }
 
   @override
@@ -60,53 +56,12 @@ class SecureTokenStorage implements TokenStorage {
 
   @override
   Future<void> clearRefreshToken() async {
-    try {
-      await _storage.delete(key: refreshKey);
-    } catch (_) {
-      // Ignorar errores en limpieza
-    }
+    await _storage.delete(key: refreshKey);
   }
 
   @override
   Future<void> clearAll() async {
-    _accessToken = null;
     await clearRefreshToken();
-  }
-}
-
-/// Implementación en memoria de [TokenStorage] para pruebas unitarias.
-class InMemoryTokenStorage implements TokenStorage {
-  InMemoryTokenStorage({String? initialRefreshToken, String? initialAccessToken})
-      : _refreshToken = initialRefreshToken,
-        _accessToken = initialAccessToken;
-
-  String? _refreshToken;
-  String? _accessToken;
-
-  @override
-  String? get accessToken => _accessToken;
-
-  @override
-  set accessToken(String? token) {
-    _accessToken = token;
-  }
-
-  @override
-  Future<String?> readRefreshToken() async => _refreshToken;
-
-  @override
-  Future<void> saveRefreshToken(String token) async {
-    _refreshToken = token;
-  }
-
-  @override
-  Future<void> clearRefreshToken() async {
-    _refreshToken = null;
-  }
-
-  @override
-  Future<void> clearAll() async {
-    _refreshToken = null;
     _accessToken = null;
   }
 }

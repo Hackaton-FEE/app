@@ -1,4 +1,5 @@
-import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+import '../support/mock_footprint_repository.dart';
+
 import 'package:fee_app/features/footprint/domain/footprint_item.dart';
 import 'package:fee_app/features/footprint/presentation/footprint_controller.dart';
 import 'package:flutter_test/flutter_test.dart';

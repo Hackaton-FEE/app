@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import '../features/accounts/data/demo_account_repository.dart';
 import '../features/accounts/data/flutter_secure_identity_storage.dart';
 import '../features/accounts/data/local_identity_profile_repository.dart';
 import '../features/accounts/domain/account_repository.dart';
@@ -22,14 +21,15 @@ import '../features/cases/presentation/cases_page.dart';
 import '../features/footprint/data/backend_footprint_repository.dart';
 import '../features/footprint/data/flutter_secure_scan_storage.dart';
 import '../features/footprint/data/local_scan_history_repository.dart';
-import '../features/footprint/data/mock_footprint_repository.dart';
+import '../features/footprint/data/unavailable_footprint_repository.dart';
 import '../features/footprint/data/osint_client.dart';
 import '../features/footprint/domain/footprint_repository.dart';
 import '../features/footprint/domain/scan_history_repository.dart';
 import '../features/footprint/presentation/dashboard_page.dart';
 import '../features/footprint/presentation/footprint_controller.dart';
 import '../features/footprint/presentation/scan_history_controller.dart';
-import '../features/guard_ai/data/demo_guard_ai_repository.dart';
+import '../features/guard_ai/data/unavailable_guard_ai_repository.dart';
+import '../features/guard_ai/domain/guard_ai_repository.dart';
 import '../features/guard_ai/presentation/guard_ai_controller.dart';
 import 'theme.dart';
 
@@ -38,6 +38,7 @@ class FeeApp extends StatefulWidget {
     this.repository,
     this.footprintRepositoryFactory,
     this.scanHistoryRepositoryFactory,
+    this.guardAiRepositoryFactory,
     this.accountRepository,
     this.authRepository,
     this.identityProfileRepository,
@@ -50,6 +51,8 @@ class FeeApp extends StatefulWidget {
   footprintRepositoryFactory;
   final ScanHistoryRepository Function(LocalAccount account)?
   scanHistoryRepositoryFactory;
+  final GuardAiRepository Function(LocalAccount account)?
+  guardAiRepositoryFactory;
   final AccountRepository? accountRepository;
   final AuthRepository? authRepository;
   final IdentityProfileRepository? identityProfileRepository;
@@ -71,10 +74,11 @@ class _FeeAppState extends State<FeeApp> {
       widget.repository ??
           LocalCaseRepository(storage: FlutterSecureCaseStorage()),
     );
-    final authRepo = widget.authRepository ??
+    final authRepo =
+        widget.authRepository ??
         (widget.accountRepository == null ? BackendAuthRepository() : null);
     _accounts = AccountsController(
-      widget.accountRepository ?? DemoAccountRepository(),
+      widget.accountRepository,
       authRepository: authRepo,
     );
     unawaited(_cases.load());
@@ -86,66 +90,73 @@ class _FeeAppState extends State<FeeApp> {
     }
   }
 
-  _AccountSession _sessionFor(LocalAccount account) =>
-      _sessions.putIfAbsent(account.id, () {
-        final scanHistoryRepo =
-            widget.scanHistoryRepositoryFactory?.call(account) ??
-            LocalScanHistoryRepository(
-              storage: FlutterSecureScanStorage(
-                prefix: 'fee.scan.${account.id}.v1.',
-              ),
-            );
-        final history = ScanHistoryController(scanHistoryRepo);
-
-        final identityRepo = widget.identityProfileRepository ??
-            LocalIdentityProfileRepository(
-              storage: FlutterSecureIdentityStorage(
-                prefix: 'fee.identity.${account.id}.v1.',
-              ),
-            );
-        final identity = IdentityProfileController(
-          identityRepo,
-          accountId: account.id,
-          isDemo: account.isDemo,
-        );
-        unawaited(identity.load());
-
-        FootprintController? footprintController;
-        FootprintRepository footprintRepo;
-
-        if (widget.footprintRepositoryFactory != null) {
-          footprintRepo = widget.footprintRepositoryFactory!(account);
-        } else if (!account.isDemo &&
-            _accounts.authRepository is BackendAuthRepository) {
-          final backendAuth = _accounts.authRepository! as BackendAuthRepository;
-          final token = backendAuth.tokenStorage.accessToken ?? '';
-          footprintRepo = BackendFootprintRepository(
-            client: OsintClient(accessToken: token),
-            targetIdentity: account.email,
-            fallbackRepository:
-                MockFootprintRepository(targetIdentity: account.email),
-            onProgressUpdate: (stage, _) {
-              footprintController?.updateStage(stage);
-            },
+  _AccountSession _sessionFor(LocalAccount account) => _sessions.putIfAbsent(
+    account.id,
+    () {
+      final scanHistoryRepo =
+          widget.scanHistoryRepositoryFactory?.call(account) ??
+          LocalScanHistoryRepository(
+            storage: FlutterSecureScanStorage(
+              prefix: 'fee.scan.${account.id}.v1.',
+            ),
           );
-        } else {
-          footprintRepo =
-              MockFootprintRepository(targetIdentity: account.email);
-        }
+      final history = ScanHistoryController(scanHistoryRepo);
 
-        final footprint = FootprintController(
-          footprintRepo,
-          onScanCompleted: history.recordScan,
-        );
-        footprintController = footprint;
+      final identityRepo =
+          widget.identityProfileRepository ??
+          LocalIdentityProfileRepository(
+            storage: FlutterSecureIdentityStorage(
+              prefix: 'fee.identity.${account.id}.v1.',
+            ),
+          );
+      final identity = IdentityProfileController(
+        identityRepo,
+        accountId: account.id,
+      );
+      unawaited(identity.load());
 
-        return _AccountSession(
-          footprint: footprint,
-          guardAi: GuardAiController(DemoGuardAiRepository()),
-          scanHistory: history,
-          identity: identity,
+      FootprintController? footprintController;
+      FootprintRepository footprintRepo;
+
+      if (widget.footprintRepositoryFactory != null) {
+        footprintRepo = widget.footprintRepositoryFactory!(account);
+      } else if (_accounts.authRepository is BackendAuthRepository) {
+        final backendAuth = _accounts.authRepository! as BackendAuthRepository;
+        footprintRepo = BackendFootprintRepository(
+          client: OsintClient(
+            tokenProvider: () => backendAuth.tokenStorage.accessToken,
+            asyncTokenProvider: ({forceRefresh = false}) =>
+                backendAuth.ensureAccessToken(forceRefresh: forceRefresh),
+          ),
+          targetIdentity: account.email,
+          historyRepository: scanHistoryRepo,
+          onProgressUpdate: (stage, _) {
+            footprintController?.updateStage(stage);
+          },
         );
-      });
+      } else {
+        footprintRepo = UnavailableFootprintRepository(
+          targetIdentity: account.email,
+        );
+      }
+
+      final footprint = FootprintController(
+        footprintRepo,
+        onScanCompleted: history.recordScan,
+      );
+      footprintController = footprint;
+
+      return _AccountSession(
+        footprint: footprint,
+        guardAi: GuardAiController(
+          widget.guardAiRepositoryFactory?.call(account) ??
+              const UnavailableGuardAiRepository(),
+        ),
+        scanHistory: history,
+        identity: identity,
+      );
+    },
+  );
 
   @override
   void dispose() {
@@ -183,6 +194,15 @@ class _FeeAppState extends State<FeeApp> {
               return ListenableBuilder(
                 listenable: session.identity,
                 builder: (context, _) {
+                  if (session.identity.error != null ||
+                      !session.identity.isLoaded ||
+                      session.identity.isLoading) {
+                    return _IdentityGate(
+                      error: session.identity.error,
+                      onRetry: session.identity.load,
+                      onSignOut: _accounts.signOut,
+                    );
+                  }
                   if (session.identity.needsOnboarding) {
                     return ProfileSetupPage(
                       account: account,
@@ -206,6 +226,76 @@ class _FeeAppState extends State<FeeApp> {
               );
             },
           ),
+  );
+}
+
+class _IdentityGate extends StatelessWidget {
+  const _IdentityGate({
+    required this.error,
+    required this.onRetry,
+    required this.onSignOut,
+  });
+  final String? error;
+  final VoidCallback onRetry;
+  final VoidCallback onSignOut;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (error == null) ...[
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Preparando tu perfil…',
+                    key: Key('identity-profile-loading'),
+                    textAlign: TextAlign.center,
+                  ),
+                ] else ...[
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      error!,
+                      key: const Key('identity-profile-error'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Tus datos guardados se conservan. Reintenta para continuar.',
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    key: const Key('identity-profile-retry'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(48, 48),
+                    ),
+                    onPressed: onRetry,
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  key: const Key('identity-profile-sign-out'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
+                  onPressed: onSignOut,
+                  child: const Text('Cerrar sesión'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 

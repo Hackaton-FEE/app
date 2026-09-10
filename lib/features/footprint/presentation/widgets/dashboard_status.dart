@@ -44,7 +44,9 @@ class DashboardStatus extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                profile?.targetIdentity ?? 'Sin identidad evaluada',
+                profile?.targetIdentity.trim().isNotEmpty == true
+                    ? profile!.targetIdentity
+                    : 'Sin identidad evaluada',
                 key: const Key('dashboard-target-identity'),
                 style: theme.textTheme.bodyMedium,
               ),
@@ -53,7 +55,7 @@ class DashboardStatus extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'AUDITORÍA DE HUELLA DIGITAL · Monitoreo activo',
+          'AUDITORÍA DE HUELLA DIGITAL · Consulta bajo demanda',
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             letterSpacing: 0.7,
@@ -67,20 +69,25 @@ class DashboardStatus extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 20),
               child: Card(
                 elevation: 0,
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.35,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.6),
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.6,
+                    ),
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
                   child: Column(
                     children: [
-                      const LogoLoadingIndicator(
-                        size: 72,
-                      ),
+                      const LogoLoadingIndicator(size: 72),
                       const SizedBox(height: 14),
                       Text(
                         footprint.scanningStage ?? 'Analizando identidad…',

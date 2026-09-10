@@ -1,8 +1,10 @@
-import 'package:fee_app/features/footprint/data/mock_footprint_repository.dart';
+import '../support/mock_footprint_repository.dart';
+
 import 'package:fee_app/app/theme.dart';
 import 'package:fee_app/features/cases/domain/privacy_case.dart';
 import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
 import 'package:fee_app/features/footprint/domain/footprint_item.dart';
+import 'package:fee_app/features/footprint/domain/osint_report.dart';
 import 'package:fee_app/features/footprint/domain/scan_history_entry.dart';
 import 'package:fee_app/features/footprint/presentation/scan_history_controller.dart';
 import 'package:fee_app/features/footprint/presentation/scan_history_page.dart';
@@ -65,6 +67,17 @@ void main() {
         highRiskCount: 1,
         mediumRiskCount: 1,
         lowRiskCount: 0,
+        osintReport: OsintReport(
+          scanId: 'backend-scan-1',
+          exposureScore: 65,
+          riskLevel: 'HIGH',
+          partial: false,
+          platformsFound: 1,
+          highConfidence: 1,
+          potentialMatches: 0,
+          rateLimited: 0,
+          enginesRun: ['test-engine'],
+        ),
         items: [
           FootprintItem(
             id: 'item-1',
@@ -84,7 +97,7 @@ void main() {
       await repository.saveScan(entry);
       await controller.load();
 
-      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpWidget(buildTestWidget(onSelectProfile: (_) {}));
       await tester.pumpAndSettle();
 
       expect(find.text('persona@empresa.com'), findsOneWidget);
@@ -100,7 +113,49 @@ void main() {
       expect(find.text('Detalle del escaneo'), findsOneWidget);
       expect(find.text('Credenciales expuestas'), findsOneWidget);
       expect(find.text('Bases Filtradas'), findsOneWidget);
+      expect(
+        find.byKey(const Key('load-scan-to-dashboard-button')),
+        findsOneWidget,
+      );
     });
+
+    testWidgets(
+      'legacy history hides unverified findings and cannot load them',
+      (tester) async {
+        final profile = await MockFootprintRepository().getProfile();
+        await controller.recordScan(profile);
+        final before = await storage.readAll();
+        var selected = false;
+        await tester.pumpWidget(
+          buildTestWidget(onSelectProfile: (_) => selected = true),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Origen no verificado'), findsOneWidget);
+        expect(find.textContaining('Exposición:'), findsNothing);
+        expect(find.textContaining(' hallazgos'), findsNothing);
+        expect(find.text('Riesgo alto'), findsNothing);
+        await tester.tap(
+          find.byKey(Key('scan-history-card-${controller.entries.single.id}')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('no permite verificar el origen'),
+          findsOneWidget,
+        );
+        for (final item in profile.items) {
+          expect(find.text(item.title), findsNothing);
+          expect(find.text(item.platform), findsNothing);
+        }
+        expect(
+          find.byKey(const Key('load-scan-to-dashboard-button')),
+          findsNothing,
+        );
+        expect(selected, isFalse);
+        expect(await storage.readAll(), before);
+      },
+    );
 
     testWidgets('allows deleting a scan from history', (tester) async {
       final entry = ScanHistoryEntry(

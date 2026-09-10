@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fee_app/features/accounts/data/identity_storage.dart';
 import 'package:fee_app/features/accounts/data/local_identity_profile_repository.dart';
@@ -85,7 +87,8 @@ void main() {
       );
 
       await repo.saveProfile(profile);
-      final retrieved = await repo.getProfile('acc-1');
+      final recreated = LocalIdentityProfileRepository(storage: storage);
+      final retrieved = await recreated.getProfile('acc-1');
       expect(retrieved, isNotNull);
       expect(retrieved!.mainIdentifier, 'user@example.com');
       expect(retrieved.associatedUsernames, ['user_x']);
@@ -94,55 +97,147 @@ void main() {
       expect(await repo.getProfile('acc-1'), isNull);
     });
 
-    test('handles corrupt json gracefully by returning null', () async {
-      final storage = _InMemoryIdentityStorage();
-      await storage.write('acc-bad', '{not valid json');
-      final repo = LocalIdentityProfileRepository(storage: storage);
+    test(
+      'corrupt data blocks reads and changes without replacing the original',
+      () async {
+        final storage = _InMemoryIdentityStorage();
+        await storage.write('acc-bad', '{not valid json');
+        final repo = LocalIdentityProfileRepository(storage: storage);
 
-      final result = await repo.getProfile('acc-bad');
-      expect(result, isNull);
+        await expectLater(repo.getProfile('acc-bad'), throwsFormatException);
+        final replacement = IdentityProfile(
+          accountId: 'acc-bad',
+          mainIdentifier: 'test@example.invalid',
+          createdAt: DateTime.utc(2026, 9, 10),
+        );
+        await expectLater(repo.saveProfile(replacement), throwsFormatException);
+        await expectLater(repo.deleteProfile('acc-bad'), throwsFormatException);
+        expect(await storage.read('acc-bad'), '{not valid json');
+      },
+    );
+  });
+
+  group('Invalid stored identity', () {
+    final valid = IdentityProfile(
+      accountId: 'acc-invalid',
+      mainIdentifier: 'test@example.invalid',
+      consentSelfAudit: false,
+      createdAt: DateTime.utc(2026, 9, 10),
+    ).toJson();
+    final invalidCases = <String, dynamic>{
+      'created_at': '2026-02-30T10:00:00Z',
+      'updated_at': 'not a date',
+      'consent_self_audit': 'true',
+      'has_completed_onboarding': null,
+      'associated_usernames': [123],
+      'full_name': false,
+      'account_id': 'another-account',
+    };
+    for (final entry in invalidCases.entries) {
+      test('rejects ${entry.key} without modifying the record', () async {
+        final raw = jsonEncode({...valid, entry.key: entry.value});
+        final storage = _InMemoryIdentityStorage();
+        await storage.write('acc-invalid', raw);
+        final repo = LocalIdentityProfileRepository(storage: storage);
+        await expectLater(
+          repo.getProfile('acc-invalid'),
+          throwsFormatException,
+        );
+        expect(await storage.read('acc-invalid'), raw);
+      });
+    }
+    for (final field in [
+      'created_at',
+      'consent_self_audit',
+      'has_completed_onboarding',
+    ]) {
+      test('missing $field never becomes a date or consent default', () {
+        final incomplete = Map<String, dynamic>.from(valid)..remove(field);
+        expect(
+          () => IdentityProfile.fromJson(incomplete),
+          throwsFormatException,
+        );
+      });
+    }
+    for (final raw in ['', ' ', '[]', 'x' * (32 * 1024 + 1)]) {
+      test(
+        'present invalid record of ${raw.length} characters is not absence',
+        () async {
+          final storage = _InMemoryIdentityStorage();
+          await storage.write('acc-invalid', raw);
+          final repo = LocalIdentityProfileRepository(storage: storage);
+          await expectLater(
+            repo.getProfile('acc-invalid'),
+            throwsFormatException,
+          );
+          expect(await storage.read('acc-invalid'), raw);
+        },
+      );
+    }
+    test('input aliases and returned collections cannot mutate a profile', () {
+      final aliases = ['alias'];
+      final profile = IdentityProfile(
+        accountId: 'test',
+        mainIdentifier: '',
+        associatedUsernames: aliases,
+        createdAt: DateTime.utc(2026, 9, 10),
+      );
+      aliases.clear();
+      expect(profile.associatedUsernames, ['alias']);
+      expect(() => profile.associatedUsernames.clear(), throwsUnsupportedError);
     });
   });
 
   group('IdentityProfileController', () {
-    test('demo account never needs onboarding', () async {
+    test('failed load cannot turn a corrupt profile into onboarding', () async {
       final storage = _InMemoryIdentityStorage();
-      final repo = LocalIdentityProfileRepository(storage: storage);
+      await storage.write('test', '{}');
       final controller = IdentityProfileController(
-        repo,
-        accountId: 'demo-1',
-        isDemo: true,
+        LocalIdentityProfileRepository(storage: storage),
+        accountId: 'test',
       );
-
+      addTearDown(controller.dispose);
       await controller.load();
+      expect(controller.error, isNotNull);
+      expect(controller.isLoaded, isFalse);
       expect(controller.needsOnboarding, isFalse);
+      expect(await controller.skipOnboarding(identifier: ''), isFalse);
+      expect(await storage.read('test'), '{}');
     });
 
-    test('new non-demo account requires onboarding until saved or skipped', () async {
+    test('a fresh account requires onboarding', () async {
       final storage = _InMemoryIdentityStorage();
       final repo = LocalIdentityProfileRepository(storage: storage);
-      final controller = IdentityProfileController(
-        repo,
-        accountId: 'user-123',
-        isDemo: false,
-      );
+      final controller = IdentityProfileController(repo, accountId: 'demo-1');
 
       await controller.load();
       expect(controller.needsOnboarding, isTrue);
-
-      await controller.skipOnboarding(email: 'test@domain.com');
-      expect(controller.needsOnboarding, isFalse);
-      expect(controller.profile?.mainIdentifier, 'test@domain.com');
     });
+
+    test(
+      'new non-demo account requires onboarding until saved or skipped',
+      () async {
+        final storage = _InMemoryIdentityStorage();
+        final repo = LocalIdentityProfileRepository(storage: storage);
+        final controller = IdentityProfileController(
+          repo,
+          accountId: 'user-123',
+        );
+
+        await controller.load();
+        expect(controller.needsOnboarding, isTrue);
+
+        await controller.skipOnboarding(email: 'test@domain.com');
+        expect(controller.needsOnboarding, isFalse);
+        expect(controller.profile?.mainIdentifier, 'test@domain.com');
+        expect(controller.profile?.consentSelfAudit, isFalse);
+      },
+    );
 
     test('save updates profile and satisfies onboarding', () async {
       final storage = _InMemoryIdentityStorage();
       final repo = LocalIdentityProfileRepository(storage: storage);
-      final controller = IdentityProfileController(
-        repo,
-        accountId: 'user-456',
-        isDemo: false,
-      );
+      final controller = IdentityProfileController(repo, accountId: 'user-456');
 
       await controller.load();
       expect(controller.needsOnboarding, isTrue);

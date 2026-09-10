@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:fee_app/features/footprint/domain/footprint_item.dart';
 import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
-import 'package:fee_app/features/guard_ai/data/demo_guard_ai_repository.dart';
+
+import '../support/demo_guard_ai_repository.dart';
+
 import 'package:fee_app/features/guard_ai/domain/guard_ai_repository.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -220,15 +222,21 @@ void main() {
 
     repo.setFootprintContext(profile);
 
-    final summaryReply = await repo.reply(GuardAiInput('¿Qué encontraron sobre mí?'));
+    final summaryReply = await repo.reply(
+      GuardAiInput('¿Qué encontraron sobre mí?'),
+    );
     expect(summaryReply.messages.last.text, contains('test.user'));
     expect(summaryReply.messages.last.text, contains('Twitter'));
 
-    final locationReply = await repo.reply(GuardAiInput('¿Dónde aparece mi ubicación?'));
+    final locationReply = await repo.reply(
+      GuardAiInput('¿Dónde aparece mi ubicación?'),
+    );
     expect(locationReply.messages.last.text, contains('Twitter'));
     expect(locationReply.messages.last.text, contains('ubicación geográfica'));
 
-    final riskReply = await repo.reply(GuardAiInput('¿Cuáles son mis riesgos?'));
+    final riskReply = await repo.reply(
+      GuardAiInput('¿Cuáles son mis riesgos?'),
+    );
     expect(riskReply.messages.last.text, contains('riesgo alto'));
   });
 }

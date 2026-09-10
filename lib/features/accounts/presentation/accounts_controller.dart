@@ -3,18 +3,14 @@ import 'package:flutter/foundation.dart';
 import '../../auth/data/auth_api_client.dart';
 import '../../auth/data/backend_auth_repository.dart';
 import '../../auth/data/passkey_authenticator.dart';
-import '../../auth/domain/user_profile.dart';
 import '../domain/account_repository.dart';
 import '../domain/local_account.dart';
 
 /// Manages active session and local/remote accounts.
 class AccountsController extends ChangeNotifier {
-  AccountsController(
-    this._repository, {
-    this.authRepository,
-  });
+  AccountsController(this._repository, {this.authRepository});
 
-  final AccountRepository _repository;
+  final AccountRepository? _repository;
   final AuthRepository? authRepository;
   List<LocalAccount> _accounts = const [];
   LocalAccount? _activeAccount;
@@ -41,10 +37,10 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     try {
-      final accounts = await _repository.listAccounts();
+      final accounts = await _repository?.listAccounts() ?? <LocalAccount>[];
       if (_disposed) return;
       _accounts = List.unmodifiable(accounts);
-      if (_activeAccount case final active?) {
+      if (_activeAccount case final active? when _repository != null) {
         _activeAccount = null;
         for (final account in accounts) {
           if (account.id == active.id) _activeAccount = account;
@@ -69,7 +65,13 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     try {
-      final saved = await _repository.addAccount(name: name, email: email);
+      final repository = _repository;
+      if (repository == null) {
+        throw const AccountRepositoryException(
+          AccountRepositoryExceptionReason.unavailable,
+        );
+      }
+      final saved = await repository.addAccount(name: name, email: email);
       if (_disposed) return false;
       final accounts = [..._accounts, saved]
         ..sort((first, second) {
@@ -122,7 +124,9 @@ class AccountsController extends ChangeNotifier {
         _activeAccount = profile.toLocalAccount();
       }
     } catch (_) {
-      // Ignorar fallos al restaurar sesión
+      if (!_disposed) {
+        _actionError = 'No se pudo restaurar la sesión. Vuelve a intentarlo.';
+      }
     } finally {
       if (!_disposed) {
         _isLoading = false;
@@ -143,22 +147,7 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     try {
-      UserProfile profile;
-      try {
-        profile = await auth.loginWithPasskey(authenticator: authenticator);
-      } catch (loginError) {
-        final isNotFound = loginError is AuthApiException &&
-            (loginError.code == 'no_passkey_found' ||
-             loginError.code == 'unknown_credential');
-        if (isNotFound) {
-          profile = await auth.registerWithPasskey(
-            label: 'Mi Bóveda',
-            authenticator: authenticator,
-          );
-        } else {
-          rethrow;
-        }
-      }
+      final profile = await auth.loginWithPasskey(authenticator: authenticator);
       if (_disposed) return false;
       _activeAccount = profile.toLocalAccount();
       return true;
@@ -206,86 +195,6 @@ class AccountsController extends ChangeNotifier {
     }
   }
 
-  Future<bool> signIn({
-    String? username,
-    String? email,
-    required String password,
-  }) async {
-    final identifier = (username?.trim().isNotEmpty == true)
-        ? username!.trim()
-        : (email?.trim() ?? '');
-    final auth = authRepository;
-    if (auth == null) {
-      _actionError = 'El servicio de autenticación no está disponible.';
-      _notify();
-      return false;
-    }
-    if (_disposed || _isSaving) return false;
-    _isSaving = true;
-    _actionError = null;
-    _notify();
-    try {
-      final profile = await auth.login(
-        email: identifier,
-        password: password,
-      );
-      if (_disposed) return false;
-      _activeAccount = profile.toLocalAccount();
-      return true;
-    } catch (error) {
-      if (!_disposed) _actionError = _errorMessage(error);
-      return false;
-    } finally {
-      if (!_disposed) {
-        _isSaving = false;
-        _notify();
-      }
-    }
-  }
-
-  Future<bool> register({
-    String? username,
-    String? email,
-    required String password,
-  }) async {
-    final identifier = (username?.trim().isNotEmpty == true)
-        ? username!.trim()
-        : (email?.trim() ?? '');
-    final auth = authRepository;
-    if (auth == null) {
-      _actionError = 'El servicio de autenticación no está disponible.';
-      _notify();
-      return false;
-    }
-    if (_disposed || _isSaving) return false;
-    _isSaving = true;
-    _actionError = null;
-    _notify();
-    try {
-      await auth.register(
-        email: identifier,
-        password: password,
-      );
-      if (_disposed) return false;
-      // Tras registrarse con éxito, iniciar sesión automáticamente
-      final profile = await auth.login(
-        email: identifier,
-        password: password,
-      );
-      if (_disposed) return false;
-      _activeAccount = profile.toLocalAccount();
-      return true;
-    } catch (error) {
-      if (!_disposed) _actionError = _errorMessage(error);
-      return false;
-    } finally {
-      if (!_disposed) {
-        _isSaving = false;
-        _notify();
-      }
-    }
-  }
-
   Future<void> signOut() async {
     if (_disposed || _isSaving) return;
     final account = _activeAccount;
@@ -293,7 +202,7 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     final auth = authRepository;
-    if (account != null && !account.isDemo && auth != null) {
+    if (account != null && auth != null) {
       try {
         await auth.logout();
       } catch (_) {

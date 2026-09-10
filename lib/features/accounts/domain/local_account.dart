@@ -4,7 +4,6 @@ class LocalAccount {
     required this.id,
     required this.name,
     required this.email,
-    this.isDemo = false,
     this.isActive = true,
     this.createdAt,
   });
@@ -12,8 +11,6 @@ class LocalAccount {
   final String id;
   final String name;
   final String email;
-  final bool isDemo;
   final bool isActive;
   final DateTime? createdAt;
 }
-

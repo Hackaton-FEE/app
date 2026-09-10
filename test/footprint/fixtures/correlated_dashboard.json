@@ -1,0 +1,104 @@
+{
+  "scan_id": "test-scan-id",
+  "generated_at": "2026-09-10T12:00:00Z",
+  "partial": true,
+  "exposure_score": 75,
+  "risk_level": "ELEVATED",
+  "summary": {
+    "platforms_found": 2,
+    "high_confidence": 1,
+    "potential_matches": 1,
+    "rate_limited": 1,
+    "engines_run": [
+      "maigret",
+      "holehe"
+    ]
+  },
+  "categories": [
+    {
+      "name": "social",
+      "color_hex": "#112233",
+      "items_count": 1,
+      "items": [
+        {
+          "platform": "Example Social",
+          "username": "persona_demo",
+          "url": "https://example.com/persona_demo",
+          "status": "CONFIRMED",
+          "confidence": 90,
+          "sources": [
+            "maigret"
+          ],
+          "details": {
+            "full_name": "Persona de prueba",
+            "followers": 120
+          }
+        }
+      ]
+    }
+  ],
+  "correlation": {
+    "identity_graph": {
+      "nodes": [
+        {
+          "id": "n1",
+          "platform": "Example Social",
+          "username": "persona_demo",
+          "category": "social"
+        },
+        {
+          "id": "n2",
+          "platform": "Example Code",
+          "username": "persona_demo",
+          "category": "coding"
+        }
+      ],
+      "edges": [
+        {
+          "source": "n1",
+          "target": "n2",
+          "shared": [
+            "username"
+          ],
+          "weight": 1
+        }
+      ],
+      "clusters": [
+        [
+          "n1",
+          "n2"
+        ]
+      ]
+    },
+    "timeline": {
+      "entries": [
+        {
+          "platform": "Example Social",
+          "username": "persona_demo",
+          "created_at": "2020-01-01",
+          "age_years": 6.7
+        }
+      ],
+      "oldest_platform": "Example Social",
+      "oldest_date": "2020-01-01",
+      "newest_platform": "Example Social",
+      "newest_date": "2020-01-01",
+      "span_years": 0.0,
+      "dormant_old_accounts": [
+        "Example Social"
+      ]
+    },
+    "reconstructed_contacts": [
+      {
+        "kind": "email",
+        "pattern": "p***@example.com",
+        "sources": [
+          "blackbird",
+          "holehe"
+        ],
+        "count": 2,
+        "consistent_with_provided": true
+      }
+    ]
+  }
+}

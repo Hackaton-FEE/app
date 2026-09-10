@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
+import '../domain/scan_target.dart';
 
 /// Modelo que encapsula el avance y estado de un escaneo OSINT.
 class OsintProgress {
@@ -18,11 +21,13 @@ class OsintProgress {
       scanId: json['scan_id'] as String? ?? '',
       status: json['status'] as String? ?? 'UNKNOWN',
       progressPercentage: (json['progress_percentage'] as num?)?.toInt() ?? 0,
-      completedEngines: (json['completed_engines'] as List<dynamic>?)
+      completedEngines:
+          (json['completed_engines'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      runningEngines: (json['running_engines'] as List<dynamic>?)
+      runningEngines:
+          (json['running_engines'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const [],
@@ -42,25 +47,40 @@ class OsintProgress {
   bool get isFailed => status == 'FAILED';
 }
 
+typedef AsyncTokenProvider = Future<String?> Function({bool forceRefresh});
+
 /// Cliente HTTP para consumir los endpoints del motor OSINT de FastAPI v0.2.0.
 class OsintClient {
   OsintClient({
     this.baseUrl = 'https://backosisnt.ici-labs.com/api/v1',
-    required this.accessToken,
+    String? accessToken,
+    String? Function()? tokenProvider,
+    this._asyncTokenProvider,
     http.Client? httpClient,
-  }) : _client = httpClient ?? http.Client();
+  }) : _tokenProvider = tokenProvider ?? (() => accessToken),
+       _client = httpClient ?? http.Client();
 
   final String baseUrl;
-  final String accessToken;
+  final String? Function() _tokenProvider;
+  final AsyncTokenProvider? _asyncTokenProvider;
   final http.Client _client;
 
-  static const _timeout = Duration(seconds: 30);
+  String get accessToken => _tokenProvider() ?? '';
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json; charset=utf-8',
-        'User-Agent': 'fee_app/0.1.0',
-        'Authorization': 'Bearer $accessToken',
-      };
+  static const _timeout = Duration(seconds: 45);
+
+  Future<Map<String, String>> _getHeaders({bool forceRefresh = false}) async {
+    var token = forceRefresh ? '' : accessToken.trim();
+    if (token.isEmpty && _asyncTokenProvider != null) {
+      final ensured = await _asyncTokenProvider(forceRefresh: forceRefresh);
+      if (ensured != null && ensured.isNotEmpty) token = ensured.trim();
+    }
+    return {
+      'Content-Type': 'application/json; charset=utf-8',
+      'User-Agent': 'fee_app/0.1.0',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
 
   /// Dispara el escaneo OSINT en segundo plano y devuelve el scan_id asignado.
   Future<String> startScan({
@@ -69,23 +89,42 @@ class OsintClient {
     String? associatedEmail,
     bool consentSelfAudit = true,
   }) async {
-    final cleanId = mainIdentifier.trim();
-    final isEmail = cleanId.contains('@');
+    final target = ScanTarget.parse(mainIdentifier);
+    final cleanId = target.identifier;
+    final isEmail = target.type == 'email';
 
-    final response = await _client
+    var headers = await _getHeaders();
+    var response = await _client
         .post(
           Uri.parse('$baseUrl/osint/scans'),
-          headers: _headers,
+          headers: headers,
           body: jsonEncode({
-            'target_type': isEmail ? 'email' : 'username',
+            'target_type': target.type,
             'identifier': cleanId,
             'associated_usernames': associatedUsernames,
-            'associated_email':
-                associatedEmail ?? (isEmail ? cleanId : null),
+            'associated_email': associatedEmail ?? (isEmail ? cleanId : null),
             'consent_self_audit': consentSelfAudit,
           }),
         )
         .timeout(_timeout);
+
+    // Si recibimos 401 por sesión inválida y contamos con asyncTokenProvider, re-autenticar y reintentar
+    if (response.statusCode == 401 && _asyncTokenProvider != null) {
+      headers = await _getHeaders(forceRefresh: true);
+      response = await _client
+          .post(
+            Uri.parse('$baseUrl/osint/scans'),
+            headers: headers,
+            body: jsonEncode({
+              'target_type': target.type,
+              'identifier': cleanId,
+              'associated_usernames': associatedUsernames,
+              'associated_email': associatedEmail ?? (isEmail ? cleanId : null),
+              'consent_self_audit': consentSelfAudit,
+            }),
+          )
+          .timeout(_timeout);
+    }
 
     if (response.statusCode == 202) {
       final data =
@@ -94,7 +133,6 @@ class OsintClient {
     }
 
     _handleError(response);
-    throw Exception('Error inesperado al iniciar escaneo: ${response.statusCode}');
   }
 
   /// Consulta periódica del avance hasta que el estado sea COMPLETED o FAILED.
@@ -106,12 +144,17 @@ class OsintClient {
     var polls = 0;
     while (polls < maxPolls) {
       polls++;
-      final response = await _client
-          .get(
-            Uri.parse('$baseUrl/osint/scans/$scanId'),
-            headers: _headers,
-          )
+      var headers = await _getHeaders();
+      var response = await _client
+          .get(Uri.parse('$baseUrl/osint/scans/$scanId'), headers: headers)
           .timeout(_timeout);
+
+      if (response.statusCode == 401 && _asyncTokenProvider != null) {
+        headers = await _getHeaders(forceRefresh: true);
+        response = await _client
+            .get(Uri.parse('$baseUrl/osint/scans/$scanId'), headers: headers)
+            .timeout(_timeout);
+      }
 
       if (response.statusCode == 200) {
         final data =
@@ -119,25 +162,38 @@ class OsintClient {
         final progress = OsintProgress.fromJson(data);
         yield progress;
 
-        if (progress.isDone) {
-          break;
+        if (progress.isFailed) {
+          throw const FormatException('El escaneo falló. Puedes reintentarlo.');
         }
+        if (progress.isDone) return;
       } else {
         _handleError(response);
       }
 
-      await Future<void>.delayed(interval);
+      if (polls < maxPolls) await Future<void>.delayed(interval);
     }
+    throw TimeoutException('El escaneo sigue pendiente. Inténtalo más tarde.');
   }
 
   /// Descarga el dashboard consolidado de hallazgos para el scan_id completado.
   Future<Map<String, dynamic>> fetchResults(String scanId) async {
-    final response = await _client
+    var headers = await _getHeaders();
+    var response = await _client
         .get(
           Uri.parse('$baseUrl/osint/scans/$scanId/results'),
-          headers: _headers,
+          headers: headers,
         )
         .timeout(_timeout);
+
+    if (response.statusCode == 401 && _asyncTokenProvider != null) {
+      headers = await _getHeaders(forceRefresh: true);
+      response = await _client
+          .get(
+            Uri.parse('$baseUrl/osint/scans/$scanId/results'),
+            headers: headers,
+          )
+          .timeout(_timeout);
+    }
 
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes))
@@ -145,17 +201,13 @@ class OsintClient {
     }
 
     _handleError(response);
-    throw Exception(
-        'Error inesperado al descargar resultados: ${response.statusCode}');
   }
 
   /// Elimina los resultados del escaneo en el servidor.
   Future<void> deleteScan(String scanId) async {
+    final headers = await _getHeaders();
     final response = await _client
-        .delete(
-          Uri.parse('$baseUrl/osint/scans/$scanId'),
-          headers: _headers,
-        )
+        .delete(Uri.parse('$baseUrl/osint/scans/$scanId'), headers: headers)
         .timeout(_timeout);
 
     if (response.statusCode != 204 && response.statusCode != 200) {
@@ -163,23 +215,18 @@ class OsintClient {
     }
   }
 
-  void _handleError(http.Response response) {
-    try {
-      final data =
-          jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-      final detail = data['detail'];
-      if (detail is String) {
-        throw Exception(detail);
-      }
-      if (detail is Map<String, dynamic>) {
-        final msg = detail['message'] as String? ?? 'Error en el servidor.';
-        throw Exception(msg);
-      }
-    } catch (e) {
-      if (e is Exception && !e.toString().contains('FormatException')) {
-        rethrow;
-      }
-    }
-    throw Exception('Error del servidor OSINT (${response.statusCode}).');
+  Never _handleError(http.Response response) {
+    // Response bodies may echo identifiers. Keep diagnostics independent of them.
+    final message = switch (response.statusCode) {
+      400 || 422 => 'Revisa el identificador y el consentimiento del escaneo.',
+      401 => 'Sesión no autorizada o expirada. Vuelve a iniciar sesión.',
+      403 => 'No tienes acceso a este escaneo.',
+      404 => 'El escaneo ya no está disponible.',
+      409 => 'El escaneo aún no está listo. Inténtalo más tarde.',
+      429 =>
+        'Límite de escaneos alcanzado en el servidor. Inténtalo más tarde.',
+      _ => 'No se pudo completar la consulta al servidor OSINT.',
+    };
+    throw FormatException(message);
   }
 }

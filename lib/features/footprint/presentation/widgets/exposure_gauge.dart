@@ -46,14 +46,16 @@ class ExposureGauge extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Semantics(
-            label: 'Índice de exposición: $score de 100',
+            label: profile.hasScanned
+                ? 'Índice de exposición: $score de 100'
+                : 'Índice de exposición: sin auditar',
             excludeSemantics: true,
             child: Wrap(
               spacing: 8,
               crossAxisAlignment: WrapCrossAlignment.end,
               children: [
                 Text(
-                  '$score',
+                  profile.hasScanned ? '$score' : '—',
                   style: theme.textTheme.displayLarge?.copyWith(
                     fontSize: 56,
                     height: 1,
@@ -62,30 +64,32 @@ class ExposureGauge extends StatelessWidget {
                     color: colors.onSurface,
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    '/100',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppPalette.olive,
-                      fontWeight: FontWeight.w400,
+                if (profile.hasScanned)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '/100',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: AppPalette.olive,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
           const SizedBox(height: 18),
-          ExcludeSemantics(
-            child: LinearProgressIndicator(
-              value: score / 100,
-              minHeight: 7,
-              borderRadius: BorderRadius.circular(8),
-              backgroundColor: colors.surface.withValues(alpha: 0.7),
-              color: riskColor,
-              stopIndicatorRadius: 0,
+          if (profile.hasScanned)
+            ExcludeSemantics(
+              child: LinearProgressIndicator(
+                value: score / 100,
+                minHeight: 7,
+                borderRadius: BorderRadius.circular(8),
+                backgroundColor: colors.surface.withValues(alpha: 0.7),
+                color: riskColor,
+                stopIndicatorRadius: 0,
+              ),
             ),
-          ),
           const SizedBox(height: 16),
           Text(
             !profile.hasScanned ? 'Sin auditar' : risk.exposureLabel,
@@ -104,27 +108,28 @@ class ExposureGauge extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 18,
-            runSpacing: 10,
-            children: [
-              _PriorityCount(
-                label: 'alta',
-                count: profile.highRiskCount,
-                color: FootprintRisk.high.color,
-              ),
-              _PriorityCount(
-                label: 'media',
-                count: profile.mediumRiskCount,
-                color: FootprintRisk.medium.color,
-              ),
-              _PriorityCount(
-                label: 'baja',
-                count: profile.lowRiskCount,
-                color: FootprintRisk.low.color,
-              ),
-            ],
-          ),
+          if (profile.hasScanned)
+            Wrap(
+              spacing: 18,
+              runSpacing: 10,
+              children: [
+                _PriorityCount(
+                  label: 'alta',
+                  count: profile.highRiskCount,
+                  color: FootprintRisk.high.color,
+                ),
+                _PriorityCount(
+                  label: 'media',
+                  count: profile.mediumRiskCount,
+                  color: FootprintRisk.medium.color,
+                ),
+                _PriorityCount(
+                  label: 'baja',
+                  count: profile.lowRiskCount,
+                  color: FootprintRisk.low.color,
+                ),
+              ],
+            ),
         ],
       ),
     );
