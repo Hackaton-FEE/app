@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../auth/data/auth_api_client.dart';
 import '../../auth/data/backend_auth_repository.dart';
 import '../../auth/data/passkey_authenticator.dart';
+import '../../auth/domain/user_profile.dart';
 import '../domain/account_repository.dart';
 import '../domain/local_account.dart';
 
@@ -142,7 +143,22 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     try {
-      final profile = await auth.loginWithPasskey(authenticator: authenticator);
+      UserProfile profile;
+      try {
+        profile = await auth.loginWithPasskey(authenticator: authenticator);
+      } catch (loginError) {
+        final isNotFound = loginError is AuthApiException &&
+            (loginError.code == 'no_passkey_found' ||
+             loginError.code == 'unknown_credential');
+        if (isNotFound) {
+          profile = await auth.registerWithPasskey(
+            label: 'Mi Bóveda',
+            authenticator: authenticator,
+          );
+        } else {
+          rethrow;
+        }
+      }
       if (_disposed) return false;
       _activeAccount = profile.toLocalAccount();
       return true;

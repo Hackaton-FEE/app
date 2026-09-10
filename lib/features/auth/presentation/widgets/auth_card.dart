@@ -148,24 +148,82 @@ class _AuthCardState extends State<AuthCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton(
-            key: const Key('auth-passkey-login-button'),
-            onPressed: busy ? null : _submitPasskeyLogin,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.primary.withValues(alpha: 0.25),
               ),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.fingerprint_rounded),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Acceder con Passkey',
-                    overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.fingerprint_rounded,
+                        color: colors.primary,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Acceso rápido con Passkey',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Entra en 1 toque. Sin contraseñas.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  key: const Key('auth-passkey-login-button'),
+                  onPressed: busy ? null : _submitPasskeyLogin,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.fingerprint_rounded, size: 22),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Entrar a mi Bóveda en 1 toque',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -174,13 +232,13 @@ class _AuthCardState extends State<AuthCard> {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'o con credenciales',
+              'o con credenciales / correo',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextFormField(
             key: const Key('auth-email-field'),
             controller: _loginEmailController,
@@ -188,16 +246,13 @@ class _AuthCardState extends State<AuthCard> {
             textInputAction: TextInputAction.next,
             enabled: !busy,
             decoration: const InputDecoration(
-              labelText: 'Correo electrónico',
+              labelText: 'Correo o alias de Bóveda',
               hintText: 'usuario@correo.com',
               prefixIcon: Icon(Icons.mail_outline_rounded),
             ),
             validator: (value) {
               final trimmed = value?.trim() ?? '';
-              if (trimmed.isEmpty) return 'Ingresa tu correo.';
-              if (!trimmed.contains('@') || !trimmed.contains('.')) {
-                return 'Ingresa un correo electrónico válido.';
-              }
+              if (trimmed.isEmpty) return 'Ingresa tu correo o alias.';
               return null;
             },
           ),
@@ -210,7 +265,7 @@ class _AuthCardState extends State<AuthCard> {
             onFieldSubmitted: (_) => _submitLogin(),
             enabled: !busy,
             decoration: InputDecoration(
-              labelText: 'Contraseña',
+              labelText: 'Contraseña (opcional con Passkey)',
               prefixIcon: const Icon(Icons.lock_outline_rounded),
               suffixIcon: IconButton(
                 tooltip: _obscureLoginPassword
@@ -234,11 +289,11 @@ class _AuthCardState extends State<AuthCard> {
             },
           ),
           const SizedBox(height: 20),
-          FilledButton(
+          OutlinedButton(
             key: const Key('auth-login-button'),
             onPressed: busy ? null : _submitLogin,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(48, 52),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(48, 48),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -247,14 +302,11 @@ class _AuthCardState extends State<AuthCard> {
                 ? const SizedBox(
                     width: 24,
                     height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
-                    ),
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
                   )
                 : const Text(
                     'Iniciar sesión',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
           ),
         ],
@@ -268,24 +320,82 @@ class _AuthCardState extends State<AuthCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          OutlinedButton(
-            key: const Key('auth-passkey-register-button'),
-            onPressed: busy ? null : _submitPasskeyRegister,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(48, 52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colors.primaryContainer.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colors.primary.withValues(alpha: 0.25),
               ),
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.fingerprint_rounded),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Crear Bóveda con Passkey',
-                    overflow: TextOverflow.ellipsis,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.shield_outlined,
+                        color: colors.primary,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bóveda FIDO2 en tu dispositivo',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colors.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Llaves en hardware. Cero contraseñas.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                FilledButton(
+                  key: const Key('auth-passkey-register-button'),
+                  onPressed: busy ? null : _submitPasskeyRegister,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_moderator_rounded, size: 22),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Crear Bóveda Segura en 1 toque',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -294,13 +404,13 @@ class _AuthCardState extends State<AuthCard> {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'o con credenciales',
+              'o personalizar nombre y credenciales',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextFormField(
             key: const Key('auth-register-email-field'),
             controller: _registerEmailController,
