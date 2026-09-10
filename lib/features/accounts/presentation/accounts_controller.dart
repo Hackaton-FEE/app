@@ -1,13 +1,19 @@
 import 'package:flutter/foundation.dart';
 
+import '../../auth/data/auth_api_client.dart';
+import '../../auth/data/backend_auth_repository.dart';
 import '../domain/account_repository.dart';
 import '../domain/local_account.dart';
 
-/// A local session stays in memory and never signs in automatically on launch.
+/// Manages active session and local/remote accounts.
 class AccountsController extends ChangeNotifier {
-  AccountsController(this._repository);
+  AccountsController(
+    this._repository, {
+    this.authRepository,
+  });
 
   final AccountRepository _repository;
+  final AuthRepository? authRepository;
   List<LocalAccount> _accounts = const [];
   LocalAccount? _activeAccount;
   bool _isLoading = true;
@@ -102,14 +108,119 @@ class AccountsController extends ChangeNotifier {
     return false;
   }
 
-  void signOut() {
+  Future<void> restoreSession() async {
+    final auth = authRepository;
+    if (auth == null || _disposed) return;
+    _isLoading = true;
+    _notify();
+    try {
+      final profile = await auth.restoreSession();
+      if (_disposed) return;
+      if (profile != null) {
+        _activeAccount = profile.toLocalAccount();
+      }
+    } catch (_) {
+      // Ignorar fallos al restaurar sesión
+    } finally {
+      if (!_disposed) {
+        _isLoading = false;
+        _notify();
+      }
+    }
+  }
+
+  Future<bool> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final auth = authRepository;
+    if (auth == null) {
+      _actionError = 'El servicio de autenticación no está disponible.';
+      _notify();
+      return false;
+    }
+    if (_disposed || _isSaving) return false;
+    _isSaving = true;
+    _actionError = null;
+    _notify();
+    try {
+      final profile = await auth.login(
+        email: email,
+        password: password,
+      );
+      if (_disposed) return false;
+      _activeAccount = profile.toLocalAccount();
+      return true;
+    } catch (error) {
+      if (!_disposed) _actionError = _errorMessage(error);
+      return false;
+    } finally {
+      if (!_disposed) {
+        _isSaving = false;
+        _notify();
+      }
+    }
+  }
+
+  Future<bool> register({
+    required String email,
+    required String password,
+  }) async {
+    final auth = authRepository;
+    if (auth == null) {
+      _actionError = 'El servicio de autenticación no está disponible.';
+      _notify();
+      return false;
+    }
+    if (_disposed || _isSaving) return false;
+    _isSaving = true;
+    _actionError = null;
+    _notify();
+    try {
+      await auth.register(
+        email: email,
+        password: password,
+      );
+      if (_disposed) return false;
+      // Tras registrarse con éxito, iniciar sesión automáticamente
+      final profile = await auth.login(
+        email: email,
+        password: password,
+      );
+      if (_disposed) return false;
+      _activeAccount = profile.toLocalAccount();
+      return true;
+    } catch (error) {
+      if (!_disposed) _actionError = _errorMessage(error);
+      return false;
+    } finally {
+      if (!_disposed) {
+        _isSaving = false;
+        _notify();
+      }
+    }
+  }
+
+  Future<void> signOut() async {
     if (_disposed || _isSaving) return;
+    final account = _activeAccount;
     _activeAccount = null;
     _actionError = null;
     _notify();
+    final auth = authRepository;
+    if (account != null && !account.isDemo && auth != null) {
+      try {
+        await auth.logout();
+      } catch (_) {
+        // Ignorar fallo de red en logout
+      }
+    }
   }
 
   String _errorMessage(Object error) {
+    if (error is AuthApiException) {
+      return error.message;
+    }
     if (error is AccountRepositoryException) {
       return switch (error.reason) {
         AccountRepositoryExceptionReason.unavailable =>

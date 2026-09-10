@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../auth/presentation/widgets/auth_card.dart';
 import 'accounts_controller.dart';
 import 'widgets/account_product_overview.dart';
 
@@ -95,9 +96,27 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                           onRetry: controller.load,
                         )
                       else ...[
-                        if (controller.accounts.isEmpty)
+                        if (controller.authRepository != null) ...[
+                          AuthCard(controller: controller),
+                          const SizedBox(height: 16),
+                          Divider(
+                            color: colors.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'O prueba en modo demostración',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (controller.accounts.isEmpty &&
+                            controller.authRepository == null)
                           _AccountError(
-                            message: 'La cuenta no está disponible. Intenta cargarla de nuevo.',
+                            message:
+                                'La cuenta no está disponible. Intenta cargarla de nuevo.',
                             onRetry: controller.load,
                           ),
                         for (final account in controller.accounts)

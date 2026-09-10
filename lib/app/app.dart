@@ -8,6 +8,7 @@ import '../features/accounts/domain/account_repository.dart';
 import '../features/accounts/domain/local_account.dart';
 import '../features/accounts/presentation/account_picker_page.dart';
 import '../features/accounts/presentation/accounts_controller.dart';
+import '../features/auth/data/backend_auth_repository.dart';
 import '../features/cases/data/flutter_secure_case_storage.dart';
 import '../features/cases/data/local_case_repository.dart';
 import '../features/cases/domain/case_repository.dart';
@@ -31,6 +32,7 @@ class FeeApp extends StatefulWidget {
     this.footprintRepositoryFactory,
     this.scanHistoryRepositoryFactory,
     this.accountRepository,
+    this.authRepository,
     this.showCasesAsHome = false,
     super.key,
   });
@@ -41,6 +43,7 @@ class FeeApp extends StatefulWidget {
   final ScanHistoryRepository Function(LocalAccount account)?
   scanHistoryRepositoryFactory;
   final AccountRepository? accountRepository;
+  final AuthRepository? authRepository;
   final bool showCasesAsHome;
 
   @override
@@ -59,11 +62,19 @@ class _FeeAppState extends State<FeeApp> {
       widget.repository ??
           LocalCaseRepository(storage: FlutterSecureCaseStorage()),
     );
+    final authRepo = widget.authRepository ??
+        (widget.accountRepository == null ? BackendAuthRepository() : null);
     _accounts = AccountsController(
       widget.accountRepository ?? DemoAccountRepository(),
+      authRepository: authRepo,
     );
     unawaited(_cases.load());
-    if (!widget.showCasesAsHome) unawaited(_accounts.load());
+    if (!widget.showCasesAsHome) {
+      unawaited(_accounts.load());
+      if (authRepo != null) {
+        unawaited(_accounts.restoreSession());
+      }
+    }
   }
 
   _AccountSession _sessionFor(LocalAccount account) =>
@@ -125,6 +136,7 @@ class _FeeAppState extends State<FeeApp> {
                 scanHistoryController: session.scanHistory,
                 account: account,
                 onManageAccounts: _accounts.signOut,
+                authRepository: _accounts.authRepository,
               );
             },
           ),

@@ -14,6 +14,7 @@ class DemoAccountRepository implements AccountRepository {
       id: 'demo-personal',
       name: 'Cuenta personal',
       email: 'pedro.demo@gmail.com',
+      isDemo: true,
     ),
   ];
 

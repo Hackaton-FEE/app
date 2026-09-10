@@ -13,6 +13,10 @@ class ProfileDrawer extends StatelessWidget {
     required this.onHelp,
     this.accountName,
     this.onManageAccounts,
+    this.isDemo = true,
+    this.onViewSessions,
+    this.onChangePassword,
+    this.onViewCapabilities,
     super.key,
   });
 
@@ -21,6 +25,10 @@ class ProfileDrawer extends StatelessWidget {
   final String? identity;
   final String? accountName;
   final VoidCallback? onManageAccounts;
+  final bool isDemo;
+  final VoidCallback? onViewSessions;
+  final VoidCallback? onChangePassword;
+  final VoidCallback? onViewCapabilities;
   final int caseCount;
   final VoidCallback onViewCases;
   final VoidCallback onHelp;
@@ -40,6 +48,27 @@ class ProfileDrawer extends StatelessWidget {
       'profile-cases',
       onViewCases,
     ),
+    if (onViewSessions != null)
+      (
+        'Sesiones activas',
+        Icons.devices_rounded,
+        'profile-sessions',
+        onViewSessions,
+      ),
+    if (onChangePassword != null)
+      (
+        'Cambiar contraseña',
+        Icons.password_rounded,
+        'profile-password',
+        onChangePassword,
+      ),
+    if (onViewCapabilities != null)
+      (
+        'Catálogo de escaneo',
+        Icons.radar_rounded,
+        'profile-capabilities',
+        onViewCapabilities,
+      ),
     if (onManageAccounts != null)
       (
         'Cerrar sesión',
@@ -173,7 +202,9 @@ class ProfileDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Cuenta de ejemplo',
+                    isDemo
+                        ? 'Cuenta de ejemplo'
+                        : 'Sesión activa (PostgreSQL)',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                     ),

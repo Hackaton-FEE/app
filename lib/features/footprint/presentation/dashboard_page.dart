@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../accounts/domain/local_account.dart';
+import '../../auth/data/backend_auth_repository.dart';
+import '../../auth/presentation/widgets/active_sessions_dialog.dart';
+import '../../auth/presentation/widgets/change_password_dialog.dart';
+import '../../auth/presentation/widgets/scan_capabilities_dialog.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
 import '../../cases/presentation/cases_controller.dart';
@@ -30,6 +34,7 @@ class DashboardPage extends StatefulWidget {
     this.scanHistoryController,
     required this.account,
     required this.onManageAccounts,
+    this.authRepository,
     super.key,
   });
 
@@ -39,6 +44,8 @@ class DashboardPage extends StatefulWidget {
   final ScanHistoryController? scanHistoryController;
   final LocalAccount account;
   final VoidCallback onManageAccounts;
+  final AuthRepository? authRepository;
+
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
@@ -152,6 +159,37 @@ class _DashboardPageState extends State<DashboardPage> {
     _openScanSheet,
   );
 
+  void _openSessionsDialog() {
+    if (widget.authRepository == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => ActiveSessionsDialog(
+        authRepository: widget.authRepository!,
+      ),
+    );
+  }
+
+  void _openChangePasswordDialog() {
+    if (widget.authRepository == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => ChangePasswordDialog(
+        authRepository: widget.authRepository!,
+        onPasswordChanged: widget.onManageAccounts,
+      ),
+    );
+  }
+
+  void _openCapabilitiesDialog() {
+    if (widget.authRepository == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (_) => ScanCapabilitiesDialog(
+        authRepository: widget.authRepository!,
+      ),
+    );
+  }
+
   void _showFindingDetail(FootprintItem item) {
     showModalBottomSheet<void>(
       context: context,
@@ -235,6 +273,7 @@ class _DashboardPageState extends State<DashboardPage> {
             drawer: ProfileDrawer(
               identity: widget.account.email,
               accountName: widget.account.name,
+              isDemo: widget.account.isDemo,
               onManageAccounts: widget.onManageAccounts,
               historyCount: widget.scanHistoryController?.count ?? 0,
               onViewHistory: widget.scanHistoryController != null
@@ -243,6 +282,17 @@ class _DashboardPageState extends State<DashboardPage> {
               caseCount: widget.casesController.state.cases.length,
               onViewCases: _openAllCases,
               onHelp: _openHelp,
+              onViewSessions:
+                  widget.authRepository != null && !widget.account.isDemo
+                      ? _openSessionsDialog
+                      : null,
+              onChangePassword:
+                  widget.authRepository != null && !widget.account.isDemo
+                      ? _openChangePasswordDialog
+                      : null,
+              onViewCapabilities: widget.authRepository != null
+                  ? _openCapabilitiesDialog
+                  : null,
             ),
             bottomNavigationBar: FootprintActionBar(
               scanning: footprint.isLoading,
