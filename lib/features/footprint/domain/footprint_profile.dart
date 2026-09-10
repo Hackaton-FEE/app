@@ -5,13 +5,24 @@ class FootprintProfile {
     required this.targetIdentity,
     required Iterable<FootprintItem> items,
     required this.lastScannedAt,
+    this.hasScanned = true,
   }) : items = List.unmodifiable(items);
+
+  factory FootprintProfile.initial({required String targetIdentity}) =>
+      FootprintProfile(
+        targetIdentity: targetIdentity,
+        items: const [],
+        lastScannedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        hasScanned: false,
+      );
 
   final String targetIdentity;
   final List<FootprintItem> items;
   final DateTime lastScannedAt;
+  final bool hasScanned;
 
   int get exposureScore {
+    if (!hasScanned) return 0;
     if (items.isEmpty) return 10;
     int points = 0;
     for (final item in items) {

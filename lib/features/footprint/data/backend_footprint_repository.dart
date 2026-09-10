@@ -11,11 +11,13 @@ import 'osint_client.dart';
 class BackendFootprintRepository implements FootprintRepository {
   BackendFootprintRepository({
     required this.client,
+    this.targetIdentity,
     FootprintRepository? fallbackRepository,
     this.onProgressUpdate,
   }) : _fallback = fallbackRepository ?? MockFootprintRepository();
 
   final OsintClient client;
+  final String? targetIdentity;
   final FootprintRepository _fallback;
   final void Function(String stage, int percentage)? onProgressUpdate;
 
@@ -26,11 +28,18 @@ class BackendFootprintRepository implements FootprintRepository {
     if (_currentProfile != null) {
       return _currentProfile!;
     }
+    if (targetIdentity != null && targetIdentity!.trim().isNotEmpty) {
+      return FootprintProfile.initial(targetIdentity: targetIdentity!.trim());
+    }
     return _fallback.getProfile();
   }
 
   @override
-  Future<FootprintProfile> scanIdentity(String identity) async {
+  Future<FootprintProfile> scanIdentity(
+    String identity, {
+    List<String> associatedUsernames = const [],
+    bool consentSelfAudit = true,
+  }) async {
     final cleanIdentity = identity.trim();
     if (cleanIdentity.isEmpty) {
       throw const FormatException('Ingresa un correo o alias válido.');
@@ -42,8 +51,9 @@ class BackendFootprintRepository implements FootprintRepository {
       final isEmail = cleanIdentity.contains('@');
       final scanId = await client.startScan(
         mainIdentifier: cleanIdentity,
+        associatedUsernames: associatedUsernames,
         associatedEmail: isEmail ? cleanIdentity : null,
-        consentSelfAudit: true,
+        consentSelfAudit: consentSelfAudit,
       );
 
       onProgressUpdate?.call('Escaneando en cascada (Blackbird, Maigret, Holehe)…', 15);

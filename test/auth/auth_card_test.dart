@@ -59,6 +59,7 @@ class FakeAuthRepository implements AuthRepository {
     registeredPassword = password;
     return UserProfile(
       id: 'test-uuid-registered',
+      label: email,
       email: email,
       isActive: true,
       createdAt: DateTime.now(),
@@ -74,6 +75,7 @@ class FakeAuthRepository implements AuthRepository {
     loggedInPassword = password;
     return UserProfile(
       id: 'test-uuid-loggedin',
+      label: email,
       email: email,
       isActive: true,
       createdAt: DateTime.now(),
@@ -203,12 +205,68 @@ void main() {
     expect(fakeAuth.registeredEmail, isNull);
   });
 
-  testWidgets('login submits credentials and signs in', (tester) async {
+  testWidgets('register form validates username min length >= 2', (tester) async {
+    await pumpAuthCard(tester);
+    await tester.tap(find.text('Crear cuenta'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('auth-register-email-field')),
+      'a',
+    );
+    await tester.enterText(
+      find.byKey(const Key('auth-register-password-field')),
+      'password-larga-1234',
+    );
+    await tester.enterText(
+      find.byKey(const Key('auth-register-confirm-password-field')),
+      'password-larga-1234',
+    );
+
+    await tester.tap(find.byKey(const Key('auth-register-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('El nombre debe tener al menos 2 caracteres.'),
+      findsOneWidget,
+    );
+    expect(fakeAuth.registeredEmail, isNull);
+  });
+
+  testWidgets('register form accepts name/username without email format', (
+    tester,
+  ) async {
+    await pumpAuthCard(tester);
+    await tester.tap(find.text('Crear cuenta'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('auth-register-email-field')),
+      'Carlos Ruiz',
+    );
+    await tester.enterText(
+      find.byKey(const Key('auth-register-password-field')),
+      'password-larga-1234',
+    );
+    await tester.enterText(
+      find.byKey(const Key('auth-register-confirm-password-field')),
+      'password-larga-1234',
+    );
+
+    await tester.tap(find.byKey(const Key('auth-register-button')));
+    await tester.pumpAndSettle();
+
+    expect(fakeAuth.registeredEmail, 'Carlos Ruiz');
+    expect(fakeAuth.registeredPassword, 'password-larga-1234');
+    expect(controller.activeAccount?.name, 'Carlos Ruiz');
+  });
+
+  testWidgets('login submits username credentials and signs in', (tester) async {
     await pumpAuthCard(tester);
 
     await tester.enterText(
       find.byKey(const Key('auth-email-field')),
-      'persona@example.com',
+      'Carlos Ruiz',
     );
     await tester.enterText(
       find.byKey(const Key('auth-password-field')),
@@ -218,8 +276,8 @@ void main() {
     await tester.tap(find.byKey(const Key('auth-login-button')));
     await tester.pumpAndSettle();
 
-    expect(fakeAuth.loggedInEmail, 'persona@example.com');
+    expect(fakeAuth.loggedInEmail, 'Carlos Ruiz');
     expect(fakeAuth.loggedInPassword, 'password-larga-1234');
-    expect(controller.activeAccount?.email, 'persona@example.com');
+    expect(controller.activeAccount?.name, 'Carlos Ruiz');
   });
 }

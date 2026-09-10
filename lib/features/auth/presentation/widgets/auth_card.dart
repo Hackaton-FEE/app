@@ -17,10 +17,10 @@ class _AuthCardState extends State<AuthCard> {
   final _loginFormKey = GlobalKey<FormState>();
   final _registerFormKey = GlobalKey<FormState>();
 
-  final _loginEmailController = TextEditingController();
+  final _loginUserController = TextEditingController();
   final _loginPasswordController = TextEditingController();
 
-  final _registerEmailController = TextEditingController();
+  final _registerUserController = TextEditingController();
   final _registerPasswordController = TextEditingController();
   final _registerConfirmController = TextEditingController();
 
@@ -30,9 +30,9 @@ class _AuthCardState extends State<AuthCard> {
 
   @override
   void dispose() {
-    _loginEmailController.dispose();
+    _loginUserController.dispose();
     _loginPasswordController.dispose();
-    _registerEmailController.dispose();
+    _registerUserController.dispose();
     _registerPasswordController.dispose();
     _registerConfirmController.dispose();
     super.dispose();
@@ -41,7 +41,7 @@ class _AuthCardState extends State<AuthCard> {
   Future<void> _submitLogin() async {
     if (!_loginFormKey.currentState!.validate()) return;
     await widget.controller.signIn(
-      email: _loginEmailController.text.trim(),
+      username: _loginUserController.text.trim(),
       password: _loginPasswordController.text,
     );
   }
@@ -53,14 +53,14 @@ class _AuthCardState extends State<AuthCard> {
   Future<void> _submitRegister() async {
     if (!_registerFormKey.currentState!.validate()) return;
     await widget.controller.register(
-      email: _registerEmailController.text.trim(),
+      username: _registerUserController.text.trim(),
       password: _registerPasswordController.text,
     );
   }
 
   Future<void> _submitPasskeyRegister() async {
-    final label = _registerEmailController.text.trim().isNotEmpty
-        ? _registerEmailController.text.trim()
+    final label = _registerUserController.text.trim().isNotEmpty
+        ? _registerUserController.text.trim()
         : 'Mi Bóveda FEE';
     await widget.controller.registerWithPasskey(label: label);
   }
@@ -232,7 +232,7 @@ class _AuthCardState extends State<AuthCard> {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'o con credenciales / correo',
+              'o con nombre y contraseña',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: colors.onSurfaceVariant,
               ),
@@ -241,18 +241,18 @@ class _AuthCardState extends State<AuthCard> {
           const SizedBox(height: 12),
           TextFormField(
             key: const Key('auth-email-field'),
-            controller: _loginEmailController,
-            keyboardType: TextInputType.emailAddress,
+            controller: _loginUserController,
+            keyboardType: TextInputType.name,
             textInputAction: TextInputAction.next,
             enabled: !busy,
             decoration: const InputDecoration(
-              labelText: 'Correo o alias de Bóveda',
-              hintText: 'usuario@correo.com',
-              prefixIcon: Icon(Icons.mail_outline_rounded),
+              labelText: 'Nombre o usuario',
+              hintText: 'ej. Carlos Ruiz',
+              prefixIcon: Icon(Icons.person_outline_rounded),
             ),
             validator: (value) {
               final trimmed = value?.trim() ?? '';
-              if (trimmed.isEmpty) return 'Ingresa tu correo o alias.';
+              if (trimmed.isEmpty) return 'Ingresa tu nombre o usuario.';
               return null;
             },
           ),
@@ -413,22 +413,24 @@ class _AuthCardState extends State<AuthCard> {
           const SizedBox(height: 12),
           TextFormField(
             key: const Key('auth-register-email-field'),
-            controller: _registerEmailController,
-            keyboardType: TextInputType.emailAddress,
+            controller: _registerUserController,
+            keyboardType: TextInputType.name,
             textInputAction: TextInputAction.next,
             enabled: !busy,
             decoration: const InputDecoration(
-              labelText: 'Correo electrónico',
-              hintText: 'usuario@correo.com',
-              prefixIcon: Icon(Icons.mail_outline_rounded),
+              labelText: 'Nombre de usuario',
+              hintText: 'ej. Carlos Ruiz',
+              prefixIcon: Icon(Icons.person_outline_rounded),
             ),
             validator: (value) {
               final trimmed = value?.trim() ?? '';
-              if (trimmed.isEmpty) return 'Ingresa un correo electrónico.';
-              if (!trimmed.contains('@') || !trimmed.contains('.')) {
-                return 'Ingresa un correo electrónico válido.';
+              if (trimmed.isEmpty) return 'Ingresa un nombre de usuario.';
+              if (trimmed.length < 2) {
+                return 'El nombre debe tener al menos 2 caracteres.';
               }
-              if (trimmed.length > 254) return 'El correo es demasiado largo.';
+              if (trimmed.length > 60) {
+                return 'El nombre es demasiado largo.';
+              }
               return null;
             },
           ),

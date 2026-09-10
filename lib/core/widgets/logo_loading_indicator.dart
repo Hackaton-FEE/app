@@ -23,8 +23,8 @@ class LogoLoadingIndicator extends StatefulWidget {
   /// Mensaje descriptivo opcional debajo del logo de carga.
   final String? message;
 
-  /// Si está en modo oscuro (usa la secuencia en blanco puro).
-  final bool isDarkMode;
+  /// Si está en modo oscuro (usa la secuencia en blanco puro). Si es null, lo deduce de Theme.of(context).
+  final bool? isDarkMode;
 
   /// Tinte opcional para forzar un color específico.
   final Color? colorOverride;
@@ -35,7 +35,7 @@ class LogoLoadingIndicator extends StatefulWidget {
     this.duration = const Duration(milliseconds: 2000),
     this.useFrames = true,
     this.message,
-    this.isDarkMode = false,
+    this.isDarkMode,
     this.colorOverride,
   });
 
@@ -96,14 +96,17 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
 
   @override
   Widget build(BuildContext context) {
+    final dark = widget.isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+
     final ColorFilter? filter = widget.colorOverride != null
         ? ColorFilter.mode(widget.colorOverride!, BlendMode.srcIn)
         : null;
 
     Widget loaderWidget;
 
-    if (widget.useFrames) {
-      final folder = widget.isDarkMode ? 'frames_120_white' : 'frames_120';
+    if (widget.useFrames && !reduceMotion) {
+      final folder = dark ? 'frames_120_white' : 'frames_120';
       final framePath = 'assets/logo/$folder/frame_${_formatFrame(_currentFrame)}.svg';
 
       loaderWidget = SizedBox(
@@ -117,7 +120,7 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
         ),
       );
     } else {
-      final standalonePath = widget.isDarkMode
+      final standalonePath = dark
           ? 'assets/logo/standalone/logo_loading_white.svg'
           : 'assets/logo/standalone/logo_loading_black.svg';
 
@@ -139,6 +142,8 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
       );
     }
 
+    final textColor = dark ? Colors.white : const Color(0xFF0F172A);
+
     return Semantics(
       label: widget.message,
       child: Column(
@@ -152,7 +157,7 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: widget.isDarkMode ? Colors.white : Colors.black87,
+              color: textColor,
               letterSpacing: 0.2,
             ),
             textAlign: TextAlign.center,

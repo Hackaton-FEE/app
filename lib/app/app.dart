@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../features/accounts/data/demo_account_repository.dart';
+import '../features/accounts/data/flutter_secure_identity_storage.dart';
+import '../features/accounts/data/local_identity_profile_repository.dart';
 import '../features/accounts/domain/account_repository.dart';
+import '../features/accounts/domain/identity_profile_repository.dart';
 import '../features/accounts/domain/local_account.dart';
 import '../features/accounts/presentation/account_picker_page.dart';
 import '../features/accounts/presentation/accounts_controller.dart';
+import '../features/accounts/presentation/identity_profile_controller.dart';
+import '../features/accounts/presentation/profile_setup_page.dart';
 import '../features/auth/data/backend_auth_repository.dart';
 import '../features/cases/data/flutter_secure_case_storage.dart';
 import '../features/cases/data/local_case_repository.dart';
@@ -35,6 +40,7 @@ class FeeApp extends StatefulWidget {
     this.scanHistoryRepositoryFactory,
     this.accountRepository,
     this.authRepository,
+    this.identityProfileRepository,
     this.showCasesAsHome = false,
     super.key,
   });
@@ -46,6 +52,7 @@ class FeeApp extends StatefulWidget {
   scanHistoryRepositoryFactory;
   final AccountRepository? accountRepository;
   final AuthRepository? authRepository;
+  final IdentityProfileRepository? identityProfileRepository;
   final bool showCasesAsHome;
 
   @override
@@ -90,6 +97,19 @@ class _FeeAppState extends State<FeeApp> {
             );
         final history = ScanHistoryController(scanHistoryRepo);
 
+        final identityRepo = widget.identityProfileRepository ??
+            LocalIdentityProfileRepository(
+              storage: FlutterSecureIdentityStorage(
+                prefix: 'fee.identity.${account.id}.v1.',
+              ),
+            );
+        final identity = IdentityProfileController(
+          identityRepo,
+          accountId: account.id,
+          isDemo: account.isDemo,
+        );
+        unawaited(identity.load());
+
         FootprintController? footprintController;
         FootprintRepository footprintRepo;
 
@@ -101,6 +121,7 @@ class _FeeAppState extends State<FeeApp> {
           final token = backendAuth.tokenStorage.accessToken ?? '';
           footprintRepo = BackendFootprintRepository(
             client: OsintClient(accessToken: token),
+            targetIdentity: account.email,
             fallbackRepository:
                 MockFootprintRepository(targetIdentity: account.email),
             onProgressUpdate: (stage, _) {
@@ -122,6 +143,7 @@ class _FeeAppState extends State<FeeApp> {
           footprint: footprint,
           guardAi: GuardAiController(DemoGuardAiRepository()),
           scanHistory: history,
+          identity: identity,
         );
       });
 
@@ -133,6 +155,7 @@ class _FeeAppState extends State<FeeApp> {
       session.footprint.dispose();
       session.guardAi.dispose();
       session.scanHistory.dispose();
+      session.identity.dispose();
     }
     super.dispose();
   }
@@ -142,6 +165,8 @@ class _FeeAppState extends State<FeeApp> {
     title: "Osisn't · Tu huella digital",
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
+    darkTheme: buildAppDarkTheme(),
+    themeMode: ThemeMode.system,
     locale: const Locale('es'),
     supportedLocales: const [Locale('es')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
@@ -155,15 +180,29 @@ class _FeeAppState extends State<FeeApp> {
                 return AccountPickerPage(controller: _accounts);
               }
               final session = _sessionFor(account);
-              return DashboardPage(
-                key: ValueKey(account.id),
-                footprintController: session.footprint,
-                casesController: _cases,
-                guardAiController: session.guardAi,
-                scanHistoryController: session.scanHistory,
-                account: account,
-                onManageAccounts: _accounts.signOut,
-                authRepository: _accounts.authRepository,
+              return ListenableBuilder(
+                listenable: session.identity,
+                builder: (context, _) {
+                  if (session.identity.needsOnboarding) {
+                    return ProfileSetupPage(
+                      account: account,
+                      identityController: session.identity,
+                      footprintController: session.footprint,
+                      isInitialOnboarding: true,
+                    );
+                  }
+                  return DashboardPage(
+                    key: ValueKey(account.id),
+                    footprintController: session.footprint,
+                    casesController: _cases,
+                    guardAiController: session.guardAi,
+                    scanHistoryController: session.scanHistory,
+                    identityController: session.identity,
+                    account: account,
+                    onManageAccounts: _accounts.signOut,
+                    authRepository: _accounts.authRepository,
+                  );
+                },
               );
             },
           ),
@@ -175,8 +214,10 @@ class _AccountSession {
     required this.footprint,
     required this.guardAi,
     required this.scanHistory,
+    required this.identity,
   });
   final FootprintController footprint;
   final GuardAiController guardAi;
   final ScanHistoryController scanHistory;
+  final IdentityProfileController identity;
 }

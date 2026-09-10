@@ -207,9 +207,13 @@ class AccountsController extends ChangeNotifier {
   }
 
   Future<bool> signIn({
-    required String email,
+    String? username,
+    String? email,
     required String password,
   }) async {
+    final identifier = (username?.trim().isNotEmpty == true)
+        ? username!.trim()
+        : (email?.trim() ?? '');
     final auth = authRepository;
     if (auth == null) {
       _actionError = 'El servicio de autenticación no está disponible.';
@@ -222,7 +226,7 @@ class AccountsController extends ChangeNotifier {
     _notify();
     try {
       final profile = await auth.login(
-        email: email,
+        email: identifier,
         password: password,
       );
       if (_disposed) return false;
@@ -240,9 +244,13 @@ class AccountsController extends ChangeNotifier {
   }
 
   Future<bool> register({
-    required String email,
+    String? username,
+    String? email,
     required String password,
   }) async {
+    final identifier = (username?.trim().isNotEmpty == true)
+        ? username!.trim()
+        : (email?.trim() ?? '');
     final auth = authRepository;
     if (auth == null) {
       _actionError = 'El servicio de autenticación no está disponible.';
@@ -255,13 +263,13 @@ class AccountsController extends ChangeNotifier {
     _notify();
     try {
       await auth.register(
-        email: email,
+        email: identifier,
         password: password,
       );
       if (_disposed) return false;
       // Tras registrarse con éxito, iniciar sesión automáticamente
       final profile = await auth.login(
-        email: email,
+        email: identifier,
         password: password,
       );
       if (_disposed) return false;

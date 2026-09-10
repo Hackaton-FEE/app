@@ -276,7 +276,11 @@ class _ControlledRepository implements FootprintRepository {
   }
 
   @override
-  Future<FootprintProfile> scanIdentity(String identity) {
+  Future<FootprintProfile> scanIdentity(
+    String identity, {
+    List<String> associatedUsernames = const [],
+    bool consentSelfAudit = true,
+  }) {
     scanCalls++;
     scanIdentities.add(identity);
     scanStarted.complete();

@@ -91,7 +91,11 @@ class MockFootprintRepository implements FootprintRepository {
   }
 
   @override
-  Future<FootprintProfile> scanIdentity(String identity) async {
+  Future<FootprintProfile> scanIdentity(
+    String identity, {
+    List<String> associatedUsernames = const [],
+    bool consentSelfAudit = true,
+  }) async {
     final cleanIdentity = identity.trim();
     if (cleanIdentity.isEmpty) {
       throw const FormatException(

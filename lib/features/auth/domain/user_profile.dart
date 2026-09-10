@@ -51,13 +51,16 @@ class UserProfile {
 
   /// Convierte el perfil del backend a [LocalAccount] para ser usado en el resto de la app.
   LocalAccount toLocalAccount({String? displayName}) {
+    final effectiveLabel = (label.isNotEmpty && label != 'Mi Bóveda FEE')
+        ? label
+        : (email.isNotEmpty ? _derivedName(email) : label);
     final name = displayName?.trim().isNotEmpty == true
         ? displayName!
-        : (label.isNotEmpty ? label : _derivedName(email));
+        : (effectiveLabel.isNotEmpty ? effectiveLabel : 'Usuario');
     return LocalAccount(
       id: id,
       name: name,
-      email: email.contains('@') ? email : '$name (Passkey FIDO2)',
+      email: email.contains('@') ? email : name,
       isDemo: false,
       isActive: isActive,
       createdAt: createdAt,

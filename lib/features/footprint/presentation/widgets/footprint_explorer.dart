@@ -154,10 +154,51 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
           ),
         ),
         if (items.isEmpty)
-          const SliverToBoxAdapter(
+          SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 28),
-              child: Text('No hay hallazgos en esta categoría.'),
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color:
+                        theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      widget.profile.hasScanned
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.radar_outlined,
+                      size: 36,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      widget.profile.hasScanned
+                          ? 'No hay hallazgos en esta categoría.'
+                          : 'Sin hallazgos registrados.',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.profile.hasScanned
+                          ? 'Tu huella se encuentra limpia en los parámetros seleccionados.'
+                          : 'Inicia un escaneo para auditar fuentes públicas y filtraciones.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           )
         else
@@ -181,7 +222,9 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
             child: Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                'Última actualización ${_formatTimeAgo(widget.profile.lastScannedAt)}.',
+                widget.profile.hasScanned
+                    ? 'Última actualización ${_formatTimeAgo(widget.profile.lastScannedAt)}.'
+                    : 'Aún no se ha realizado ninguna auditoría.',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

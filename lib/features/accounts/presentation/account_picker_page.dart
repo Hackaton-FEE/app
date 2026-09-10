@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/logo_loading_indicator.dart';
 import '../../auth/presentation/widgets/auth_card.dart';
 import 'accounts_controller.dart';
 import 'widgets/account_product_overview.dart';
@@ -22,9 +24,16 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
     final colors = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Osisn't",
-          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppLogo(size: 28),
+            SizedBox(width: 10),
+            Text(
+              "Osisn't",
+              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -1),
+            ),
+          ],
         ),
       ),
       body: SafeArea(
@@ -59,11 +68,7 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                               color: colors.primaryContainer,
                               borderRadius: BorderRadius.circular(24),
                             ),
-                            child: Icon(
-                              Icons.fingerprint_rounded,
-                              size: 38,
-                              color: colors.onPrimaryContainer,
-                            ),
+                            child: const AppLogo(size: 40),
                           ),
                         ),
                       ),
@@ -85,10 +90,14 @@ class _AccountPickerPageState extends State<AccountPickerPage> {
                       ),
                       const SizedBox(height: 24),
                       if (controller.isLoading)
-                        Semantics(
-                          liveRegion: true,
-                          label: 'Cargando cuentas',
-                          child: const LinearProgressIndicator(),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: LogoLoadingIndicator(
+                              size: 72,
+                              message: 'Cargando cuentas...',
+                            ),
+                          ),
                         )
                       else if (controller.loadError != null)
                         _AccountError(

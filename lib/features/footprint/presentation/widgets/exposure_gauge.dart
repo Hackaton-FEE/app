@@ -88,7 +88,7 @@ class ExposureGauge extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            risk.exposureLabel,
+            !profile.hasScanned ? 'Sin auditar' : risk.exposureLabel,
             style: theme.textTheme.titleMedium?.copyWith(
               color: AppPalette.deepOlive,
               fontWeight: FontWeight.w600,
@@ -96,7 +96,9 @@ class ExposureGauge extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Empieza por los hallazgos de mayor prioridad.',
+            !profile.hasScanned
+                ? 'Aún no se ha realizado ninguna auditoría para esta identidad.'
+                : 'Empieza por los hallazgos de mayor prioridad.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppPalette.olive,
             ),

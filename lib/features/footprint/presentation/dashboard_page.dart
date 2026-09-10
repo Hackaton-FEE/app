@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_logo.dart';
 import '../../accounts/domain/local_account.dart';
+import '../../accounts/presentation/identity_profile_controller.dart';
+import '../../accounts/presentation/profile_setup_page.dart';
 import '../../auth/data/backend_auth_repository.dart';
 import '../../auth/presentation/widgets/active_sessions_dialog.dart';
 import '../../auth/presentation/widgets/change_password_dialog.dart';
@@ -32,6 +35,7 @@ class DashboardPage extends StatefulWidget {
     required this.casesController,
     required this.guardAiController,
     this.scanHistoryController,
+    this.identityController,
     required this.account,
     required this.onManageAccounts,
     this.authRepository,
@@ -42,6 +46,7 @@ class DashboardPage extends StatefulWidget {
   final CasesController casesController;
   final GuardAiController guardAiController;
   final ScanHistoryController? scanHistoryController;
+  final IdentityProfileController? identityController;
   final LocalAccount account;
   final VoidCallback onManageAccounts;
   final AuthRepository? authRepository;
@@ -194,6 +199,20 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  void _openIdentitySetup() {
+    if (widget.identityController == null) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ProfileSetupPage(
+          account: widget.account,
+          identityController: widget.identityController!,
+          footprintController: widget.footprintController,
+          isInitialOnboarding: false,
+        ),
+      ),
+    );
+  }
+
   void _showFindingDetail(FootprintItem item) {
     showModalBottomSheet<void>(
       context: context,
@@ -241,12 +260,22 @@ class _DashboardPageState extends State<DashboardPage> {
             appBar: AppBar(
               toolbarHeight: 72,
               title: _region(
-                const Text(
-                  "Osisn't",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1,
-                  ),
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppLogo(size: 24),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        "Osisn't",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               leading: Builder(
@@ -296,6 +325,9 @@ class _DashboardPageState extends State<DashboardPage> {
                       : null,
               onViewCapabilities: widget.authRepository != null
                   ? _openCapabilitiesDialog
+                  : null,
+              onViewIdentity: widget.identityController != null
+                  ? _openIdentitySetup
                   : null,
             ),
             bottomNavigationBar: FootprintActionBar(

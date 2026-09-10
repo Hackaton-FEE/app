@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_logo.dart';
+
 /// Local profile navigation. The owning drawer closes before an action runs.
 class ProfileDrawer extends StatelessWidget {
   const ProfileDrawer({
@@ -17,6 +19,7 @@ class ProfileDrawer extends StatelessWidget {
     this.onViewSessions,
     this.onChangePassword,
     this.onViewCapabilities,
+    this.onViewIdentity,
     super.key,
   });
 
@@ -29,12 +32,20 @@ class ProfileDrawer extends StatelessWidget {
   final VoidCallback? onViewSessions;
   final VoidCallback? onChangePassword;
   final VoidCallback? onViewCapabilities;
+  final VoidCallback? onViewIdentity;
   final int caseCount;
   final VoidCallback onViewCases;
   final VoidCallback onHelp;
 
   List<(String, IconData, String, VoidCallback?)> get _destinations => [
     ('Mi huella', Icons.fingerprint_rounded, 'profile-footprint', null),
+    if (onViewIdentity != null)
+      (
+        'Identidad a proteger',
+        Icons.shield_outlined,
+        'profile-identity',
+        onViewIdentity,
+      ),
     if (onViewHistory != null)
       (
         'Historial de escaneos ($historyCount)',
@@ -145,6 +156,8 @@ class ProfileDrawer extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      const AppLogo(size: 26),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Semantics(
                           header: true,

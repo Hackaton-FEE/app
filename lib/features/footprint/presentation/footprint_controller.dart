@@ -90,7 +90,11 @@ class FootprintController extends ChangeNotifier {
     }
   }
 
-  Future<bool> scanIdentity(String identity) async {
+  Future<bool> scanIdentity(
+    String identity, {
+    List<String> associatedUsernames = const [],
+    bool consentSelfAudit = true,
+  }) async {
     if (_disposed || _isLoading) return false;
     _isLoading = true;
     _error = null;
@@ -112,7 +116,11 @@ class FootprintController extends ChangeNotifier {
       _scanningStage = 'Generando diagnóstico de huella digital…';
       _notify();
 
-      final profile = await _repository.scanIdentity(identity);
+      final profile = await _repository.scanIdentity(
+        identity,
+        associatedUsernames: associatedUsernames,
+        consentSelfAudit: consentSelfAudit,
+      );
       if (_disposed) return false;
       _profile = profile;
       await onScanCompleted?.call(profile);
