@@ -141,3 +141,11 @@ Para el recorrido real: iniciar una autoauditoría, esperar su aceptación,
 bloquear o cambiar de app, volver y comprobar que continúa el mismo ID. Forzar
 la detención y reabrir permite comprobar recuperación tras terminar el proceso,
 sin borrar almacenamiento ni crear otra búsqueda.
+
+Verificación del 10 de septiembre de 2026 (hora de México), Pixel 10 Pro XL,
+Android 17, APK debug: se inició una autoauditoría autorizada, se salió a Inicio,
+se volvió a FEE y se forzó la detención del proceso durante la ejecución. Al
+reabrir, la app recuperó el mismo ID; el total de escaneos del servidor no aumentó.
+El servidor llegó a COMPLETED y el cliente guardó una sola entrada de historial.
+La consulta devolvió cero hallazgos con Blackbird degradado; esto no acredita
+cobertura de fuentes. No se ejecutó un bloqueo físico ni un recorrido TalkBack.
