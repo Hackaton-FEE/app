@@ -52,6 +52,27 @@ La base configurada es `https://backosisnt.ici-labs.com/api/v1`.
 | Resultado | `GET /osint/scans/{id}/results`, HTTP 200 con dashboard. |
 | Eliminar remoto | `DELETE /osint/scans/{id}`; independiente del historial local. |
 
+El formulario de perfil y «Escanear» exige correo propio, de uno a diez alias
+y teléfono internacional. Usa el contrato existente: `target_type=phone`,
+`identifier` con el teléfono, `associated_email`, `associated_usernames` y
+`consent_self_audit=true`. Así el servidor recibe entradas para Blackbird y
+Maigret (alias), Holehe (correo) e Ignorant (teléfono) en una sola auditoría.
+No se infieren correos ni alias a partir del nombre. Los perfiles antiguos se
+precargan sin reset; deben completarse antes de iniciar una auditoría nueva.
+
+El correo asociado se propaga por el controlador y repositorio y se conserva
+en reintentos, incluida la renovación de sesión. El teléfono se envía como
+identificador primario porque el backend no admite `associated_phone`.
+Los identificadores se guardan en el perfil local antes de iniciar desde el
+formulario; si la persistencia falla, se conservan los campos y no se inicia.
+Los pendientes aceptados siguen recuperándose por ID, sin duplicar solicitudes.
+
+Disponer de las tres entradas habilita el intento de los cuatro motores; no
+garantiza que todas sus fuentes respondan. No se cambian límites, proxies,
+reintentos ni credenciales del servidor. El modo configurado sigue siendo real.
+Los nombres completos anteriores se conservan localmente; el servidor actual
+no los usa para alimentar un motor, por lo que ya no se solicitan en el formulario.
+
 El cuerpo inicial declara `target_type`, `identifier`, identificadores
 asociados y `consent_self_audit`. Los teléfonos requieren `+` y código
 internacional; se normalizan espacios, paréntesis y guiones. Los alias numéricos

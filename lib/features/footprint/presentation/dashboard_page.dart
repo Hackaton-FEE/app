@@ -23,7 +23,7 @@ import 'widgets/dashboard_spotlight.dart';
 import 'widgets/footprint_action_bar.dart';
 import 'widgets/profile_drawer.dart';
 import 'widgets/footprint_detail_sheet.dart';
-import 'widgets/scan_bottom_sheet.dart';
+import 'widgets/scan_form_navigation.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -124,28 +124,12 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  void _openScanSheet() {
-    if (widget.footprintController.isLoading) return;
-    final currentTarget =
-        widget.footprintController.profile?.targetIdentity ??
-        widget.account.email;
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
-          ? AnimationStyle.noAnimation
-          : null,
-      backgroundColor: Colors.transparent,
-      builder: (_) => ScanBottomSheet(
-        initialIdentity: currentTarget,
-        onScan: (identity) {
-          unawaited(widget.footprintController.scanIdentity(identity));
-        },
-      ),
-    );
-  }
+  void _openScanSheet() => openScanForm(
+    context,
+    widget.footprintController,
+    identityController: widget.identityController,
+    fallbackIdentity: widget.account.email,
+  );
 
   Future<void> _openNewReport(FootprintItem item) =>
       openFootprintReport(context, widget.casesController, item);

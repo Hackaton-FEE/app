@@ -1,3 +1,4 @@
+import '../support/scan_form_test_helpers.dart';
 import '../support/ready_identity_repository.dart';
 import '../support/demo_guard_ai_repository.dart';
 
@@ -167,20 +168,21 @@ void main() {
       find.byKey(const Key('scan-identity-field')),
       scanned,
     );
+    await fillScanContacts(tester);
     await revealAndTap(
       tester,
       find.byKey(const Key('start-scan-submit-button')),
     );
-    expect(find.text(scanned), findsOneWidget);
+    expect(find.text('+12025550123'), findsOneWidget);
 
     await returnToPicker(tester);
     await select(tester, _second);
-    expect(find.text(scanned), findsNothing);
+    expect(find.text('+12025550123'), findsNothing);
     expect(find.text(_second.email), findsOneWidget);
 
     await returnToPicker(tester);
     await select(tester, _first);
-    expect(find.text(scanned), findsOneWidget);
+    expect(find.text('+12025550123'), findsOneWidget);
   });
 
   testWidgets('GuardAI keeps each profile conversation and draft separate', (

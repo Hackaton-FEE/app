@@ -1,3 +1,4 @@
+import '../support/scan_form_test_helpers.dart';
 import '../support/ready_identity_repository.dart';
 import '../support/demo_guard_ai_repository.dart';
 import '../support/demo_account_repository.dart';
@@ -232,9 +233,10 @@ void main() {
           )
           .getSemanticsData();
       expect(input.flagsCollection.isTextField, isTrue);
-      expect(input.label, contains('Correo, alias o teléfono'));
+      expect(input.label, contains('Correo propio'));
       expect(input.value, 'identidad.ficticia@example.invalid');
 
+      await fillScanContacts(tester);
       final submit = find.byKey(const Key('start-scan-submit-button'));
       await reveal(
         tester,
@@ -254,7 +256,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(ScanBottomSheet), findsNothing);
       await reveal(tester, find.byKey(const Key('dashboard-target-identity')));
-      expect(find.text('identidad.ficticia@example.invalid'), findsOneWidget);
+      expect(find.text('+12025550123'), findsOneWidget);
       expect(tester.takeException(), isNull);
     } finally {
       semantics.dispose();

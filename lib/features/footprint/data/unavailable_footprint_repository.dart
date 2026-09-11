@@ -13,6 +13,7 @@ class UnavailableFootprintRepository implements FootprintRepository {
   Future<FootprintProfile> scanIdentity(
     String identity, {
     List<String> associatedUsernames = const [],
+    String? associatedEmail,
     bool consentSelfAudit = true,
   }) async => throw const FormatException(
     'Inicia una sesión en el servidor para realizar el escaneo.',

@@ -1,3 +1,5 @@
+import '../support/scan_form_test_helpers.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fee_app/features/accounts/data/identity_storage.dart';
@@ -25,6 +27,7 @@ class _FakeFootprintRepository implements FootprintRepository {
   String? lastScannedIdentity;
   List<String>? lastUsernames;
   bool? lastConsent;
+  String? lastEmail;
 
   @override
   Future<FootprintProfile> getProfile() async =>
@@ -34,11 +37,13 @@ class _FakeFootprintRepository implements FootprintRepository {
   Future<FootprintProfile> scanIdentity(
     String identity, {
     List<String> associatedUsernames = const [],
+    String? associatedEmail,
     bool consentSelfAudit = true,
   }) async {
     lastScannedIdentity = identity;
     lastUsernames = associatedUsernames;
     lastConsent = consentSelfAudit;
+    lastEmail = associatedEmail;
     return FootprintProfile.initial(targetIdentity: identity);
   }
 }
@@ -80,47 +85,6 @@ void main() {
     expect(find.text('Configurar más tarde (iniciar en 0)'), findsOneWidget);
   });
 
-  testWidgets('Can add and delete associated usernames', (tester) async {
-    tester.view.physicalSize = const Size(800, 1400);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    final storage = _InMemoryStorage();
-    final repo = LocalIdentityProfileRepository(storage: storage);
-    final controller = IdentityProfileController(repo, accountId: 'acc-1');
-    await controller.load();
-
-    const account = LocalAccount(
-      id: 'acc-1',
-      name: 'Ana',
-      email: 'ana@test.com',
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(
-        home: ProfileSetupPage(
-          account: account,
-          identityController: controller,
-          isInitialOnboarding: true,
-        ),
-      ),
-    );
-
-    final inputFinder = find.widgetWithText(TextField, 'Ej. jdoe, pepito_dev');
-    await tester.enterText(inputFinder, 'anita_dev');
-    await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pump();
-
-    expect(find.text('@anita_dev'), findsOneWidget);
-
-    // Delete chip
-    await tester.tap(find.byIcon(Icons.clear).last);
-    await tester.pump();
-
-    expect(find.text('@anita_dev'), findsNothing);
-  });
-
   testWidgets(
     'Submitting form saves profile, triggers scan, and calls onCompleted',
     (tester) async {
@@ -156,16 +120,10 @@ void main() {
         ),
       );
 
-      // Add handle
-      final inputFinder = find.widgetWithText(
-        TextField,
-        'Ej. jdoe, pepito_dev',
-      );
-      await tester.enterText(inputFinder, 'analopez');
-      await tester.tap(find.byIcon(Icons.add_rounded));
-      await tester.pump();
+      await fillScanContacts(tester, aliases: 'analopez');
 
       // Tap submit
+      await tester.ensureVisible(find.text('Guardar e Iniciar Auditoría'));
       await tester.tap(find.text('Guardar e Iniciar Auditoría'));
       await tester.pumpAndSettle();
 
@@ -173,7 +131,9 @@ void main() {
       expect(controller.needsOnboarding, isFalse);
       expect(controller.profile?.mainIdentifier, 'ana@empresa.com');
       expect(controller.profile?.associatedUsernames, ['analopez']);
-      expect(fakeFootprintRepo.lastScannedIdentity, 'ana@empresa.com');
+      expect(fakeFootprintRepo.lastScannedIdentity, '+12025550123');
+      expect(fakeFootprintRepo.lastEmail, 'ana@empresa.com');
+      expect(controller.profile?.phone, '+12025550123');
       expect(fakeFootprintRepo.lastUsernames, ['analopez']);
     },
   );
@@ -210,6 +170,9 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(
+      find.text('Configurar más tarde (iniciar en 0)'),
+    );
     await tester.tap(find.text('Configurar más tarde (iniciar en 0)'));
     await tester.pumpAndSettle();
 
@@ -247,6 +210,9 @@ void main() {
             onCompleted: () => completed = true,
           ),
         ),
+      );
+      await tester.ensureVisible(
+        find.text('Configurar más tarde (iniciar en 0)'),
       );
       await tester.tap(find.text('Configurar más tarde (iniciar en 0)'));
       await tester.pumpAndSettle();
@@ -292,6 +258,9 @@ void main() {
       )) {
         expect(field.controller!.text, isEmpty);
       }
+      await tester.ensureVisible(
+        find.text('Configurar más tarde (iniciar en 0)'),
+      );
       await tester.tap(find.text('Configurar más tarde (iniciar en 0)'));
       await tester.pumpAndSettle();
       expect(controller.profile?.mainIdentifier, isEmpty);

@@ -1,3 +1,4 @@
+import 'support/scan_form_test_helpers.dart';
 import 'support/ready_identity_repository.dart';
 import 'support/demo_guard_ai_repository.dart';
 import 'support/demo_account_repository.dart';
@@ -122,10 +123,14 @@ void main() {
       find.byKey(const Key('scan-identity-field')),
       'nuevo_objetivo@gmail.com',
     );
+    await fillScanContacts(tester);
+    await tester.ensureVisible(
+      find.byKey(const Key('start-scan-submit-button')),
+    );
     await tester.tap(find.byKey(const Key('start-scan-submit-button')));
     await tester.pumpAndSettle();
 
-    expect(find.text('nuevo_objetivo@gmail.com'), findsOneWidget);
+    expect(find.text('+12025550123'), findsOneWidget);
     expect(await scanStorage.readAll(), hasLength(1));
   });
 

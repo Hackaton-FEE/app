@@ -1,57 +1,60 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/scan_target.dart';
+import '../../domain/scan_identifiers.dart';
+import 'scan_draft_guard.dart';
+import 'scan_identity_fields.dart';
 
 class ScanBottomSheet extends StatefulWidget {
   const ScanBottomSheet({
     required this.initialIdentity,
     required this.onScan,
+    this.email,
+    this.phone,
+    this.aliases = const [],
     super.key,
   });
-
   final String initialIdentity;
-  final ValueChanged<String> onScan;
-
+  final String? email;
+  final String? phone;
+  final List<String> aliases;
+  final Future<void> Function(ScanIdentifiers) onScan;
   @override
   State<ScanBottomSheet> createState() => _ScanBottomSheetState();
 }
 
 class _ScanBottomSheetState extends State<ScanBottomSheet> {
-  late final TextEditingController _controller;
-  final _formKey = GlobalKey<FormState>();
-  final _identityFocus = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialIdentity);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _identityFocus.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      _identityFocus.requestFocus();
-      return;
+  final _fields = GlobalKey<ScanIdentityFieldsState>();
+  bool _dirty = false;
+  bool _busy = false;
+  String? _error;
+  Future<void> _submit() async {
+    final input = _fields.currentState!.validate();
+    if (input == null) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.onScan(input);
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error =
+              'No se pudieron guardar los datos. Se conservan aquí; reintenta.';
+        });
+      }
     }
-    final value = _controller.text.trim();
-    Navigator.of(context).pop();
-    widget.onScan(value);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-      ),
+  Widget build(BuildContext context) => ScanDraftGuard(
+    dirty: _dirty,
+    busy: _busy,
+    child: Material(
+      color: Theme.of(context).colorScheme.surface,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -61,78 +64,58 @@ class _ScanBottomSheetState extends State<ScanBottomSheet> {
             24,
             MediaQuery.viewInsetsOf(context).bottom + 24,
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Semantics(
-                        header: true,
-                        child: Text(
-                          'Explora tu huella',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        'Explora tu huella',
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Cerrar análisis',
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Ingresa tu correo, alias o teléfono con código de país para revisar tu exposición '
-                  'en fuentes públicas. Al continuar confirmas que auditas tus propios datos.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                ),
-                const SizedBox(height: 24),
-                TextFormField(
-                  key: const Key('scan-identity-field'),
-                  controller: _controller,
-                  focusNode: _identityFocus,
-                  autofocus: true,
-                  autocorrect: false,
-                  enableSuggestions: false,
-                  textInputAction: TextInputAction.go,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo, alias o teléfono (obligatorio)',
-                    hintText: 'alias o +52 55 0000 0000',
-                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                    prefixIcon: Icon(Icons.alternate_email_rounded),
-                    errorMaxLines: 3,
+                  IconButton(
+                    tooltip: 'Cerrar análisis',
+                    onPressed: _busy
+                        ? null
+                        : () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.close_rounded),
                   ),
-                  validator: (value) {
-                    try {
-                      ScanTarget.parse(value ?? '');
-                      return null;
-                    } on FormatException catch (error) {
-                      return error.message;
-                    }
-                  },
-                  onFieldSubmitted: (_) => _submit(),
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  key: const Key('start-scan-submit-button'),
-                  onPressed: _submit,
-                  icon: const Icon(Icons.radar_rounded),
-                  label: const Text('Iniciar análisis'),
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ScanIdentityFields(
+                key: _fields,
+                enabled: !_busy,
+                initialIdentity: widget.initialIdentity,
+                email: widget.email,
+                phone: widget.phone,
+                aliases: widget.aliases,
+                onChanged: () =>
+                    setState(() => _dirty = _fields.currentState!.isDirty),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Al iniciar confirmas que estos datos son tuyos y autorizas la autoauditoría.',
+              ),
+              const SizedBox(height: 16),
+              if (_error != null)
+                Semantics(liveRegion: true, child: Text(_error!)),
+              FilledButton.icon(
+                key: const Key('start-scan-submit-button'),
+                onPressed: _busy ? null : _submit,
+                icon: const Icon(Icons.radar_rounded),
+                label: const Text('Iniciar análisis'),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

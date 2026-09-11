@@ -6,6 +6,7 @@ import '../domain/footprint_profile.dart';
 import '../domain/footprint_repository.dart';
 import '../domain/resumable_footprint_repository.dart';
 import 'pending_scan_store.dart';
+import 'finding_presentation_mapper.dart';
 import '../domain/scan_history_repository.dart';
 import 'osint_client.dart';
 import 'osint_dashboard_payload.dart';
@@ -92,6 +93,7 @@ class BackendFootprintRepository
   Future<FootprintProfile> scanIdentity(
     String identity, {
     List<String> associatedUsernames = const [],
+    String? associatedEmail,
     bool consentSelfAudit = true,
   }) async => (await _exclusive(() async {
     _pendingScan ??= await pendingStore?.load();
@@ -99,12 +101,18 @@ class BackendFootprintRepository
       await pendingStore?.save(pending);
       return _recover(pending);
     }
-    return _startScan(identity, associatedUsernames, consentSelfAudit);
+    return _startScan(
+      identity,
+      associatedUsernames,
+      associatedEmail,
+      consentSelfAudit,
+    );
   }))!;
 
   Future<FootprintProfile> _startScan(
     String identity,
     List<String> associatedUsernames,
+    String? associatedEmail,
     bool consentSelfAudit,
   ) async {
     final cleanIdentity = identity.trim();
@@ -119,7 +127,7 @@ class BackendFootprintRepository
     final scanId = await client.startScan(
       mainIdentifier: cleanIdentity,
       associatedUsernames: associatedUsernames,
-      associatedEmail: isEmail ? cleanIdentity : null,
+      associatedEmail: associatedEmail ?? (isEmail ? cleanIdentity : null),
       consentSelfAudit: consentSelfAudit,
     );
 
@@ -193,7 +201,7 @@ class BackendFootprintRepository
         final sources = finding.sources;
         final details = finding.details;
 
-        final category = _mapCategory(
+        final category = mapFindingCategory(
           categoryData.name,
           sources: sources,
           details: details,
@@ -232,7 +240,7 @@ class BackendFootprintRepository
           exposedDataList.add('Presencia pública indexada');
         }
 
-        final riskLevel = _mapRisk(status, confidence);
+        final riskLevel = mapFindingRisk(status, confidence);
         final title = status == 'POTENTIAL_MATCH'
             ? 'Posible coincidencia en $platform'
             : details['full_name'] != null
@@ -244,7 +252,7 @@ class BackendFootprintRepository
             'Confianza reportada: $confidence%. '
             'No confirma titularidad ni actividad reciente.';
 
-        final recommendedAction = _recommendedActionFor(category, platform);
+        final recommendedAction = recommendedFindingAction(category, platform);
 
         items.add(
           FootprintItem(
@@ -271,80 +279,5 @@ class BackendFootprintRepository
       lastScannedAt: dashboard.generatedAt.toLocal(),
       osintReport: report,
     );
-  }
-
-  FootprintCategory _mapCategory(
-    String name, {
-    required List<String> sources,
-    required Map<String, dynamic> details,
-  }) {
-    final lowerCat = name.toLowerCase();
-
-    // Verificaciones de correo / teléfono o motor Holehe -> Contacto
-    if (sources.contains('holehe') ||
-        sources.contains('ignorant') ||
-        details['masked_email'] != null ||
-        details['masked_phone'] != null ||
-        lowerCat.contains('contact') ||
-        lowerCat.contains('phone') ||
-        lowerCat.contains('messaging') ||
-        lowerCat.contains('email')) {
-      return FootprintCategory.exposedContact;
-    }
-
-    // Filtraciones / leaks / darkweb
-    if (lowerCat.contains('breach') ||
-        lowerCat.contains('leak') ||
-        lowerCat.contains('pwned') ||
-        lowerCat.contains('password') ||
-        lowerCat.contains('pastebin') ||
-        lowerCat.contains('darkweb')) {
-      return FootprintCategory.dataBreach;
-    }
-
-    // Redes sociales, plataformas de desarrollo, gaming, hobbies
-    if (lowerCat.contains('social') ||
-        lowerCat.contains('coding') ||
-        lowerCat.contains('forum') ||
-        lowerCat.contains('tech') ||
-        lowerCat.contains('gaming') ||
-        lowerCat.contains('music') ||
-        lowerCat.contains('hobby')) {
-      return FootprintCategory.socialProfile;
-    }
-
-    // Directorios, finanzas, brokers, dominios y registros públicos
-    if (lowerCat.contains('broker') ||
-        lowerCat.contains('search') ||
-        lowerCat.contains('lookup') ||
-        lowerCat.contains('finance') ||
-        lowerCat.contains('domain') ||
-        lowerCat.contains('adult') ||
-        lowerCat.contains('other')) {
-      return FootprintCategory.dataBroker;
-    }
-
-    return FootprintCategory.socialProfile;
-  }
-
-  FootprintRisk _mapRisk(String status, int confidence) {
-    if (status == 'CONFIRMED' && confidence >= 85) {
-      return FootprintRisk.high;
-    }
-    if (confidence >= 60 || status == 'POTENTIAL_MATCH') {
-      return FootprintRisk.medium;
-    }
-    return FootprintRisk.low;
-  }
-
-  String _recommendedActionFor(FootprintCategory category, String platform) {
-    return switch (category) {
-      FootprintCategory.dataBreach => 'Cambiar la contraseña inmediatamente y habilitar autenticación multifactor.',
-      FootprintCategory.dataBroker =>
-        'Generar un reclamo formal de desindexación y retiro de registros en $platform.',
-      FootprintCategory.exposedContact => 'Ocultar teléfonos y correos en los ajustes de privacidad de recuperación.',
-      FootprintCategory.socialProfile =>
-        'Revisar la visibilidad de tu perfil en $platform y restringir datos personales públicos.',
-    };
   }
 }

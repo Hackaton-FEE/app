@@ -20,6 +20,7 @@ class FootprintController extends ChangeNotifier {
   String? _error;
   String? _failedScanIdentity;
   List<String> _failedAliases = const [];
+  String? _failedEmail;
   bool _failedConsent = true;
   String? _scanningStage;
   FootprintCategory? _selectedCategory;
@@ -72,6 +73,7 @@ class FootprintController extends ChangeNotifier {
       await scanIdentity(
         identity,
         associatedUsernames: _failedAliases,
+        associatedEmail: _failedEmail,
         consentSelfAudit: _failedConsent,
       );
     }
@@ -148,6 +150,7 @@ class FootprintController extends ChangeNotifier {
   Future<bool> scanIdentity(
     String identity, {
     List<String> associatedUsernames = const [],
+    String? associatedEmail,
     bool consentSelfAudit = true,
   }) async {
     if (_disposed || _isLoading) return false;
@@ -174,6 +177,7 @@ class FootprintController extends ChangeNotifier {
       final profile = await _repository.scanIdentity(
         identity,
         associatedUsernames: associatedUsernames,
+        associatedEmail: associatedEmail,
         consentSelfAudit: consentSelfAudit,
       );
       if (_disposed) return false;
@@ -183,6 +187,7 @@ class FootprintController extends ChangeNotifier {
       if (!_disposed) {
         _failedScanIdentity = identity;
         _failedAliases = List.unmodifiable(associatedUsernames);
+        _failedEmail = associatedEmail;
         _failedConsent = consentSelfAudit;
         _error = e is FormatException
             ? e.message

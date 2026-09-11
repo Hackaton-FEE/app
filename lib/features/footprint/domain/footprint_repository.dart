@@ -5,6 +5,7 @@ abstract class FootprintRepository {
   Future<FootprintProfile> scanIdentity(
     String identity, {
     List<String> associatedUsernames = const [],
+    String? associatedEmail,
     bool consentSelfAudit = true,
   });
 }
