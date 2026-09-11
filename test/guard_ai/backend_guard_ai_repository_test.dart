@@ -76,32 +76,31 @@ void main() {
       });
     });
 
-    test(
-      'leaves the conversation unchanged when the assistant is disabled',
-      () async {
-        final repository = BackendGuardAiRepository(
-          client: AssistantClient(
-            httpClient: MockClient.streaming(
-              (request, _) async => http.StreamedResponse(
-                Stream.value(
-                  utf8.encode(
-                    jsonEncode({
-                      'type': 'https://fee/errors/assistant-unavailable',
-                    }),
-                  ),
+    test('returns general guidance when generation is unavailable', () async {
+      final repository = BackendGuardAiRepository(
+        client: AssistantClient(
+          httpClient: MockClient.streaming(
+            (request, _) async => http.StreamedResponse(
+              Stream.value(
+                utf8.encode(
+                  jsonEncode({
+                    'type': 'https://fee/errors/assistant-unavailable',
+                  }),
                 ),
-                503,
               ),
+              503,
             ),
           ),
-        );
+        ),
+      );
 
-        await expectLater(
-          repository.reply(GuardAiInput('hola')),
-          throwsA(isA<GuardAiUnavailable>()),
-        );
-        expect((await repository.loadConversation()).messages, isEmpty);
-      },
-    );
+      final conversation = await repository.reply(GuardAiInput('hola'));
+      expect(conversation.messages, hasLength(2));
+      expect(
+        conversation.messages.last.text,
+        startsWith('Orientación general:'),
+      );
+      expect(conversation.messages.last.recommendedAction, isNull);
+    });
   });
 }

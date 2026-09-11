@@ -1,11 +1,18 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+
 import '../domain/guard_ai_repository.dart';
 import '../domain/guard_ai_quick_prompt.dart';
 import 'assistant_client.dart';
 import '../../footprint/domain/footprint_profile.dart';
 import 'guard_ai_report_context.dart';
+import 'guard_ai_fallback.dart';
+import 'guard_ai_wire_messages.dart';
 
 /// Conecta GuardAI con `POST /api/v1/assistant/chat`. El servidor no
-/// persiste la conversación: cada turno reenvía el historial completo, así
+/// persiste la conversación: cada turno reenvía el historial reciente, así
 /// que este repositorio lo conserva en memoria mientras vive la instancia
 /// (una por chat, ver `GuardAiController.newChat`).
 class BackendGuardAiRepository implements GuardAiRepository {
@@ -25,27 +32,25 @@ class BackendGuardAiRepository implements GuardAiRepository {
       ..._messages,
       GuardAiMessage(role: GuardAiRole.person, text: input.text),
     ];
-    final String text;
+    String text;
+    var usedFallback = false;
     try {
-      text = await _client.chat([
-        for (final message in pending.take(pending.length - 1))
-          {
-            'role': message.role == GuardAiRole.person ? 'user' : 'assistant',
-            'content': message.text,
-          },
-        if (currentProfile != null)
-          {'role': 'user', 'content': guardAiReportContext(profile)},
-        {'role': 'user', 'content': input.text},
-      ]);
-    } on AssistantChatRejected catch (rejection) {
-      // El servidor solo emite este código cuando el asistente está
-      // apagado por configuración, no ante un fallo transitorio del
-      // proveedor: es el único caso en que GuardAI está realmente
-      // "desconectado" desde la perspectiva del cliente.
-      if (rejection.code == 'assistant-unavailable') {
-        throw const GuardAiUnavailable();
+      text = await _client.chat(
+        guardAiWireMessages(
+          history: _messages,
+          input: input.text,
+          reportContext: currentProfile != null
+              ? guardAiReportContext(profile)
+              : null,
+        ),
+      );
+      if (text.trim().isEmpty) {
+        throw const AssistantChatFailure('Respuesta vacía.');
       }
-      rethrow;
+    } catch (error) {
+      if (!_generationFailed(error)) rethrow;
+      text = guardAiFallback(input.text);
+      usedFallback = true;
     }
     _messages = [
       ...pending,
@@ -53,7 +58,8 @@ class BackendGuardAiRepository implements GuardAiRepository {
         role: GuardAiRole.assistant,
         text: text,
         recommendedAction:
-            input.text == GuardAiQuickPrompt.help &&
+            !usedFallback &&
+                input.text == GuardAiQuickPrompt.help &&
                 profile != null &&
                 profile.items.isNotEmpty
             ? profile.items
@@ -69,4 +75,18 @@ class BackendGuardAiRepository implements GuardAiRepository {
 
   GuardAiConversation _snapshot() =>
       GuardAiConversation(messages: List.of(_messages));
+
+  bool _generationFailed(Object error) {
+    if (error is AssistantChatRejected) {
+      final status = error.statusCode;
+      return status == 429 ||
+          (status != null && status >= 500 && status <= 599) ||
+          (status == null && error.code == 'assistant-unavailable');
+    }
+    return error is AssistantChatFailure ||
+        error is TimeoutException ||
+        error is http.ClientException ||
+        error is SocketException ||
+        error is TlsException;
+  }
 }

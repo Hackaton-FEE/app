@@ -68,6 +68,78 @@ void main() {
       );
     });
 
+    test(
+      'returns completed text even when the connection stays open',
+      () async {
+        final stream = StreamController<List<int>>();
+        final client = AssistantClient(
+          httpClient: MockClient.streaming(
+            (request, _) async => http.StreamedResponse(stream.stream, 200),
+          ),
+        );
+        stream.add(
+          utf8.encode(
+            _event('token', {'content': 'Respuesta completa.'}) +
+                _event('done', {}),
+          ),
+        );
+        try {
+          expect(
+            await client
+                .chat([
+                  {'role': 'user', 'content': 'hola'},
+                ])
+                .timeout(const Duration(seconds: 1)),
+            'Respuesta completa.',
+          );
+          expect(stream.hasListener, isFalse);
+        } finally {
+          await stream.close();
+        }
+      },
+    );
+
+    test('blank provider output is a generation failure', () async {
+      final client = AssistantClient(
+        httpClient: MockClient.streaming(
+          (request, _) async => _sseResponse([
+            _event('token', {'content': '  \n '}),
+            _event('done', {}),
+          ]),
+        ),
+      );
+      await expectLater(
+        client.chat([
+          {'role': 'user', 'content': 'hola'},
+        ]),
+        throwsA(isA<AssistantChatFailure>()),
+      );
+    });
+
+    test(
+      'keeps HTTP status when the error body is not a problem document',
+      () async {
+        final client = AssistantClient(
+          httpClient: MockClient.streaming(
+            (request, _) async =>
+                _sseResponse(['bad gateway'], statusCode: 502),
+          ),
+        );
+        await expectLater(
+          client.chat([
+            {'role': 'user', 'content': 'hola'},
+          ]),
+          throwsA(
+            isA<AssistantChatRejected>().having(
+              (error) => error.statusCode,
+              'statusCode',
+              502,
+            ),
+          ),
+        );
+      },
+    );
+
     test('a 503 before streaming surfaces as AssistantChatRejected', () async {
       final client = AssistantClient(
         httpClient: MockClient.streaming(

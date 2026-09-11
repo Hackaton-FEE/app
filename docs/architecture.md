@@ -174,7 +174,20 @@ no incluye tokens, notas de casos ni consulta fuentes nuevas.
 El botón de acciones rápidas conserva el borrador y ofrece revisión del perfil,
 ayuda y plan de privacidad. Se ha retirado la conversación de muestra y su
 ejecutor simulado del producto. Las pruebas siguen usando dobles. La respuesta
-solo se confirma después de recibir el cierre SSE; fallos conservan el borrador.
+generada se confirma al recibir `done` en SSE, sin esperar a que
+el servidor cierre la conexión. Si el proveedor no responde, devuelve contenido
+vacío, agota el tiempo o falla la red, el repositorio presenta una respuesta
+local identificada como «Orientación general:», elegida por palabras de la
+consulta. También se aplica ante HTTP 429 y fallos 5xx. No interpreta el informe,
+atribuye hallazgos ni incorpora acciones del perfil. El siguiente turno vuelve
+a consultar al proveedor. La consulta y esta orientación se incorporan una
+sola vez al chat; los errores de sesión o validación conservan el borrador.
+
+El historial visible permanece completo. Para cada petición se conservan el
+contexto actual del informe y la nueva consulta, y se añaden los pares recientes
+que caben en 20 mensajes y 16,000 bytes UTF-8 de JSON. Los mensajes históricos
+se limitan a 4,000 puntos de código solo en el envío. La consulta actual no se
+recorta; si excede el contrato se rechaza para corregirla.
 Los diálogos de acciones no confirman ejecución externa sin un ejecutor conectado.
 Posponer no programa notificaciones. Regresar al inicio cierra el menú y sale
 una sola vez de GuardAI, conservando conversación y borrador durante la sesión.

@@ -13,9 +13,14 @@ class AssistantChatFailure implements Exception {
 /// (sesión inválida, conversación fuera de los límites, o asistente
 /// deshabilitado/no disponible).
 class AssistantChatRejected implements Exception {
-  const AssistantChatRejected({required this.code, required this.message});
+  const AssistantChatRejected({
+    required this.code,
+    required this.message,
+    this.statusCode,
+  });
   final String? code;
   final String message;
+  final int? statusCode;
 }
 
 typedef AssistantAsyncTokenProvider = Future<String?> Function({
@@ -85,9 +90,11 @@ class AssistantClient {
   Future<AssistantChatRejected> _rejectionFor(
     http.StreamedResponse response,
   ) async {
-    final body = await response.stream.bytesToString();
     String? code;
     try {
+      final body = await response.stream.bytesToString().timeout(
+        _connectTimeout,
+      );
       final decoded = jsonDecode(body);
       if (decoded is Map<String, dynamic>) {
         final type = decoded['type'];
@@ -103,7 +110,11 @@ class AssistantClient {
       503 => 'GuardAI no está disponible en este momento.',
       _ => 'No se pudo contactar con GuardAI.',
     };
-    return AssistantChatRejected(code: code, message: message);
+    return AssistantChatRejected(
+      code: code,
+      message: message,
+      statusCode: response.statusCode,
+    );
   }
 
   Future<String> _consume(http.StreamedResponse response) async {
@@ -144,11 +155,14 @@ class AssistantClient {
     }
 
     try {
-      await response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())
-          .timeout(_streamIdleTimeout)
-          .forEach(handleLine);
+      await for (final line
+          in response.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())
+              .timeout(_streamIdleTimeout)) {
+        handleLine(line);
+        if (sawDone) break;
+      }
     } on AssistantChatFailure {
       rethrow;
     } catch (_) {
@@ -157,7 +171,7 @@ class AssistantClient {
       );
     }
 
-    if (!sawDone || buffer.length == 0) {
+    if (!sawDone || buffer.toString().trim().isEmpty) {
       throw const AssistantChatFailure(
         'GuardAI no devolvió una respuesta completa. Inténtalo de nuevo.',
       );

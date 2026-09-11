@@ -174,3 +174,16 @@ datos enviados, cambio de informe entre turnos, ausencia de informe sin
 hallazgos inventados, borrador conservado y contexto bajo el límite del servidor.
 Las suites de widgets siguen cubriendo navegación y texto ampliado.
 No prueba disponibilidad del proveedor, TalkBack ni VoiceOver.
+
+## GuardAI ante generación intermitente
+
+`test/guard_ai/guard_ai_fallback_test.dart` cubre orientación local por palabras
+clave (con acentos y límites de palabra), errores SSE, red/TLS, tiempo agotado,
+contenido vacío y HTTP 429/503. Verifica que la orientación aparezca como
+respuesta normal sin aviso rojo, que no incluya hechos ni acciones del perfil,
+que no duplique turnos y que la consulta siguiente vuelva al proveedor. Los
+errores de sesión, autorización y validación siguen visibles y no confirman
+un envío. Las pruebas de transporte verifican 20 mensajes como máximo, pares
+recientes completos, contexto actual conservado y 16,000 bytes reales UTF-8,
+incluso con texto CJK; el historial visible no se recorta. Son pruebas locales
+con dobles, sin llamadas al proveedor ni consumo del proxy residencial.
