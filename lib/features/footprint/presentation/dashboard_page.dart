@@ -39,7 +39,7 @@ class DashboardPage extends StatefulWidget {
   final ScanHistoryController? scanHistoryController;
   final IdentityProfileController? identityController;
   final LocalAccount account;
-  final VoidCallback onManageAccounts;
+  final VoidCallback? onManageAccounts;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();

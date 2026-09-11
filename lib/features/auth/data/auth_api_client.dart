@@ -90,11 +90,7 @@ class AuthApiClient {
         .timeout(_timeout);
 
     if (response.statusCode == 201 || response.statusCode == 200) {
-      final data = _decodeBody(response) as Map<String, dynamic>;
-      final tokens = AuthTokens.fromJson(data);
-      await tokenStorage.saveRefreshToken(tokens.refreshToken);
-      tokenStorage.accessToken = tokens.accessToken;
-      return tokens;
+      return _saveSession(response);
     }
     throw _parseError(response);
   }
@@ -138,13 +134,25 @@ class AuthApiClient {
         .timeout(_timeout);
 
     if (response.statusCode == 200) {
-      final data = _decodeBody(response) as Map<String, dynamic>;
-      final tokens = AuthTokens.fromJson(data);
-      await tokenStorage.saveRefreshToken(tokens.refreshToken);
-      tokenStorage.accessToken = tokens.accessToken;
-      return tokens;
+      return _saveSession(response);
     }
     throw _parseError(response);
+  }
+
+  /// Abre una sesión aislada sin registro ni ceremonia nativa.
+  Future<AuthTokens> createTestingSession() async {
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/testing/session'),
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'User-Agent': 'fee_app/0.1.0',
+          },
+          body: '{}',
+        )
+        .timeout(_timeout);
+    if (response.statusCode != 201) throw _parseError(response);
+    return _saveSession(response);
   }
 
   /// Renueva los tokens de sesión de manera atómica y serializada.
@@ -177,6 +185,10 @@ class AuthApiClient {
       return null;
     }
     if (response.statusCode != 200) throw _parseError(response);
+    return _saveSession(response);
+  }
+
+  Future<AuthTokens> _saveSession(http.Response response) async {
     final tokens = AuthTokens.fromJson(
       _decodeBody(response) as Map<String, dynamic>,
     );
@@ -313,15 +325,18 @@ class AuthApiClient {
       // Error messages do not echo identifiers or remote response bodies.
     }
     return AuthApiException(
-      message: switch (response.statusCode) {
-        400 || 422 => 'No se pudo validar la solicitud. Revisa los datos e inténtalo de nuevo.',
-        401 => 'Tu sesión o llave de acceso no pudo validarse. Inicia sesión de nuevo.',
-        403 => 'Acceso denegado.',
-        404 => 'El servicio solicitado no está disponible.',
-        409 => 'La solicitud entra en conflicto con un registro existente.',
-        429 => 'Demasiados intentos. Inténtalo más tarde.',
-        _ => 'No se pudo completar la consulta al servidor.',
-      },
+      message: code == 'testing-access-disabled'
+          ? 'El acceso de pruebas no está habilitado en el servidor. Intenta más tarde.'
+          : switch (response.statusCode) {
+              400 || 422 => 'No se pudo validar la solicitud. Revisa los datos e inténtalo de nuevo.',
+              401 => 'Tu sesión o llave de acceso no pudo validarse. Inicia sesión de nuevo.',
+              403 => 'Acceso denegado.',
+              404 => 'El servicio solicitado no está disponible.',
+              409 =>
+                'La solicitud entra en conflicto con un registro existente.',
+              429 => 'Demasiados intentos. Inténtalo más tarde.',
+              _ => 'No se pudo completar la consulta al servidor.',
+            },
       code: code,
       statusCode: response.statusCode,
     );

@@ -25,21 +25,37 @@ en lista vacía, diagnóstico de ejemplo o guardado exitoso.
 
 ## Autenticación y sesión
 
-La app utiliza `BackendAuthRepository` y los endpoints de passkeys, renovación,
-`/auth/me` y logout. `NativePasskeyAuthenticator` delega en `passkeys` 2.22.3:
-las respuestas provienen del gestor nativo, sin fabricar firmas ni atestaciones.
-La documentación de [llaves nativas](native-passkeys.md) recoge la asociación
-Android, los errores recuperables y la transición desde credenciales antiguas.
+La distribución actual abre automáticamente una sesión de pruebas y muestra el
+formulario de identidad sin registro ni interacción con Passkey. `main` activa
+`FEE_TESTING_ACCESS=true`; se puede compilar con `false` para recuperar el flujo
+nativo. El servidor debe habilitar `FEE_AUTH_MODE=testing` antes de distribuir
+esta app. Véase [acceso temporal de pruebas](testing-access.md).
+
+`BackendAuthRepository` consume `POST /auth/testing/session` (HTTP 201 con el
+mismo contrato de tokens), renovación y `/auth/me`. La cuenta de pruebas tiene
+un ID único y cero credenciales. El token JWT conserva la propiedad de los
+análisis: OSINT y GuardAI reciben Bearer y comparten una renovación serializada.
+El refresh de pruebas se guarda en una clave separada; las passkeys, sus
+referencias nativas y el refresh anterior se conservan.
+
+La sesión se establece antes de construir repositorios de perfil e historial,
+cuyos prefijos usan el ID recibido del servidor. Una renovación rechazada
+durante un análisis falla de forma recuperable y no crea otra cuenta. Al volver
+a abrir la aplicación puede iniciarse una sesión nueva si la anterior venció;
+no se atribuye el historial anterior a esa cuenta nueva. Un fallo de red o de
+lectura conserva las credenciales y permite reintentar. La UI de pruebas no
+ofrece acceso nativo ni cierre de sesión.
 
 El backend identifica la cuenta con un ID y una etiqueta. No se deduce una
 identidad OSINT de esa etiqueta. El perfil que la persona quiera auditar se
-aporta en onboarding o en Escanear. La sesión se restaura con los tokens
-persistidos; si la renovación falla se solicita acceso explícito. Nunca se
-registra otra cuenta como recuperación automática.
+aporta en el formulario o en Escanear. Un perfil guardado permite volver al
+dashboard sin ejecutar automáticamente otro análisis.
 
-No hay endpoints de contraseña, catálogo de proveedores ni administración de
-sesiones en el contrato desplegado. La UI de acceso ofrece passkeys; el menú lateral no incluye catálogo ni
-administración de sesiones.
+Fuera del modo de pruebas, `NativePasskeyAuthenticator` delega en `passkeys`
+2.22.3; las respuestas provienen del gestor nativo, sin fabricar firmas ni
+atestaciones. [Llaves nativas](native-passkeys.md) documenta la asociación
+Android y sus errores recuperables. El autenticador se crea únicamente cuando
+se solicita en ese modo; el acceso de pruebas no invoca el plugin.
 
 ## Contrato OSINT
 

@@ -17,7 +17,7 @@ abstract interface class TokenStorage {
 class SecureTokenStorage implements TokenStorage {
   SecureTokenStorage({
     FlutterSecureStorage? storage,
-    this.refreshKey = 'fee.auth.v1.refresh_token',
+    this.refreshKey = passkeyRefreshKey,
   }) : _storage =
            storage ??
            const FlutterSecureStorage(
@@ -31,6 +31,9 @@ class SecureTokenStorage implements TokenStorage {
                synchronizable: false,
              ),
            );
+
+  static const passkeyRefreshKey = 'fee.auth.v1.refresh_token';
+  static const testingRefreshKey = 'fee.auth.v1.testing_refresh_token';
 
   final FlutterSecureStorage _storage;
   final String refreshKey;

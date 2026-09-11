@@ -34,6 +34,7 @@ import '../features/guard_ai/data/backend_guard_ai_repository.dart';
 import '../features/guard_ai/data/unavailable_guard_ai_repository.dart';
 import '../features/guard_ai/domain/guard_ai_repository.dart';
 import '../features/guard_ai/presentation/guard_ai_controller.dart';
+import 'access_loading_gate.dart';
 import 'theme.dart';
 
 class FeeApp extends StatefulWidget {
@@ -46,6 +47,7 @@ class FeeApp extends StatefulWidget {
     this.authRepository,
     this.identityProfileRepository,
     this.showCasesAsHome = false,
+    this.testingAccessEnabled = false,
     super.key,
   });
 
@@ -60,6 +62,7 @@ class FeeApp extends StatefulWidget {
   final AuthRepository? authRepository;
   final IdentityProfileRepository? identityProfileRepository;
   final bool showCasesAsHome;
+  final bool testingAccessEnabled;
 
   @override
   State<FeeApp> createState() => _FeeAppState();
@@ -79,18 +82,24 @@ class _FeeAppState extends State<FeeApp> {
     );
     final authRepo =
         widget.authRepository ??
-        (widget.accountRepository == null ? BackendAuthRepository() : null);
+        (widget.accountRepository == null
+            ? BackendAuthRepository(
+                testingAccessEnabled: widget.testingAccessEnabled,
+              )
+            : null);
     _accounts = AccountsController(
       widget.accountRepository,
       authRepository: authRepo,
     );
     unawaited(_cases.load());
     if (!widget.showCasesAsHome) {
-      unawaited(_accounts.load());
-      if (authRepo != null) {
-        unawaited(_accounts.restoreSession());
-      }
+      unawaited(_loadAccounts(authRepo));
     }
+  }
+
+  Future<void> _loadAccounts(AuthRepository? authRepo) async {
+    await _accounts.load();
+    if (mounted && authRepo != null) await _accounts.restoreSession();
   }
 
   /// Una instancia nueva por llamada: cada chat de GuardAI guarda su propio
@@ -224,6 +233,16 @@ class _FeeAppState extends State<FeeApp> {
             builder: (context, _) {
               final account = _accounts.activeAccount;
               if (account == null) {
+                if (widget.testingAccessEnabled) {
+                  return AccessLoadingGate(
+                    keyPrefix: 'testing-access',
+                    loadingText: 'Preparando el acceso…',
+                    error: _accounts.error,
+                    onRetry: _accounts.isLoading
+                        ? null
+                        : _accounts.restoreSession,
+                  );
+                }
                 return AccountPickerPage(controller: _accounts);
               }
               final session = _sessionFor(account);
@@ -233,10 +252,12 @@ class _FeeAppState extends State<FeeApp> {
                   if (session.identity.error != null ||
                       !session.identity.isLoaded ||
                       session.identity.isLoading) {
-                    return _IdentityGate(
+                    return AccessLoadingGate(
                       error: session.identity.error,
                       onRetry: session.identity.load,
-                      onSignOut: _accounts.signOut,
+                      onSignOut: widget.testingAccessEnabled
+                          ? null
+                          : _accounts.signOut,
                     );
                   }
                   if (session.identity.needsOnboarding) {
@@ -255,82 +276,14 @@ class _FeeAppState extends State<FeeApp> {
                     scanHistoryController: session.scanHistory,
                     identityController: session.identity,
                     account: account,
-                    onManageAccounts: _accounts.signOut,
+                    onManageAccounts: widget.testingAccessEnabled
+                        ? null
+                        : _accounts.signOut,
                   );
                 },
               );
             },
           ),
-  );
-}
-
-class _IdentityGate extends StatelessWidget {
-  const _IdentityGate({
-    required this.error,
-    required this.onRetry,
-    required this.onSignOut,
-  });
-  final String? error;
-  final VoidCallback onRetry;
-  final VoidCallback onSignOut;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (error == null) ...[
-                  const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Preparando tu perfil…',
-                    key: Key('identity-profile-loading'),
-                    textAlign: TextAlign.center,
-                  ),
-                ] else ...[
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      error!,
-                      key: const Key('identity-profile-error'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Tus datos guardados se conservan. Reintenta para continuar.',
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    key: const Key('identity-profile-retry'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(48, 48),
-                    ),
-                    onPressed: onRetry,
-                    child: const Text('Reintentar'),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  key: const Key('identity-profile-sign-out'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(48, 48),
-                  ),
-                  onPressed: onSignOut,
-                  child: const Text('Cerrar sesión'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    ),
   );
 }
 

@@ -20,15 +20,23 @@ class BackendAuthRepository implements AuthRepository {
     AuthApiClient? apiClient,
     TokenStorage? tokenStorage,
     PasskeyAuthenticator? authenticator,
+    bool testingAccessEnabled = false,
   }) {
     final effectiveStorage =
-        tokenStorage ?? apiClient?.tokenStorage ?? SecureTokenStorage();
+        tokenStorage ??
+        apiClient?.tokenStorage ??
+        SecureTokenStorage(
+          refreshKey: testingAccessEnabled
+              ? SecureTokenStorage.testingRefreshKey
+              : SecureTokenStorage.passkeyRefreshKey,
+        );
     final effectiveClient =
         apiClient ?? AuthApiClient(tokenStorage: effectiveStorage);
     return BackendAuthRepository._(
       storage: effectiveStorage,
       client: effectiveClient,
-      authenticator: authenticator ?? NativePasskeyAuthenticator(),
+      authenticator: authenticator,
+      testingAccessEnabled: testingAccessEnabled,
     );
   }
 
@@ -36,15 +44,20 @@ class BackendAuthRepository implements AuthRepository {
     required this._storage,
     required this._client,
     required this._authenticator,
+    required this.testingAccessEnabled,
   });
 
   final TokenStorage _storage;
   final AuthApiClient _client;
-  final PasskeyAuthenticator _authenticator;
+  PasskeyAuthenticator? _authenticator;
+  final bool testingAccessEnabled;
+  Future<UserProfile?>? _restoreInProgress;
+  bool _testingSessionEstablished = false;
 
   AuthApiClient get apiClient => _client;
   TokenStorage get tokenStorage => _storage;
-  PasskeyAuthenticator get authenticator => _authenticator;
+  PasskeyAuthenticator get authenticator =>
+      _authenticator ??= NativePasskeyAuthenticator();
 
   @override
   Future<bool> checkHealth() => _client.checkHealth();
@@ -54,7 +67,8 @@ class BackendAuthRepository implements AuthRepository {
     String label = 'Mi Bóveda FEE',
     PasskeyAuthenticator? authenticator,
   }) async {
-    final effectiveAuth = authenticator ?? _authenticator;
+    _requirePasskeyMode();
+    final effectiveAuth = authenticator ?? this.authenticator;
     final options = await _client.getRegistrationOptions(label: label);
     final challengeToken = options['challenge_token'] as String;
     final publicKey = options['public_key'] as Map<String, dynamic>;
@@ -71,7 +85,8 @@ class BackendAuthRepository implements AuthRepository {
   Future<UserProfile> loginWithPasskey({
     PasskeyAuthenticator? authenticator,
   }) async {
-    final effectiveAuth = authenticator ?? _authenticator;
+    _requirePasskeyMode();
+    final effectiveAuth = authenticator ?? this.authenticator;
     final options = await _client.getAuthenticationOptions();
     final challengeToken = options['challenge_token'] as String;
     final publicKey = options['public_key'] as Map<String, dynamic>;
@@ -85,31 +100,58 @@ class BackendAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<UserProfile?> restoreSession() async {
-    final tokens = await _client.refreshTokens();
-    if (tokens == null) return null;
-    return _client.getMe();
+  Future<UserProfile?> restoreSession() => _restoreInProgress ??=
+      _restoreSession().whenComplete(() => _restoreInProgress = null);
+
+  Future<UserProfile?> _restoreSession() async {
+    if (_storage.accessToken == null || _storage.accessToken!.isEmpty) {
+      final tokens = await _client.refreshTokens();
+      if (tokens == null) {
+        if (!testingAccessEnabled) return null;
+        if (_testingSessionEstablished) throw _sessionExpired;
+        await _client.createTestingSession();
+      }
+    }
+    final profile = await _client.getMe();
+    _testingSessionEstablished = testingAccessEnabled;
+    return profile;
   }
 
   @override
-  Future<void> logout() => _client.logout();
+  Future<void> logout() async {
+    await _client.logout();
+    _testingSessionEstablished = false;
+  }
 
   @override
   Future<UserProfile> getProfile() => _client.getMe();
 
-  /// Renueva una sesión existente. El acceso nativo requiere una acción explícita.
+  /// Renueva la misma cuenta; una petición nunca crea una identidad de reemplazo.
   Future<String> ensureAccessToken({bool forceRefresh = false}) async {
     final current = _storage.accessToken;
     if (!forceRefresh && current != null && current.isNotEmpty) return current;
     _storage.accessToken = null;
-    final restored = await restoreSession();
-    final refreshed = _storage.accessToken;
-    if (restored != null && refreshed != null && refreshed.isNotEmpty) {
-      return refreshed;
+    final refreshed = await _client.refreshTokens();
+    if (refreshed != null && refreshed.accessToken.isNotEmpty) {
+      return refreshed.accessToken;
     }
-    throw const AuthApiException(
-      message: 'Tu sesión venció. Inicia sesión con tu llave de acceso.',
-      code: 'auth_required',
-    );
+    throw _sessionExpired;
+  }
+
+  AuthApiException get _sessionExpired => AuthApiException(
+    message: testingAccessEnabled
+        ? 'La sesión de pruebas venció. Cierra y vuelve a abrir la app para continuar.'
+        : 'Tu sesión venció. Inicia sesión con tu llave de acceso.',
+    code: 'auth_required',
+  );
+
+  void _requirePasskeyMode() {
+    if (testingAccessEnabled) {
+      throw const AuthApiException(
+        message:
+            'Las llaves de acceso están deshabilitadas durante las pruebas.',
+        code: 'passkey_disabled',
+      );
+    }
   }
 }

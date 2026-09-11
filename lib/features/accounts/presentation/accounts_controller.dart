@@ -114,7 +114,8 @@ class AccountsController extends ChangeNotifier {
 
   Future<void> restoreSession() async {
     final auth = authRepository;
-    if (auth == null || _disposed) return;
+    if (auth == null || _disposed || _isSaving) return;
+    _actionError = null;
     _isLoading = true;
     _notify();
     try {
@@ -123,9 +124,11 @@ class AccountsController extends ChangeNotifier {
       if (profile != null) {
         _activeAccount = profile.toLocalAccount();
       }
-    } catch (_) {
+    } catch (error) {
       if (!_disposed) {
-        _actionError = 'No se pudo restaurar la sesión. Vuelve a intentarlo.';
+        _actionError = error is AuthApiException
+            ? error.message
+            : 'No se pudo restaurar la sesión. Vuelve a intentarlo.';
       }
     } finally {
       if (!_disposed) {
