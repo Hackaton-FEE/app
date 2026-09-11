@@ -16,6 +16,44 @@ void main() {
       storage = FakeScanHistoryStorage();
     });
 
+    test(
+      'large report survives storage and repository recreation intact',
+      () async {
+        final entry = _largeEntry(2 * 1024 * 1024, clock());
+        final repo = LocalScanHistoryRepository(storage: storage, clock: clock);
+        expect(
+          utf8.encode(jsonEncode(entry.toJson())).length,
+          greaterThan(1024 * 1024),
+        );
+        await repo.saveScan(entry);
+        final reopened = LocalScanHistoryRepository(
+          storage: storage,
+          clock: clock,
+        );
+        expect((await reopened.loadHistory()).single.toJson(), entry.toJson());
+      },
+    );
+
+    test(
+      'oversized report is rejected without pruning or overwriting',
+      () async {
+        final expired = _largeEntry(
+          10,
+          clock().subtract(const Duration(days: 4)),
+        );
+        await storage.write(expired.id, jsonEncode(expired.toJson()));
+        final before = await storage.readAll();
+        final repo = LocalScanHistoryRepository(storage: storage, clock: clock);
+        await expectLater(
+          repo.saveScan(
+            _largeEntry(LocalScanHistoryRepository.maxRecordBytes, clock()),
+          ),
+          throwsFormatException,
+        );
+        expect(await storage.readAll(), before);
+      },
+    );
+
     test('saves and loads scan history successfully', () async {
       final repo = LocalScanHistoryRepository(storage: storage, clock: clock);
       final entry = ScanHistoryEntry(
@@ -193,3 +231,28 @@ void main() {
     );
   });
 }
+
+ScanHistoryEntry _largeEntry(int bytes, DateTime date) => ScanHistoryEntry(
+  id: 'large-report',
+  targetIdentity: 'example.invalid',
+  scannedAt: date,
+  exposureScore: 10,
+  overallRisk: FootprintRisk.low,
+  highRiskCount: 0,
+  mediumRiskCount: 0,
+  lowRiskCount: 1,
+  items: [
+    FootprintItem(
+      id: 'finding',
+      platform: 'Example',
+      category: FootprintCategory.socialProfile,
+      riskLevel: FootprintRisk.low,
+      title: 'Test finding',
+      description: 'Test',
+      exposedData: const [],
+      sourceUrl: 'https://example.invalid',
+      recommendedAction: 'Review',
+      rawDetails: {'details': 'a' * bytes},
+    ),
+  ],
+);

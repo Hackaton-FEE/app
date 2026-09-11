@@ -13,7 +13,8 @@ class LocalScanHistoryRepository implements ScanHistoryRepository {
   final ScanHistoryStorage storage;
   final DateTime Function() _clock;
   Future<void>? _pending;
-  static const maxRecordBytes = 1024 * 1024;
+  // Full OSINT reports can exceed 1 MiB, especially correlation graphs.
+  static const maxRecordBytes = 16 * 1024 * 1024;
 
   Future<T> _enqueue<T>(Future<T> Function() operation) {
     final result = _pending == null

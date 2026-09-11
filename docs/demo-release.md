@@ -43,7 +43,7 @@ Flutter 3.47.2 / Dart 3.13.2, Linux, Android debug:
 - Formato de `lib test integration_test tool`: correcto.
 - `dart run tool/check_source_size.dart`: 111 archivos; máximo 350 líneas.
 - `flutter analyze`: sin incidencias.
-- `flutter test`: 358 pasan, una prueba de red opt-in omitida.
+- `flutter test`: 360 pasan, una prueba de red opt-in omitida.
 - Capturas GuardAI: cinco pruebas pasan, incluidas anchura 320 y texto al 200 %.
 - `flutter build apk --debug`: correcto.
 - `adb install -r`: correcto en el Pixel conectado, sin borrar almacenamiento.
@@ -53,9 +53,17 @@ en `/home/peterpad/Hackaton-FEE/demo-artifacts/`:
 `osisnt-demo-guardai.apk` y `osisnt-before-guardai.apk`. La copia anterior solo
 respalda el ejecutable; no es una exportación de los datos del dispositivo.
 
-El teléfono estaba bloqueado después de instalar: el recorrido físico, teclado
-real y autenticación biométrica de esta compilación quedan pendientes.
-No se ejecutó iOS, TalkBack ni una nueva prueba de reinicio de almacenamiento.
+El recorrido físico de GuardAI verificó apertura, teclado real, borrador
+conservado tras envío no disponible y regreso al dashboard. Durante ese recorrido
+se detectó que el resultado remoto pendiente superaba 1 MiB: `saveScan` lo
+rechazaba antes de escribir, impidiendo confirmar el análisis. Se amplió la cota
+local a 16 MiB manteniendo JSON v1 y validación completa; no se truncaron datos.
+Las nuevas pruebas conservan un informe de 2 MiB al recrear el repositorio y
+rechazan exceso de 16 MiB sin podar ni sobrescribir registros anteriores.
+El Pixel recuperó su escaneo pendiente y mostró una entrada en el historial.
+Tras forzar la detención y reabrir, el panel conservó el análisis sin errores.
+No se inició un escaneo nuevo ni se borraron datos para recuperar el existente.
+La autenticación biométrica de esta compilación, iOS y TalkBack no se ejecutaron.
 La compilación advierte que passkeys_android aún usa Kotlin Gradle Plugin;
 no impidió compilar y no se actualizaron dependencias antes de la demo.
 

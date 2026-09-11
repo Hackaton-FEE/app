@@ -95,7 +95,7 @@ institucional se centraliza en `lib/app/palette.dart` y el tema Material.
 Un JSON versión 1 por escaneo conserva los hallazgos y, para informes nuevos,
 `osintReport` con metadatos y correlación. Cada ID de cuenta tiene su prefijo
 `fee.scan.<accountId>.v1.` dentro del espacio nativo `fee_scans`. El máximo
-por registro es 1 MiB. Los registros se validan antes de podar o mutar y las
+por registro es 16 MiB. Los registros se validan antes de podar o mutar y las
 operaciones se serializan dentro de una instancia.
 
 La retención local sigue siendo de tres días y no borra escaneos remotos.
