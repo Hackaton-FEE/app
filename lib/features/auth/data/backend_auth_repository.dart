@@ -1,5 +1,3 @@
-import '../domain/scan_capability.dart';
-import '../domain/session_info.dart';
 import '../domain/user_profile.dart';
 import 'auth_api_client.dart';
 import 'passkey_authenticator.dart';
@@ -15,9 +13,6 @@ abstract interface class AuthRepository {
   Future<UserProfile?> restoreSession();
   Future<void> logout();
   Future<UserProfile> getProfile();
-  Future<List<SessionInfo>> getSessions();
-  Future<void> revokeSession(String sessionId);
-  Future<List<ScanCapabilityProvider>> getScanCapabilities();
 }
 
 class BackendAuthRepository implements AuthRepository {
@@ -101,17 +96,6 @@ class BackendAuthRepository implements AuthRepository {
 
   @override
   Future<UserProfile> getProfile() => _client.getMe();
-
-  @override
-  Future<List<SessionInfo>> getSessions() => _client.getSessions();
-
-  @override
-  Future<void> revokeSession(String sessionId) =>
-      _client.revokeSession(sessionId);
-
-  @override
-  Future<List<ScanCapabilityProvider>> getScanCapabilities() =>
-      _client.getScanCapabilities();
 
   /// Renueva una sesión existente. El acceso nativo requiere una acción explícita.
   Future<String> ensureAccessToken({bool forceRefresh = false}) async {

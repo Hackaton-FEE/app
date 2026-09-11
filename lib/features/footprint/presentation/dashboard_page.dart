@@ -6,9 +6,6 @@ import '../../../core/widgets/app_logo.dart';
 import '../../accounts/domain/local_account.dart';
 import '../../accounts/presentation/identity_profile_controller.dart';
 import '../../accounts/presentation/profile_setup_page.dart';
-import '../../auth/data/backend_auth_repository.dart';
-import '../../auth/presentation/widgets/active_sessions_dialog.dart';
-import '../../auth/presentation/widgets/scan_capabilities_dialog.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
 import '../../cases/presentation/cases_controller.dart';
@@ -34,7 +31,6 @@ class DashboardPage extends StatefulWidget {
     this.identityController,
     required this.account,
     required this.onManageAccounts,
-    this.authRepository,
     super.key,
   });
 
@@ -45,7 +41,6 @@ class DashboardPage extends StatefulWidget {
   final IdentityProfileController? identityController;
   final LocalAccount account;
   final VoidCallback onManageAccounts;
-  final AuthRepository? authRepository;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -58,7 +53,7 @@ class _DashboardPageState extends State<DashboardPage>
   final _spotlightSurface = GlobalKey();
   final _tourTargets = List.generate(5, (_) => GlobalKey());
   bool _drawerOpen = false;
-  final _helpFocus = FocusNode();
+  final _profileFocus = FocusNode();
   final _tourFocus = FocusNode();
   int? _tourStep;
 
@@ -67,7 +62,7 @@ class _DashboardPageState extends State<DashboardPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (step == null) {
-        _helpFocus.requestFocus();
+        _profileFocus.requestFocus();
       } else if (_tourAnchor.currentContext case final target?) {
         _tourFocus.requestFocus();
         Scrollable.ensureVisible(
@@ -97,7 +92,7 @@ class _DashboardPageState extends State<DashboardPage>
     WidgetsBinding.instance.removeObserver(this);
     widget.footprintController.setForeground(false);
     _scrollController.dispose();
-    _helpFocus.dispose();
+    _profileFocus.dispose();
     _tourFocus.dispose();
     super.dispose();
   }
@@ -157,24 +152,6 @@ class _DashboardPageState extends State<DashboardPage>
     widget.footprintController,
     _openScanSheet,
   );
-
-  void _openSessionsDialog() {
-    if (widget.authRepository == null) return;
-    showDialog<void>(
-      context: context,
-      builder: (_) =>
-          ActiveSessionsDialog(authRepository: widget.authRepository!),
-    );
-  }
-
-  void _openCapabilitiesDialog() {
-    if (widget.authRepository == null) return;
-    showDialog<void>(
-      context: context,
-      builder: (_) =>
-          ScanCapabilitiesDialog(authRepository: widget.authRepository!),
-    );
-  }
 
   void _openIdentitySetup() {
     if (widget.identityController == null) return;
@@ -260,6 +237,7 @@ class _DashboardPageState extends State<DashboardPage>
                 builder: (context) => _region(
                   IconButton(
                     key: const Key('dashboard-profile-button'),
+                    focusNode: _profileFocus,
                     tooltip: 'Abrir perfil',
                     onPressed: () => Scaffold.of(context).openDrawer(),
                     icon: Icon(
@@ -269,16 +247,6 @@ class _DashboardPageState extends State<DashboardPage>
                   4,
                 ),
               ),
-              actions: [
-                _region(
-                  IconButton(
-                    focusNode: _helpFocus,
-                    tooltip: 'Ayuda de uso',
-                    onPressed: _openHelp,
-                    icon: const Icon(Icons.help_outline),
-                  ),
-                ),
-              ],
             ),
             drawer: ProfileDrawer(
               identity: widget.account.email,
@@ -288,15 +256,7 @@ class _DashboardPageState extends State<DashboardPage>
               onViewHistory: widget.scanHistoryController != null
                   ? _openScanHistory
                   : null,
-              caseCount: widget.casesController.state.cases.length,
-              onViewCases: _openAllCases,
               onHelp: _openHelp,
-              onViewSessions: widget.authRepository != null
-                  ? _openSessionsDialog
-                  : null,
-              onViewCapabilities: widget.authRepository != null
-                  ? _openCapabilitiesDialog
-                  : null,
               onViewIdentity: widget.identityController != null
                   ? _openIdentitySetup
                   : null,

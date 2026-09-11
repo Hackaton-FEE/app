@@ -22,9 +22,8 @@ void main() {
           key: scaffoldKey,
           drawer: ProfileDrawer(
             identity: null,
-            caseCount: 2,
             onManageAccounts: () => recordAction('logout'),
-            onViewCases: () => recordAction('cases'),
+            onViewHistory: () => recordAction('history'),
             onHelp: () => recordAction('help'),
           ),
           body: const Text('Dashboard'),
@@ -32,7 +31,7 @@ void main() {
       ),
     );
 
-    for (final key in ['profile-cases', 'profile-accounts', 'profile-help']) {
+    for (final key in ['profile-history', 'profile-accounts', 'profile-help']) {
       scaffoldKey.currentState!.openDrawer();
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.byKey(Key(key)));
@@ -40,7 +39,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Dashboard'), findsOneWidget);
     }
-    expect(actions, ['cases', 'logout', 'help']);
+    expect(actions, ['history', 'logout', 'help']);
 
     scaffoldKey.currentState!.openDrawer();
     await tester.pumpAndSettle();
@@ -53,7 +52,7 @@ void main() {
     await tester.tap(find.text('Mi huella'));
     await tester.pumpAndSettle();
     expect(scaffoldKey.currentState!.isDrawerOpen, isFalse);
-    expect(actions, ['cases', 'logout', 'help']);
+    expect(actions, ['history', 'logout', 'help']);
   });
 
   testWidgets('supports a long identity at 320 px and 200 percent text', (
@@ -78,8 +77,6 @@ void main() {
           key: scaffoldKey,
           drawer: ProfileDrawer(
             identity: identity,
-            caseCount: 123,
-            onViewCases: () {},
             onHelp: () => helpOpened = true,
           ),
           body: const SizedBox.expand(),

@@ -39,8 +39,8 @@ class DashboardTourPanel extends StatelessWidget {
       'GuardAI · botón inferior derecho',
     ),
     (
-      'Encuentra tus casos',
-      'Abre el perfil arriba a la izquierda para consultar los casos del dispositivo o cerrar sesión. Los casos se guardan localmente; no se envían.',
+      'Explora tu perfil',
+      'Abre el perfil arriba a la izquierda para consultar tu identidad, el historial de escaneos, la ayuda o cerrar sesión.',
       Icons.person_pin,
       'Abre el perfil',
     ),

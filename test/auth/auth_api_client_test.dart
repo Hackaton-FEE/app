@@ -129,33 +129,6 @@ void main() {
     });
 
     test(
-      'unsupported catalogs never fabricate data or call absent routes',
-      () async {
-        var calls = 0;
-        final client = AuthApiClient(
-          tokenStorage: tokenStorage,
-          httpClient: MockClient((request) async {
-            calls++;
-            return http.Response('{}', 200);
-          }),
-        );
-        await expectLater(
-          client.getSessions(),
-          throwsA(isA<AuthApiException>()),
-        );
-        await expectLater(
-          client.getScanCapabilities(),
-          throwsA(isA<AuthApiException>()),
-        );
-        await expectLater(
-          client.revokeSession('test'),
-          throwsA(isA<AuthApiException>()),
-        );
-        expect(calls, 0);
-      },
-    );
-
-    test(
       'failed refresh preserves existing credentials and shares the error',
       () async {
         await tokenStorage.saveRefreshToken('existing-refresh');

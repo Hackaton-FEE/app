@@ -93,7 +93,7 @@ En el PR indica comandos ejecutados, plataforma/destino, resultado del plugin re
 
 ## Historial de escaneos
 
-`flutter test test/footprint test/presentation/scan_history_page_test.dart` cubre persistencia recreando el repositorio, conservación ante corrupción, fallos de purga y borrado, reintento de guardado sin duplicados y operaciones en cola. La navegación conserva los accesos independientes a historial y casos; las pruebas de widgets incluyen ancho de 320 px y texto al 200 %.
+`flutter test test/footprint test/presentation/scan_history_page_test.dart` cubre persistencia recreando el repositorio, conservación ante corrupción, fallos de purga y borrado, reintento de guardado sin duplicados y operaciones en cola. La barra lateral conserva el acceso al historial y una sola entrada de ayuda, sin accesos a casos, sesiones ni catálogo; las pruebas de widgets incluyen ancho de 320 px y texto al 200 %.
 
 `flutter test integration_test/scan_history_storage_test.dart -d <device-id>` comprueba el plugin nativo con un espacio de almacenamiento de prueba: persistencia al recrear el repositorio, separación por cuenta, corrupción conservada y purga de registros vencidos. Se ejecutó en Pixel 10 Pro XL con Android 17; no prueba reinicio del proceso, iOS, TalkBack ni VoiceOver.
 

@@ -3,7 +3,6 @@ import 'support/ready_identity_repository.dart';
 import 'support/demo_guard_ai_repository.dart';
 import 'support/demo_account_repository.dart';
 
-import 'package:fee_app/features/cases/presentation/cases_page.dart';
 import 'package:fee_app/app/app.dart';
 import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:fee_app/features/cases/presentation/case_form_page.dart';
@@ -171,7 +170,18 @@ void main() {
       }
 
       final before = await pixelsAt([const Offset(5, 100), targetPoint()]);
-      await tester.tap(find.byTooltip('Ayuda de uso'));
+      await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('profile-help')),
+        160,
+        scrollable: find.descendant(
+          of: find.byType(NavigationDrawer),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profile-help')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dashboard-spotlight')), findsOneWidget);
       final after = await pixelsAt([const Offset(5, 100), targetPoint()]);
@@ -197,7 +207,18 @@ void main() {
     tester,
   ) async {
     await startDashboard(tester);
-    await tester.tap(find.byTooltip('Ayuda de uso'));
+    await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('profile-help')),
+      160,
+      scrollable: find.descendant(
+        of: find.byType(NavigationDrawer),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('profile-help')));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.byType(PopupMenuButton<String>), findsNothing);
@@ -329,16 +350,34 @@ void main() {
     expect(find.byType(ScanHistoryPage), findsOneWidget);
     expect(find.text('Historial de escaneos'), findsOneWidget);
   });
-  testWidgets('cases remain reachable alongside scan history', (tester) async {
-    await startDashboard(tester);
-    await tester.tap(find.byKey(const Key('dashboard-profile-button')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('profile-history')), findsOneWidget);
-    final cases = find.byKey(const Key('profile-cases'));
-    await tester.ensureVisible(cases);
-    await tester.pumpAndSettle();
-    await tester.tap(cases);
-    await tester.pumpAndSettle();
-    expect(find.byType(CasesPage), findsOneWidget);
-  });
+  testWidgets(
+    'sidebar keeps history and one help entry without removed options',
+    (tester) async {
+      await startDashboard(tester);
+      expect(find.byTooltip('Ayuda de uso'), findsNothing);
+      await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('profile-history')), findsOneWidget);
+      expect(find.byKey(const Key('profile-help')), findsOneWidget);
+      for (final key in [
+        'profile-cases',
+        'profile-sessions',
+        'profile-capabilities',
+      ]) {
+        expect(find.byKey(Key(key)), findsNothing);
+      }
+      await tester.scrollUntilVisible(
+        find.byKey(const Key('profile-help')),
+        160,
+        scrollable: find.descendant(
+          of: find.byType(NavigationDrawer),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profile-help')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Paso 1 de 5'), findsOneWidget);
+    },
+  );
 }
