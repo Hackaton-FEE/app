@@ -41,7 +41,66 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'concurrent bootstrap creates one account without invoking Passkey',
+    'restoration and background requests never create a testing account',
+    () async {
+      final repository = BackendAuthRepository(
+        testingAccessEnabled: true,
+        apiClient: AuthApiClient(
+          tokenStorage: InMemoryTokenStorage(),
+          httpClient: MockClient(
+            (_) async => throw StateError('No HTTP before Enter'),
+          ),
+        ),
+      );
+      expect(await repository.restoreSession(), isNull);
+      await expectLater(
+        repository.ensureAccessToken(),
+        throwsA(isA<AuthApiException>()),
+      );
+    },
+  );
+
+  test('testing logout clears access only and explicit reentry restores same identity', () async {
+    final storage = InMemoryTokenStorage();
+    final paths = <String>[];
+    final repository = BackendAuthRepository(
+      testingAccessEnabled: true,
+      apiClient: AuthApiClient(
+        tokenStorage: storage,
+        httpClient: MockClient((request) async {
+          paths.add(request.url.path);
+          if (request.url.path.endsWith('/testing/session')) {
+            return _tokens('guest', 201);
+          }
+          if (request.url.path.endsWith('/token/refresh')) {
+            return _tokens('renewed');
+          }
+          expect(request.url.path, '/api/v1/auth/me');
+          return _profile();
+        }),
+      ),
+    );
+    final first = await repository.startTestingSession();
+    await repository.logout();
+    expect(storage.accessToken, isNull);
+    expect(await storage.readRefreshToken(), 'guest-refresh');
+    await expectLater(
+      repository.ensureAccessToken(),
+      throwsA(isA<AuthApiException>()),
+    );
+    expect(paths, ['/api/v1/auth/testing/session', '/api/v1/auth/me']);
+    final second = await repository.startTestingSession();
+    expect(second.id, first.id);
+    expect(paths, [
+      '/api/v1/auth/testing/session',
+      '/api/v1/auth/me',
+      '/api/v1/auth/token/refresh',
+      '/api/v1/auth/me',
+    ]);
+  });
+
+  test(
+    'concurrent explicit entry creates one account without invoking Passkey',
     () async {
       final storage = InMemoryTokenStorage();
       final paths = <String>[];
@@ -65,10 +124,10 @@ void main() {
         ),
       );
       final profiles = await Future.wait(
-        List.generate(5, (_) => repository.restoreSession()),
+        List.generate(5, (_) => repository.startTestingSession()),
       );
-      expect(profiles.map((p) => p!.id).toSet(), {'testing-account'});
-      expect(profiles.first!.toLocalAccount().email, isEmpty);
+      expect(profiles.map((p) => p.id).toSet(), {'testing-account'});
+      expect(profiles.first.toLocalAccount().email, isEmpty);
       expect(paths, ['/api/v1/auth/testing/session', '/api/v1/auth/me']);
       expect(await storage.readRefreshToken(), 'guest-refresh');
       await expectLater(
@@ -106,7 +165,7 @@ void main() {
           }),
         ),
       );
-      expect((await repository.restoreSession())!.id, 'testing-account');
+      expect((await repository.startTestingSession()).id, 'testing-account');
       expect(paths, ['/api/v1/auth/token/refresh', '/api/v1/auth/me']);
     },
   );
@@ -134,7 +193,7 @@ void main() {
       ),
     );
     await expectLater(
-      repository.restoreSession(),
+      repository.startTestingSession(),
       throwsA(
         isA<AuthApiException>().having(
           (e) => e.code,
@@ -144,10 +203,10 @@ void main() {
       ),
     );
     await expectLater(
-      repository.restoreSession(),
+      repository.startTestingSession(),
       throwsA(isA<http.ClientException>()),
     );
-    expect((await repository.restoreSession())!.id, 'testing-account');
+    expect((await repository.startTestingSession()).id, 'testing-account');
     expect(attempt, 3);
   });
 
@@ -170,7 +229,7 @@ void main() {
           }),
         ),
       );
-      await repository.restoreSession();
+      await repository.startTestingSession();
       for (var i = 0; i < 3; i++) {
         await expectLater(
           repository.ensureAccessToken(forceRefresh: true),
@@ -184,7 +243,7 @@ void main() {
         );
       }
       await expectLater(
-        repository.restoreSession(),
+        repository.startTestingSession(),
         throwsA(isA<AuthApiException>()),
       );
       expect(creates, 1);
@@ -213,7 +272,7 @@ void main() {
         }),
       ),
     );
-    await repository.restoreSession();
+    await repository.startTestingSession();
     final originalRequests = <String>{};
     final bothRejected = Completer<void>();
     final client = MockClient((request) async {
@@ -287,4 +346,49 @@ void main() {
       );
     },
   );
+
+  for (final reenter in [false, true]) {
+    test('logout rejects pending refresh retry; reenter=$reenter', () async {
+      final refreshStarted = Completer<void>();
+      final releaseRefresh = Completer<void>();
+      var refreshCalls = 0;
+      final repository = BackendAuthRepository(
+        testingAccessEnabled: true,
+        apiClient: AuthApiClient(
+          tokenStorage: InMemoryTokenStorage(),
+          httpClient: MockClient((request) async {
+            if (request.url.path.endsWith('/testing/session')) {
+              return _tokens('guest', 201);
+            }
+            if (request.url.path.endsWith('/me')) return _profile();
+            expect(request.url.path, '/api/v1/auth/token/refresh');
+            refreshCalls++;
+            refreshStarted.complete();
+            await releaseRefresh.future;
+            return _tokens('rotated');
+          }),
+        ),
+      );
+      await repository.startTestingSession();
+      final stale = repository.ensureAccessToken(forceRefresh: true);
+      final rejected = expectLater(stale, throwsA(isA<AuthApiException>()));
+      await refreshStarted.future;
+      await repository.logout();
+      final reentry = reenter ? repository.startTestingSession() : null;
+      releaseRefresh.complete();
+      await rejected;
+      if (reentry != null) {
+        expect((await reentry).id, 'testing-account');
+        expect(repository.accessToken, 'rotated-access');
+        expect(await repository.ensureAccessToken(), 'rotated-access');
+      } else {
+        expect(repository.accessToken, isNull);
+        await expectLater(
+          repository.ensureAccessToken(),
+          throwsA(isA<AuthApiException>()),
+        );
+      }
+      expect(refreshCalls, 1);
+    });
+  }
 }

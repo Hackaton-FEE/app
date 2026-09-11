@@ -25,8 +25,9 @@ en lista vacía, diagnóstico de ejemplo o guardado exitoso.
 
 ## Autenticación y sesión
 
-La distribución actual abre automáticamente una sesión de pruebas y muestra el
-formulario de identidad sin registro ni interacción con Passkey. `main` activa
+La distribución actual conserva la bienvenida y el botón Entrar. Al pulsarlo
+prepara una sesión de pruebas, muestra progreso real y abre el formulario de
+identidad sin registro ni interacción con Passkey. `main` activa
 `FEE_TESTING_ACCESS=true`; se puede compilar con `false` para recuperar el flujo
 nativo. El servidor debe habilitar `FEE_AUTH_MODE=testing` antes de distribuir
 esta app. Véase [acceso temporal de pruebas](testing-access.md).
@@ -40,11 +41,16 @@ referencias nativas y el refresh anterior se conservan.
 
 La sesión se establece antes de construir repositorios de perfil e historial,
 cuyos prefijos usan el ID recibido del servidor. Una renovación rechazada
-durante un análisis falla de forma recuperable y no crea otra cuenta. Al volver
-a abrir la aplicación puede iniciarse una sesión nueva si la anterior venció;
-no se atribuye el historial anterior a esa cuenta nueva. Un fallo de red o de
-lectura conserva las credenciales y permite reintentar. La UI de pruebas no
-ofrece acceso nativo ni cierre de sesión.
+durante un análisis falla de forma recuperable y no crea otra cuenta. La
+bienvenida se muestra al abrir la aplicación; solo Entrar puede solicitar
+acceso. Cerrar sesión vuelve a la bienvenida, oculta el access token y conserva
+el refresh de pruebas para recuperar la misma cuenta e historial al entrar.
+Una renovación que estaba en curso no puede reintentar OSINT/LLM tras cerrar
+sesión, ni sobrescribir la identidad elegida en una entrada posterior. Si el
+refresh venció, una nueva entrada explícita puede crear otra cuenta; no se
+atribuye el historial anterior a esa cuenta nueva. Un fallo de red o de lectura
+conserva las credenciales y permite reintentar. La UI de pruebas conserva la
+bienvenida y la salida, y omite el registro y el acceso nativo.
 
 El backend identifica la cuenta con un ID y una etiqueta. No se deduce una
 identidad OSINT de esa etiqueta. El perfil que la persona quiera auditar se

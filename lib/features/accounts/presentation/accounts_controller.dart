@@ -28,6 +28,9 @@ class AccountsController extends ChangeNotifier {
   String? get loadError => _loadError;
   String? get actionError => _actionError;
   String? get error => _loadError ?? _actionError;
+  bool get testingAccessEnabled =>
+      authRepository is BackendAuthRepository &&
+      (authRepository! as BackendAuthRepository).testingAccessEnabled;
 
   Future<void> load() async {
     if (_loadInProgress || _isSaving || _disposed) return;
@@ -150,7 +153,9 @@ class AccountsController extends ChangeNotifier {
     _actionError = null;
     _notify();
     try {
-      final profile = await auth.loginWithPasskey(authenticator: authenticator);
+      final profile = testingAccessEnabled
+          ? await (auth as BackendAuthRepository).startTestingSession()
+          : await auth.loginWithPasskey(authenticator: authenticator);
       if (_disposed) return false;
       _activeAccount = profile.toLocalAccount();
       return true;
@@ -201,7 +206,7 @@ class AccountsController extends ChangeNotifier {
   Future<void> signOut() async {
     if (_disposed || _isSaving) return;
     final account = _activeAccount;
-    _activeAccount = null;
+    _isSaving = true;
     _actionError = null;
     _notify();
     final auth = authRepository;
@@ -209,8 +214,13 @@ class AccountsController extends ChangeNotifier {
       try {
         await auth.logout();
       } catch (_) {
-        // Ignorar fallo de red en logout
+        // El cliente limpia los tokens locales incluso si falla la revocación.
       }
+    }
+    if (!_disposed) {
+      _activeAccount = null;
+      _isSaving = false;
+      _notify();
     }
   }
 

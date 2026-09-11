@@ -52,10 +52,15 @@ class BackendAuthRepository implements AuthRepository {
   PasskeyAuthenticator? _authenticator;
   final bool testingAccessEnabled;
   Future<UserProfile?>? _restoreInProgress;
+  Future<UserProfile>? _testingSignIn;
   bool _testingSessionEstablished = false;
+  int _sessionGeneration = 0;
 
   AuthApiClient get apiClient => _client;
   TokenStorage get tokenStorage => _storage;
+  String? get accessToken => testingAccessEnabled && !_testingSessionEstablished
+      ? null
+      : _storage.accessToken;
   PasskeyAuthenticator get authenticator =>
       _authenticator ??= NativePasskeyAuthenticator();
 
@@ -106,20 +111,37 @@ class BackendAuthRepository implements AuthRepository {
   Future<UserProfile?> _restoreSession() async {
     if (_storage.accessToken == null || _storage.accessToken!.isEmpty) {
       final tokens = await _client.refreshTokens();
-      if (tokens == null) {
-        if (!testingAccessEnabled) return null;
-        if (_testingSessionEstablished) throw _sessionExpired;
-        await _client.createTestingSession();
-      }
+      if (tokens == null) return null;
     }
     final profile = await _client.getMe();
     _testingSessionEstablished = testingAccessEnabled;
     return profile;
   }
 
+  /// Solo el botón Entrar puede preparar una cuenta de pruebas nueva.
+  Future<UserProfile> startTestingSession() => _testingSignIn ??=
+      _startTestingSession().whenComplete(() => _testingSignIn = null);
+
+  Future<UserProfile> _startTestingSession() async {
+    if (!testingAccessEnabled) throw _sessionExpired;
+    final existing = await restoreSession();
+    if (existing != null) return existing;
+    if (_testingSessionEstablished) throw _sessionExpired;
+    await _client.createTestingSession();
+    final profile = await _client.getMe();
+    _testingSessionEstablished = true;
+    return profile;
+  }
+
   @override
   Future<void> logout() async {
-    await _client.logout();
+    if (testingAccessEnabled) {
+      // Salida local de la interfaz: Entrar recupera la misma cuenta e historial.
+      _sessionGeneration++;
+      _storage.accessToken = null;
+    } else {
+      await _client.logout();
+    }
     _testingSessionEstablished = false;
   }
 
@@ -128,10 +150,18 @@ class BackendAuthRepository implements AuthRepository {
 
   /// Renueva la misma cuenta; una petición nunca crea una identidad de reemplazo.
   Future<String> ensureAccessToken({bool forceRefresh = false}) async {
+    final generation = _sessionGeneration;
+    if (testingAccessEnabled && !_testingSessionEstablished) {
+      throw _sessionExpired;
+    }
     final current = _storage.accessToken;
     if (!forceRefresh && current != null && current.isNotEmpty) return current;
     _storage.accessToken = null;
     final refreshed = await _client.refreshTokens();
+    if (testingAccessEnabled &&
+        (generation != _sessionGeneration || !_testingSessionEstablished)) {
+      throw _sessionExpired;
+    }
     if (refreshed != null && refreshed.accessToken.isNotEmpty) {
       return refreshed.accessToken;
     }
@@ -140,7 +170,7 @@ class BackendAuthRepository implements AuthRepository {
 
   AuthApiException get _sessionExpired => AuthApiException(
     message: testingAccessEnabled
-        ? 'La sesión de pruebas venció. Cierra y vuelve a abrir la app para continuar.'
+        ? 'La sesión de pruebas venció. Cierra sesión y pulsa Entrar para continuar.'
         : 'Tu sesión venció. Inicia sesión con tu llave de acceso.',
     code: 'auth_required',
   );

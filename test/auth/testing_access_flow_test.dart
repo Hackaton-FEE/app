@@ -85,6 +85,12 @@ class _Harness {
             201,
           );
         }
+        if (request.url.path.endsWith('/token/refresh')) {
+          return http.Response(
+            '{"access_token":"renewed-token","refresh_token":"renewed-refresh"}',
+            200,
+          );
+        }
         expect(request.url.path, '/api/v1/auth/me');
         return http.Response(
           jsonEncode({
@@ -110,25 +116,51 @@ class _Harness {
   );
 }
 
-void _expectNoLogin() {
-  expect(find.byType(AuthCard), findsNothing);
-  expect(find.byType(AccountPickerPage), findsNothing);
+void _expectWelcome() {
+  expect(find.byType(AuthCard), findsOneWidget);
+  expect(find.byType(AccountPickerPage), findsOneWidget);
+  expect(find.byKey(const Key('auth-passkey-login-button')), findsOneWidget);
+  expect(find.text('Entrar'), findsOneWidget);
+  expect(find.text('Crear cuenta'), findsNothing);
   expect(find.text('Entrar con llave de acceso'), findsNothing);
+  expect(find.byKey(const Key('auth-label-field')), findsNothing);
+}
+
+Future<void> _enter(WidgetTester tester, {bool settle = true}) async {
+  final button = find.byKey(const Key('auth-passkey-login-button'));
+  await tester.ensureVisible(button);
+  await tester.tap(button);
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
 }
 
 void main() {
   testWidgets(
-    'startup opens input form automatically and submits only client data',
+    'welcome, entry progress, client form, logout and reentry preserve account',
     (tester) async {
       final harness = _Harness()..requestGate = Completer<void>();
       await tester.pumpWidget(harness.app);
-      await tester.pump();
-      _expectNoLogin();
-      expect(find.byKey(const Key('testing-access-loading')), findsOneWidget);
+      await tester.pumpAndSettle();
+      _expectWelcome();
+      expect(harness.paths, isEmpty);
+      await _enter(tester, settle: false);
+      expect(find.byType(AccountPickerPage), findsOneWidget);
+      expect(find.text('Preparando acceso…'), findsOneWidget);
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const Key('auth-passkey-login-button')),
+            )
+            .onPressed,
+        isNull,
+      );
       harness.requestGate!.complete();
       await tester.pumpAndSettle();
-      _expectNoLogin();
       expect(find.byType(ProfileSetupPage), findsOneWidget);
+      expect(find.byType(AccountPickerPage), findsNothing);
       expect(find.text('Pruebas'), findsNothing);
       final email = find.byKey(const Key('scan-identity-field'));
       expect(tester.widget<TextFormField>(email).initialValue, isEmpty);
@@ -145,7 +177,8 @@ void main() {
       expect(harness.footprint.scannedIdentity, '+525512345678');
       expect(harness.footprint.scannedEmail, 'client@example.invalid');
       expect(harness.footprint.scannedAliases, ['real_client']);
-      expect(harness.identity.profile!.accountId, 'guest-1');
+      final saved = harness.identity.profile;
+      expect(saved!.accountId, 'guest-1');
       expect(find.byType(DashboardPage), findsOneWidget);
       expect(harness.paths, [
         '/api/v1/auth/testing/session',
@@ -153,58 +186,88 @@ void main() {
       ]);
       await tester.tap(find.byTooltip('Abrir perfil'));
       await tester.pumpAndSettle();
-      expect(find.text('Cerrar sesión'), findsNothing);
-      _expectNoLogin();
+      final logout = find.text('Cerrar sesión');
+      await tester.ensureVisible(logout);
+      await tester.tap(logout);
+      await tester.pumpAndSettle();
+      _expectWelcome();
+      expect(harness.identity.profile, same(saved));
+      expect(harness.auth.tokenStorage.accessToken, isNull);
+      expect(
+        await harness.auth.tokenStorage.readRefreshToken(),
+        'guest-refresh',
+      );
+      expect(harness.paths.length, 2);
+      await _enter(tester);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(harness.identity.profile, same(saved));
+      expect(harness.paths, [
+        '/api/v1/auth/testing/session',
+        '/api/v1/auth/me',
+        '/api/v1/auth/token/refresh',
+        '/api/v1/auth/me',
+      ]);
     },
   );
 
-  testWidgets(
-    'failed automatic access offers accessible retry and retains form route',
-    (tester) async {
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      tester.platformDispatcher.textScaleFactorTestValue = 2;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      final semantics = tester.ensureSemantics();
-      final harness = _Harness()..unavailable = true;
-      await tester.pumpWidget(harness.app);
-      await tester.pumpAndSettle();
-      _expectNoLogin();
-      expect(find.byKey(const Key('testing-access-error')), findsOneWidget);
-      expect(find.byType(ProfileSetupPage), findsNothing);
-      expect(tester.takeException(), isNull);
-      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-      semantics.dispose();
-      harness.unavailable = false;
-      await tester.ensureVisible(find.byKey(const Key('testing-access-retry')));
-      await tester.tap(find.byKey(const Key('testing-access-retry')));
-      await tester.pumpAndSettle();
-      _expectNoLogin();
-      expect(find.byType(ProfileSetupPage), findsOneWidget);
-      expect(find.byKey(const Key('testing-access-error')), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
-
-  testWidgets('saved client opens dashboard in the same testing account', (
+  testWidgets('failed entry preserves welcome with accessible retry', (
     tester,
   ) async {
-    final harness = _Harness();
-    harness.identity.profile = IdentityProfile(
-      accountId: 'guest-1',
-      mainIdentifier: 'client@example.invalid',
-      associatedEmail: 'client@example.invalid',
-      associatedUsernames: const ['real_client'],
-      phone: '+525512345678',
-      createdAt: DateTime.utc(2026, 9, 11),
-    );
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final harness = _Harness()..unavailable = true;
     await tester.pumpWidget(harness.app);
     await tester.pumpAndSettle();
-    expect(find.byType(DashboardPage), findsOneWidget);
-    _expectNoLogin();
-    expect(harness.footprint.scannedIdentity, isNull);
+    _expectWelcome();
+    await _enter(tester);
+    _expectWelcome();
+    expect(
+      find.text('No se pudo completar la consulta al servidor.'),
+      findsOneWidget,
+    );
+    expect(find.byType(ProfileSetupPage), findsNothing);
+    final semantics = tester.ensureSemantics();
+    await tester.ensureVisible(
+      find.byKey(const Key('auth-passkey-login-button')),
+    );
+    await tester.pumpAndSettle();
+    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+    semantics.dispose();
+    expect(tester.takeException(), isNull);
+    harness.unavailable = false;
+    await _enter(tester);
+    expect(find.byType(ProfileSetupPage), findsOneWidget);
+    expect(find.byType(AccountPickerPage), findsNothing);
+    expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'cold start preserves welcome until click even with an existing session',
+    (tester) async {
+      final harness = _Harness();
+      harness.identity.profile = IdentityProfile(
+        accountId: 'guest-1',
+        mainIdentifier: 'client@example.invalid',
+        associatedEmail: 'client@example.invalid',
+        associatedUsernames: const ['real_client'],
+        phone: '+525512345678',
+        createdAt: DateTime.utc(2026, 9, 11),
+      );
+      await harness.auth.startTestingSession();
+      harness.paths.clear();
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+      _expectWelcome();
+      expect(harness.paths, isEmpty);
+      await _enter(tester);
+      expect(find.byType(DashboardPage), findsOneWidget);
+      expect(harness.paths, ['/api/v1/auth/me']);
+      expect(harness.footprint.scannedIdentity, isNull);
+    },
+  );
 }

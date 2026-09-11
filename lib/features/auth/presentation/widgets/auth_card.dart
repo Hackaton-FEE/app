@@ -38,6 +38,7 @@ class _AuthCardState extends State<AuthCard> {
     builder: (context, _) {
       final theme = Theme.of(context);
       final controller = widget.controller;
+      final testing = controller.testingAccessEnabled;
       final busy = controller.isSaving || controller.isLoading;
       return Card(
         color: theme.colorScheme.surfaceContainerLow,
@@ -54,9 +55,11 @@ class _AuthCardState extends State<AuthCard> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Usa una llave de acceso del dispositivo. El sistema te pedirá '
-                'confirmar con el método de desbloqueo disponible.',
+              Text(
+                testing
+                    ? 'Entra para consultar tu huella digital.'
+                    : 'Usa una llave de acceso del dispositivo. El sistema te pedirá '
+                          'confirmar con el método de desbloqueo disponible.',
               ),
               const SizedBox(height: 16),
               if (controller.actionError != null) ...[
@@ -98,26 +101,37 @@ class _AuthCardState extends State<AuthCard> {
                     ? _register
                     : () => controller.signInWithPasskey(),
                 style: FilledButton.styleFrom(minimumSize: const Size(48, 56)),
-                icon: const Icon(Icons.key_outlined),
+                icon: busy
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(testing ? Icons.login_rounded : Icons.key_outlined),
                 label: Text(
                   busy
-                      ? 'Esperando confirmación…'
+                      ? testing
+                            ? 'Preparando acceso…'
+                            : 'Esperando confirmación…'
                       : _registering
                       ? 'Crear con llave de acceso'
+                      : testing
+                      ? 'Entrar'
                       : 'Entrar con llave de acceso',
                 ),
               ),
-              const SizedBox(height: 12),
-              TextButton(
-                key: const Key('auth-mode-button'),
-                onPressed: busy
-                    ? null
-                    : () => setState(() => _registering = !_registering),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-                child: Text(
-                  _registering ? 'Ya tengo una cuenta' : 'Crear cuenta',
+              if (!testing) ...[
+                const SizedBox(height: 12),
+                TextButton(
+                  key: const Key('auth-mode-button'),
+                  onPressed: busy
+                      ? null
+                      : () => setState(() => _registering = !_registering),
+                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                  child: Text(
+                    _registering ? 'Ya tengo una cuenta' : 'Crear cuenta',
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

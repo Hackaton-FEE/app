@@ -99,7 +99,9 @@ class _FeeAppState extends State<FeeApp> {
 
   Future<void> _loadAccounts(AuthRepository? authRepo) async {
     await _accounts.load();
-    if (mounted && authRepo != null) await _accounts.restoreSession();
+    if (mounted && authRepo != null && !widget.testingAccessEnabled) {
+      await _accounts.restoreSession();
+    }
   }
 
   /// Una instancia nueva por llamada: cada chat de GuardAI guarda su propio
@@ -116,7 +118,7 @@ class _FeeAppState extends State<FeeApp> {
       return BackendGuardAiRepository(
         currentProfile: () => footprint.profile,
         client: AssistantClient(
-          tokenProvider: () => backendAuth.tokenStorage.accessToken,
+          tokenProvider: () => backendAuth.accessToken,
           asyncTokenProvider: ({forceRefresh = false}) =>
               backendAuth.ensureAccessToken(forceRefresh: forceRefresh),
         ),
@@ -159,7 +161,7 @@ class _FeeAppState extends State<FeeApp> {
         final backendAuth = _accounts.authRepository! as BackendAuthRepository;
         footprintRepo = BackendFootprintRepository(
           client: OsintClient(
-            tokenProvider: () => backendAuth.tokenStorage.accessToken,
+            tokenProvider: () => backendAuth.accessToken,
             asyncTokenProvider: ({forceRefresh = false}) =>
                 backendAuth.ensureAccessToken(forceRefresh: forceRefresh),
           ),
@@ -233,16 +235,6 @@ class _FeeAppState extends State<FeeApp> {
             builder: (context, _) {
               final account = _accounts.activeAccount;
               if (account == null) {
-                if (widget.testingAccessEnabled) {
-                  return AccessLoadingGate(
-                    keyPrefix: 'testing-access',
-                    loadingText: 'Preparando el acceso…',
-                    error: _accounts.error,
-                    onRetry: _accounts.isLoading
-                        ? null
-                        : _accounts.restoreSession,
-                  );
-                }
                 return AccountPickerPage(controller: _accounts);
               }
               final session = _sessionFor(account);
@@ -255,9 +247,7 @@ class _FeeAppState extends State<FeeApp> {
                     return AccessLoadingGate(
                       error: session.identity.error,
                       onRetry: session.identity.load,
-                      onSignOut: widget.testingAccessEnabled
-                          ? null
-                          : _accounts.signOut,
+                      onSignOut: _accounts.signOut,
                     );
                   }
                   if (session.identity.needsOnboarding) {
@@ -276,9 +266,7 @@ class _FeeAppState extends State<FeeApp> {
                     scanHistoryController: session.scanHistory,
                     identityController: session.identity,
                     account: account,
-                    onManageAccounts: widget.testingAccessEnabled
-                        ? null
-                        : _accounts.signOut,
+                    onManageAccounts: _accounts.signOut,
                   );
                 },
               );
