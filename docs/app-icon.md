@@ -5,10 +5,9 @@ El arte aprobado se conserva en
 símbolo en relieve utilizada en el pitch. Los SVG originales se mantienen para
 usos donde se necesita un símbolo plano, incluida la versión temática de Android.
 
-`AppLogo` muestra este icono cuadrado en la interfaz, tanto en tema claro como
-oscuro. Los parámetros explícitos de color, contraste y colores originales
-conservan las variantes SVG. El indicador animado de carga sigue utilizando
-los vectores existentes.
+El cambio se limita al icono externo del lanzador Android. La interfaz conserva
+su logotipo SVG original y el indicador animado de carga. El PNG fuente no se
+incluye en los assets de Flutter; solo se utiliza para generar recursos nativos.
 
 ## Android
 
@@ -50,9 +49,9 @@ ni `sharp`. iOS permanece aplazado conforme a la arquitectura del proyecto.
 
 Se verificaron formato, límite de tamaño de código, análisis estático y las
 335 pruebas de Flutter (una prueba de red opt-in omitida). El APK debug compiló.
-La [captura del selector de cuenta](images/app-icon-account-picker.png) se
-renderizó a 390 × 844 con `demo@example.com`; es una captura de widgets, no del
-teléfono. También se inspeccionaron máscaras circular y redondeada del lanzador.
+Se inspeccionaron máscaras circular y redondeada del lanzador. El componente
+`AppLogo`, sus pruebas y la declaración de assets de Flutter se conservan
+exactamente como estaban antes de este cambio.
 
 La actualización por `adb install -r` al Pixel 10 Pro XL fue rechazada con
 `INSTALL_FAILED_UPDATE_INCOMPATIBLE`: la instalación previa tiene otra firma.

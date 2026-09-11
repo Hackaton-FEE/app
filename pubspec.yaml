@@ -28,7 +28,6 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/logo/raster/
     - assets/logo/vector/
     - assets/logo/standalone/
     - assets/logo/frames_120/
