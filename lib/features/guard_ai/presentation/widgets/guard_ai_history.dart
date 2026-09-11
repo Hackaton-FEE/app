@@ -12,7 +12,6 @@ class GuardAiHistory extends StatelessWidget {
     required this.latestReplyKey,
     this.decisions,
     this.createActionExecutor,
-    this.isSimulation = false,
     super.key,
   });
 
@@ -20,7 +19,6 @@ class GuardAiHistory extends StatelessWidget {
   final GlobalKey latestReplyKey;
   final Map<GuardAiMessage, String>? decisions;
   final GuardAiActionExecutor Function()? createActionExecutor;
-  final bool isSimulation;
 
   @override
   Widget build(BuildContext context) => SliverMainAxisGroup(
@@ -34,7 +32,6 @@ class GuardAiHistory extends StatelessWidget {
             message: messages[index],
             decisions: decisions,
             createActionExecutor: createActionExecutor,
-            isSimulation: isSimulation,
           ),
         ),
       ),
@@ -48,7 +45,6 @@ class GuardAiHistory extends StatelessWidget {
               message: messages.last,
               decisions: decisions,
               createActionExecutor: createActionExecutor,
-              isSimulation: isSimulation,
             ),
           ),
         ),
@@ -61,14 +57,12 @@ class _MessageBubble extends StatefulWidget {
     required this.message,
     this.decisions,
     this.createActionExecutor,
-    this.isSimulation = false,
     super.key,
   });
 
   final GuardAiMessage message;
   final Map<GuardAiMessage, String>? decisions;
   final GuardAiActionExecutor Function()? createActionExecutor;
-  final bool isSimulation;
 
   @override
   State<_MessageBubble> createState() => _MessageBubbleState();
@@ -84,7 +78,6 @@ class _MessageBubbleState extends State<_MessageBubble> {
       builder: (context) => GuardAiActionDialog(
         action: widget.message.recommendedAction!,
         executor: widget.createActionExecutor?.call(),
-        isSimulation: widget.isSimulation,
       ),
     );
     if (mounted && result != null) {

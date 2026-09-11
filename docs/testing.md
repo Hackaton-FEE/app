@@ -162,16 +162,15 @@ cuenta elegida, sin inferir conexiones entre sus vecinos. Estas pruebas de
 widgets no sustituyen un recorrido TalkBack/VoiceOver ni un dispositivo nativo.
 
 
-## Conversación de muestra de GuardAI
+## GuardAI con el informe del dashboard
 
-Abre GuardAI → botón de rayo a la izquierda de enviar → Conversación de muestra.
-El título debe indicar «Muestra». Usa Revisar mi perfil para obtener el
-análisis ficticio y Ayúdame con una recomendación para abrir la confirmación.
-Prueba Posponer y Aceptar: la segunda opción muestra tres pasos y termina con
-«Simulación completada», sin modificar cuentas. Vuelve al inicio desde el menú
-y reabre GuardAI: conserva la conversación y el borrador durante la sesión.
+Abre GuardAI y usa el botón de rayo a la izquierda de enviar. Las opciones
+Revisar mi perfil, Ayúdame con una recomendación y Preparar un plan de privacidad
+envían un atajo conservando el borrador. El repositorio añade el informe visible
+a cada petición SSE y actualiza ese contexto si cambia el informe.
 
-`flutter test test/guard_ai/guard_ai_sample_flow_test.dart` verifica el recorrido
-a 320 × 640 y texto al 100 % y 200 %, el retorno con una sola salida de ruta,
-el borrador, la separación del chat normal y las etiquetas/objetivos Android.
-No prueba TalkBack, VoiceOver ni ejecución externa.
+`flutter test test/guard_ai/guard_ai_report_context_test.dart` verifica los
+datos enviados, cambio de informe entre turnos, ausencia de informe sin
+hallazgos inventados, borrador conservado y contexto bajo el límite del servidor.
+Las suites de widgets siguen cubriendo navegación y texto ampliado.
+No prueba disponibilidad del proveedor, TalkBack ni VoiceOver.

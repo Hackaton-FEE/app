@@ -2,9 +2,8 @@
 
 El cliente Flutter 3.47.2 / Dart 3.13.2 presenta la huella digital consultada por
 la API FEE. La entrega actual se valida en Android; Apple queda aplazado por
-petición del usuario. No incluye cuentas ni hallazgos de demostración en los escaneos. GuardAI
-ofrece una conversación de muestra explícita y separada, con datos ficticios
-y sin comunicación externa; el chat normal conserva su adaptador configurado.
+petición del usuario. No incluye cuentas ni hallazgos ficticios en producción.
+GuardAI utiliza el informe visible en el dashboard como contexto de conversación.
 
 ## Composición y responsabilidades
 
@@ -140,28 +139,31 @@ permiten reintentar, sin completar el onboarding por un guardado fallido.
 
 GuardAI incorpora los componentes de `front` (`cc10c47`): bienvenida, drawer,
 conversaciones y borradores durante la sesión, ayuda, informes y diálogos de
-acciones. `FeeApp.guardAiRepositoryFactory` crea un repositorio independiente
-por cuenta y por conversación. El adaptador de producción sigue siendo
-`UnavailableGuardAiRepository`: conserva el borrador y avisa que el mensaje no
-se ha enviado. Desde «Acciones rápidas» se puede abrir una conversación de
-muestra separada con `SampleGuardAiRepository`, identificada en el título.
-Usa siempre el perfil ficticio @cliente.demo; nunca interpreta un escaneo real.
-Los atajos permiten revisar el perfil de muestra, preparar un plan y pedir
-ayuda para abrir la confirmación. Conservan el borrador. Aceptar inicia el
-ejecutor local de muestra y su progreso; completar la simulación no modifica
-cuentas ni envía solicitudes. Posponer conserva una preferencia de sesión.
-El menú se cierra con `closeDrawer` antes de salir una sola vez de GuardAI,
-sin apilar un dashboard nuevo. El resto de dobles vive en `test/support`.
-`GuardAiActionExecutor` permite integrar ejecución y progreso; su implementación
-por defecto falla sin confirmar éxito. Posponer no programa notificaciones.
+acciones. `FeeApp.guardAiRepositoryFactory` permite inyectar repositorios
+independientes por cuenta y conversación. El adaptador de producción es
+`BackendGuardAiRepository`, que consume SSE de `/assistant/chat`. Cada turno
+obtiene una instantánea actual del mismo FootprintController del dashboard;
+incluye score, riesgo, fecha, parcialidad y hallazgos dentro de una cota.
+Se indica cuántos hallazgos se omiten del contexto, sin inventar datos. El
+contexto se renueva al cambiar el informe y no se almacena como mensaje visible.
+Viaja al servidor y al proveedor del asistente junto con la conversación;
+no incluye tokens, notas de casos ni consulta fuentes nuevas.
+
+El botón de acciones rápidas conserva el borrador y ofrece revisión del perfil,
+ayuda y plan de privacidad. Se ha retirado la conversación de muestra y su
+ejecutor simulado del producto. Las pruebas siguen usando dobles. La respuesta
+solo se confirma después de recibir el cierre SSE; fallos conservan el borrador.
+Los diálogos de acciones no confirman ejecución externa sin un ejecutor conectado.
+Posponer no programa notificaciones. Regresar al inicio cierra el menú y sale
+una sola vez de GuardAI, conservando conversación y borrador durante la sesión.
 
 La inspección del backend desplegado `d92af3e` en `oracle-fee` el 11 de septiembre
 de 2026 confirmó `POST /api/v1/assistant/chat`, autenticado y limitado a 15/minuto.
 Recibe `messages` con `role` (`user` o `assistant`) y `content`; responde SSE con
 `token` (`content`), `error` (`detail`) y `done`. El servidor antepone su prompt
 fijo y no persiste conversaciones. En producción está `assistant_mode=disabled`
-y no hay clave del proveedor configurada. Este cliente todavía no consume ese
-endpoint. Habilitarlo requiere configurar el proveedor y verificar el adaptador,
+y no hay clave del proveedor configurada. El cliente ya consume ese
+endpoint. Habilitar respuestas requiere configurar el proveedor y verificar el adaptador,
 el streaming completo, renovación de sesión y errores sin falso envío exitoso.
 El contrato inspeccionado no incluye ejecución de acciones ni informes
 estructurados. No se inventan esas capacidades en el cliente.

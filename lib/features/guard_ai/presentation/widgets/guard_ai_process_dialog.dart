@@ -10,15 +10,9 @@ import 'guard_ai_process_timeline.dart';
 
 /// Replaces confirmation on the same route, so completion returns to the chat.
 class GuardAiProcessDialog extends StatefulWidget {
-  const GuardAiProcessDialog({
-    required this.action,
-    this.executor,
-    this.isSimulation = false,
-    super.key,
-  });
+  const GuardAiProcessDialog({required this.action, this.executor, super.key});
   final String action;
   final GuardAiActionExecutor? executor;
-  final bool isSimulation;
 
   @override
   State<GuardAiProcessDialog> createState() => _GuardAiProcessDialogState();
@@ -63,9 +57,7 @@ class _GuardAiProcessDialogState extends State<GuardAiProcessDialog> {
     final success = _controller.status == GuardAiProcessStatus.completed;
     Navigator.of(context).pop(
       success
-          ? (widget.isSimulation
-                ? 'Simulación completada. No se modificó ninguna cuenta.'
-                : 'Acción correctamente realizada.')
+          ? 'Acción correctamente realizada.'
           : 'No se pudo completar la acción. El proceso se detuvo.',
     );
   }
@@ -104,7 +96,7 @@ class _GuardAiProcessDialogState extends State<GuardAiProcessDialog> {
               horizontal: 20,
               vertical: 24,
             ),
-            title: Text(widget.isSimulation ? 'Proceso de muestra' : 'Proceso'),
+            title: const Text('Proceso'),
             content: SizedBox(
               width: 420,
               child: Column(
@@ -166,16 +158,12 @@ class _GuardAiProcessDialogState extends State<GuardAiProcessDialog> {
       ),
       title: Text(
         success
-            ? (widget.isSimulation
-                  ? 'Simulación completada'
-                  : 'Acción correctamente realizada')
+            ? 'Acción correctamente realizada'
             : 'No se pudo completar la acción',
       ),
       content: Text(
         success
-            ? (widget.isSimulation
-                  ? 'Se completaron los pasos de muestra. No se modificó ninguna cuenta ni se envió una solicitud.'
-                  : 'Se completaron los tres pasos de “${widget.action}”.')
+            ? 'Se completaron los tres pasos de “${widget.action}”.'
             : 'Falló el paso “${guardAiProcessSteps[_controller.failedStep!].title}”. El proceso se detuvo y no continuó con los pasos restantes.\n\nPuedes volver al chat para revisar la recomendación.',
       ),
       actions: [

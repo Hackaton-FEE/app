@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/sample_guard_ai_repository.dart';
-
-const sampleConversationAction = 'sample-conversation';
+import '../../domain/guard_ai_quick_prompt.dart';
 
 class GuardAiQuickActions extends StatelessWidget {
   const GuardAiQuickActions({
@@ -37,33 +35,24 @@ class GuardAiQuickActions extends StatelessWidget {
               const Text('Elige una opción. Tu borrador se conserva.'),
               for (final option in [
                 (
-                  SampleGuardAiRepository.review,
+                  GuardAiQuickPrompt.review,
                   Icons.person_search_outlined,
                   'Análisis y orientación sobre el perfil.',
                 ),
                 (
-                  SampleGuardAiRepository.help,
+                  GuardAiQuickPrompt.help,
                   Icons.task_alt,
                   'Revisar una acción, aceptarla o posponerla.',
                 ),
                 (
-                  SampleGuardAiRepository.plan,
+                  GuardAiQuickPrompt.plan,
                   Icons.checklist,
                   'Organizar los siguientes pasos en la app.',
-                ),
-                (
-                  sampleConversationAction,
-                  Icons.science_outlined,
-                  'Abrir una conversación separada con un perfil ficticio.',
                 ),
               ])
                 ListTile(
                   leading: Icon(option.$2),
-                  title: Text(
-                    option.$1 == sampleConversationAction
-                        ? 'Conversación de muestra'
-                        : option.$1,
-                  ),
+                  title: Text(option.$1),
                   subtitle: Text(option.$3),
                   onTap: () => Navigator.pop(context, option.$1),
                 ),

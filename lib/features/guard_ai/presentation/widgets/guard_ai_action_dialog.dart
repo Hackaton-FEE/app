@@ -7,15 +7,9 @@ import 'guard_ai_process_dialog.dart';
 
 /// A local decision only: no external action or notification is scheduled.
 class GuardAiActionDialog extends StatefulWidget {
-  const GuardAiActionDialog({
-    required this.action,
-    this.executor,
-    this.isSimulation = false,
-    super.key,
-  });
+  const GuardAiActionDialog({required this.action, this.executor, super.key});
   final String action;
   final GuardAiActionExecutor? executor;
-  final bool isSimulation;
 
   @override
   State<GuardAiActionDialog> createState() => _GuardAiActionDialogState();
@@ -51,11 +45,7 @@ class _GuardAiActionDialogState extends State<GuardAiActionDialog> {
 
   @override
   Widget build(BuildContext context) => _processing
-      ? GuardAiProcessDialog(
-          action: widget.action,
-          executor: widget.executor,
-          isSimulation: widget.isSimulation,
-        )
+      ? GuardAiProcessDialog(action: widget.action, executor: widget.executor)
       : AlertDialog(
           scrollable: true,
           backgroundColor: AppPalette.card,
@@ -137,7 +127,7 @@ class _GuardAiActionDialogState extends State<GuardAiActionDialog> {
                 )
               : Text(
                   '¿Quieres realizar ${widget.action}?\n\n'
-                  '${widget.isSimulation ? 'Simulación: solo verás pasos de muestra. No se modificará ninguna cuenta.' : 'La acción necesita un servicio de ejecución conectado.'}',
+                  'La acción necesita un servicio de ejecución conectado.',
                 ),
           actions: [
             IntrinsicHeight(

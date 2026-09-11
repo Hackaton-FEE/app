@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import '../data/sample_guard_ai_repository.dart';
-import '../data/sample_guard_ai_action_executor.dart';
+import '../domain/guard_ai_quick_prompt.dart';
 import 'widgets/guard_ai_action_dialog.dart';
-import 'widgets/guard_ai_quick_actions.dart';
 
 import 'package:flutter/material.dart';
 
@@ -82,10 +80,7 @@ class _GuardAiPageState extends State<GuardAiPage> {
       key: ValueKey(widget.controller.chatId),
       messages: _conversation.messages,
       decisions: _decisions,
-      createActionExecutor: _conversation.isSimulation
-          ? SampleGuardAiActionExecutor.new
-          : widget.createActionExecutor,
-      isSimulation: _conversation.isSimulation,
+      createActionExecutor: widget.createActionExecutor,
       latestReplyKey: _latestReplyKey,
     );
   }
@@ -130,10 +125,6 @@ class _GuardAiPageState extends State<GuardAiPage> {
   }
 
   Future<void> _quickAction(String choice) async {
-    if (choice == sampleConversationAction) {
-      await widget.controller.newChat(repository: SampleGuardAiRepository());
-      return;
-    }
     final succeeded = await widget.controller.sendQuickPrompt(choice);
     if (!mounted) return;
     _text.text = widget.controller.draft;
@@ -141,18 +132,14 @@ class _GuardAiPageState extends State<GuardAiPage> {
     _followReply = true;
     _inputFocus.unfocus();
     final message = widget.controller.conversation.messages.last;
-    if (choice == SampleGuardAiRepository.help &&
+    if (choice == GuardAiQuickPrompt.help &&
         message.recommendedAction != null) {
-      final simulation = widget.controller.conversation.isSimulation;
       final result = await showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (_) => GuardAiActionDialog(
           action: message.recommendedAction!,
-          isSimulation: simulation,
-          executor: simulation
-              ? SampleGuardAiActionExecutor()
-              : widget.createActionExecutor?.call(),
+          executor: widget.createActionExecutor?.call(),
         ),
       );
       if (mounted && result != null) {
@@ -217,9 +204,7 @@ class _GuardAiPageState extends State<GuardAiPage> {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    controller.conversation.isSimulation
-                        ? 'Muestra'
-                        : 'GuardAI',
+                    'GuardAI',
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

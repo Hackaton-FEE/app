@@ -87,7 +87,7 @@ class GuardAiWelcome extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'Escribe tu consulta para comenzar. Evita compartir contraseñas o datos sensibles.',
+                'Escribe tu consulta o usa las acciones rápidas. GuardAI toma como contexto el informe abierto en el dashboard. Evita compartir contraseñas.',
                 style: TextStyle(height: 1.5, color: AppPalette.deepOlive),
               ),
             ],

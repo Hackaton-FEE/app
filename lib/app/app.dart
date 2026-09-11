@@ -95,13 +95,17 @@ class _FeeAppState extends State<FeeApp> {
 
   /// Una instancia nueva por llamada: cada chat de GuardAI guarda su propio
   /// historial en memoria (el servidor no persiste la conversación).
-  GuardAiRepository _guardAiRepositoryFor(LocalAccount account) {
+  GuardAiRepository _guardAiRepositoryFor(
+    LocalAccount account,
+    FootprintController footprint,
+  ) {
     if (widget.guardAiRepositoryFactory != null) {
       return widget.guardAiRepositoryFactory!(account);
     }
     if (_accounts.authRepository is BackendAuthRepository) {
       final backendAuth = _accounts.authRepository! as BackendAuthRepository;
       return BackendGuardAiRepository(
+        currentProfile: () => footprint.profile,
         client: AssistantClient(
           tokenProvider: () => backendAuth.tokenStorage.accessToken,
           asyncTokenProvider: ({forceRefresh = false}) =>
@@ -181,8 +185,8 @@ class _FeeAppState extends State<FeeApp> {
       return _AccountSession(
         footprint: footprint,
         guardAi: GuardAiController(
-          _guardAiRepositoryFor(account),
-          createRepository: () => _guardAiRepositoryFor(account),
+          _guardAiRepositoryFor(account, footprint),
+          createRepository: () => _guardAiRepositoryFor(account, footprint),
         ),
         scanHistory: history,
         identity: identity,

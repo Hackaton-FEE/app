@@ -30,7 +30,6 @@ class GuardAiController extends ChangeNotifier {
     final messages = conversation.messages.where(
       (m) => m.role == GuardAiRole.person,
     );
-    if (conversation.isSimulation) return 'Conversación de muestra';
     return messages.isEmpty ? 'Nueva conversación' : messages.first.text;
   }
 
