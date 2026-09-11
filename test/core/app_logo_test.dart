@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AppLogo', () {
-    testWidgets('renders light monochrome SVG by default in light theme', (
+    testWidgets('renders the app icon by default in light theme', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -16,14 +16,15 @@ void main() {
         ),
       );
 
-      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
-      final loader = svg.bytesLoader as SvgAssetLoader;
-      expect(loader.assetName, 'assets/logo/vector/logo_monochrome.svg');
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as AssetImage).assetName,
+        'assets/logo/raster/osisnt_app_icon.png',
+      );
+      expect(tester.getSize(find.byType(AppLogo)), const Size(40, 40));
     });
 
-    testWidgets('renders dark white SVG when dark mode is enabled', (
-      tester,
-    ) async {
+    testWidgets('keeps the app icon in dark theme', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
@@ -33,9 +34,11 @@ void main() {
         ),
       );
 
-      final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
-      final loader = svg.bytesLoader as SvgAssetLoader;
-      expect(loader.assetName, 'assets/logo/vector/logo_dark_white.svg');
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as AssetImage).assetName,
+        'assets/logo/raster/osisnt_app_icon.png',
+      );
     });
 
     testWidgets('respects explicit isDarkMode override', (tester) async {
@@ -68,7 +71,7 @@ void main() {
       expect(loader.assetName, 'assets/logo/vector/logo_cropped.svg');
     });
 
-    testWidgets('calculates dimensions respecting cropped aspect ratio', (
+    testWidgets('keeps the app icon square when height is supplied', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -77,9 +80,7 @@ void main() {
         ),
       );
 
-      final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
-      expect(sizedBox.height, 100.0);
-      expect(sizedBox.width, closeTo(100.0 * AppLogo.aspectRatio, 0.01));
+      expect(tester.getSize(find.byType(AppLogo)), const Size(100, 100));
     });
 
     testWidgets('exposes accessible semantics when semanticLabel is provided', (

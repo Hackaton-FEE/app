@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Logotipo vectorial oficial de Osisn't (Isotipo recortado y optimizado).
+/// Icono oficial de Osisnt, con relieve marfil sobre grafito.
 ///
-/// Renderiza el isotipo de la corriente de viento que culmina en la huella dactilar,
-/// con recorte ajustado al contorno biométrico sin márgenes vacíos.
-/// Se adapta dinámicamente al modo claro u oscuro del tema o admite un color
-/// explícito para personalización en contextos especiales.
+/// Conserva las variantes vectoriales para los contextos que soliciten un
+/// color, modo de contraste o los colores originales explícitamente.
 class AppLogo extends StatelessWidget {
   /// Tamaño de referencia (ancho base) del isotipo cuando no se especifican [width] ni [height].
   final double size;
@@ -17,8 +15,7 @@ class AppLogo extends StatelessWidget {
   /// Alto explícito opcional. Si se define sin [width], calcula el ancho automáticamente según el aspect ratio oficial.
   final double? height;
 
-  /// Si se debe forzar el modo oscuro (blanco puro) o modo claro (negro institucional).
-  /// Si es `null`, infiere el brillo a partir de `Theme.of(context).brightness`.
+  /// Solicita el vector blanco o negro. Si es `null`, usa el icono de la app.
   final bool? isDarkMode;
 
   /// Tinte de color opcional para sobrescribir el color del vector.
@@ -33,7 +30,8 @@ class AppLogo extends StatelessWidget {
   /// Dimensiones canónicas del SVG recortado oficial.
   static const double originalWidth = 643.7101449275362;
   static const double originalHeight = 850.048;
-  static const double aspectRatio = originalWidth / originalHeight; // ~0.7573
+  static const double vectorAspectRatio = originalWidth / originalHeight;
+  static const double aspectRatio = 1;
 
   const AppLogo({
     super.key,
@@ -42,12 +40,14 @@ class AppLogo extends StatelessWidget {
     this.height,
     this.isDarkMode,
     this.color,
-    this.semanticLabel = "Logotipo de Osisn't",
+    this.semanticLabel = 'Logotipo de Osisnt',
     this.useOriginalColors = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final useVector = isDarkMode != null || color != null || useOriginalColors;
+    final ratio = useVector ? vectorAspectRatio : aspectRatio;
     final dark =
         isDarkMode ?? (Theme.of(context).brightness == Brightness.dark);
     final assetPath = useOriginalColors
@@ -61,18 +61,25 @@ class AppLogo extends StatelessWidget {
         : null;
 
     final double effectiveWidth =
-        width ?? (height != null ? height! * aspectRatio : size);
+        width ?? (height != null ? height! * ratio : size);
     final double effectiveHeight =
-        height ?? (width != null ? width! / aspectRatio : size / aspectRatio);
+        height ?? (width != null ? width! / ratio : size / ratio);
 
     final logoWidget = SizedBox(
       width: effectiveWidth,
       height: effectiveHeight,
-      child: SvgPicture.asset(
-        assetPath,
-        fit: BoxFit.contain,
-        colorFilter: filter,
-      ),
+      child: useVector
+          ? SvgPicture.asset(
+              assetPath,
+              fit: BoxFit.contain,
+              colorFilter: filter,
+              excludeFromSemantics: true,
+            )
+          : Image.asset(
+              'assets/logo/raster/osisnt_app_icon.png',
+              fit: BoxFit.contain,
+              excludeFromSemantics: true,
+            ),
     );
 
     if (semanticLabel == null || semanticLabel!.isEmpty) {
