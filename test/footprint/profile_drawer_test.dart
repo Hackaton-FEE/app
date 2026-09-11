@@ -55,59 +55,66 @@ void main() {
     expect(actions, ['history', 'logout', 'help']);
   });
 
-  testWidgets('supports a long identity at 320 px and 200 percent text', (
-    tester,
-  ) async {
-    const identity = 'identidad.ficticia.larga.para.pruebas@example.invalid';
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-    final semantics = tester.ensureSemantics();
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-    var helpOpened = false;
+  for (final size in [const Size(320, 640), const Size(640, 320)]) {
+    testWidgets('supports a long identity at $size and 200 percent text', (
+      tester,
+    ) async {
+      const identity = 'identidad.ficticia.larga.para.pruebas@example.invalid';
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final semantics = tester.ensureSemantics();
+      final scaffoldKey = GlobalKey<ScaffoldState>();
+      var helpOpened = false;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: buildAppTheme(),
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(textScaler: const TextScaler.linear(2)),
-          child: child!,
-        ),
-        home: Scaffold(
-          key: scaffoldKey,
-          drawer: ProfileDrawer(
-            identity: identity,
-            onHelp: () => helpOpened = true,
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildAppTheme(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
           ),
-          body: const SizedBox.expand(),
+          home: Scaffold(
+            key: scaffoldKey,
+            drawer: ProfileDrawer(
+              identity: identity,
+              onViewIdentity: () {},
+              onViewHistory: () {},
+              onManageAccounts: () {},
+              onHelp: () => helpOpened = true,
+            ),
+            body: const SizedBox.expand(),
+          ),
         ),
-      ),
-    );
-    scaffoldKey.currentState!.openDrawer();
-    await tester.pumpAndSettle();
+      );
+      scaffoldKey.currentState!.openDrawer();
+      await tester.pumpAndSettle();
 
-    expect(find.bySemanticsLabel('Identidad: $identity'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      expect(find.bySemanticsLabel('Identidad: $identity'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
 
-    final help = find.byKey(const Key('profile-help'));
-    await tester.scrollUntilVisible(
-      help,
-      160,
-      scrollable: find.descendant(
-        of: find.byType(NavigationDrawer),
-        matching: find.byType(Scrollable),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-    await tester.tap(help);
-    await tester.pumpAndSettle();
-    expect(helpOpened, isTrue);
-    expect(scaffoldKey.currentState!.isDrawerOpen, isFalse);
-    semantics.dispose();
-  });
+      final help = find.byKey(const Key('profile-help'));
+      expect(help.hitTestable(), findsOneWidget);
+      final helpPosition = tester.getTopLeft(help);
+      await tester.drag(
+        find.descendant(
+          of: find.byType(NavigationDrawer),
+          matching: find.byType(Scrollable),
+        ),
+        const Offset(0, -400),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      expect(tester.getTopLeft(help), helpPosition);
+      await tester.tap(help);
+      await tester.pumpAndSettle();
+      expect(helpOpened, isTrue);
+      expect(scaffoldKey.currentState!.isDrawerOpen, isFalse);
+      semantics.dispose();
+    });
+  }
 }

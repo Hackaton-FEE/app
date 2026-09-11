@@ -78,7 +78,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Configura tu identidad a proteger'), findsOneWidget);
+    expect(find.text('Completa tu perfil'), findsOneWidget);
     expect(find.text('Carlos Ruiz'), findsNothing);
     expect(find.text('carlos@example.com'), findsOneWidget);
     expect(find.text('Guardar e Iniciar Auditoría'), findsOneWidget);

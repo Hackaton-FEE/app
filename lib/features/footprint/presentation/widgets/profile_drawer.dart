@@ -29,8 +29,8 @@ class ProfileDrawer extends StatelessWidget {
     ('Mi huella', Icons.fingerprint_rounded, 'profile-footprint', null),
     if (onViewIdentity != null)
       (
-        'Identidad a proteger',
-        Icons.shield_outlined,
+        'Mi perfil',
+        Icons.person_outline_rounded,
         'profile-identity',
         onViewIdentity,
       ),
@@ -48,7 +48,6 @@ class ProfileDrawer extends StatelessWidget {
         'profile-accounts',
         onManageAccounts,
       ),
-    ('Ayuda', Icons.help_outline_rounded, 'profile-help', onHelp),
   ];
 
   void _selectDestination(BuildContext context, int index) {
@@ -109,6 +108,28 @@ class ProfileDrawer extends StatelessWidget {
           selectedIndex: 0,
           indicatorColor: colors.primaryContainer,
           onDestinationSelected: (index) => _selectDestination(context, index),
+          footer: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Divider(),
+                  ListTile(
+                    key: const Key('profile-help'),
+                    minTileHeight: 56,
+                    leading: const Icon(Icons.help_outline_rounded),
+                    title: const Text('Ayuda'),
+                    onTap: () {
+                      Scaffold.of(context).closeDrawer();
+                      onHelp();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 12, 16, 24),

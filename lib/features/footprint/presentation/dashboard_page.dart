@@ -9,7 +9,6 @@ import '../../accounts/presentation/profile_setup_page.dart';
 import '../../guard_ai/presentation/guard_ai_controller.dart';
 import '../../guard_ai/presentation/guard_ai_page.dart';
 import '../../cases/presentation/cases_controller.dart';
-import '../../cases/presentation/cases_page.dart';
 import '../domain/footprint_item.dart';
 import 'footprint_controller.dart';
 import 'scan_history_controller.dart';
@@ -140,12 +139,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  void _openAllCases() => Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      builder: (_) => CasesPage(controller: widget.casesController),
-    ),
-  );
-
   void _openScanHistory() => openScanHistory(
     context,
     widget.scanHistoryController,
@@ -191,13 +184,6 @@ class _DashboardPageState extends State<DashboardPage>
       ]),
       builder: (context, _) {
         final footprint = widget.footprintController;
-        final profile = footprint.profile;
-        final featuredItem = profile == null || profile.items.isEmpty
-            ? null
-            : profile.items.firstWhere(
-                (item) => item.riskLevel == FootprintRisk.high,
-                orElse: () => profile.items.first,
-              );
         return DashboardSpotlight(
           surfaceKey: _spotlightSurface,
           panelKey: _tourAnchor,
@@ -271,17 +257,12 @@ class _DashboardPageState extends State<DashboardPage>
             ),
             body: DashboardContent(
               footprint: footprint,
-              casesController: widget.casesController,
               history: widget.scanHistoryController,
-              featuredItem: featuredItem,
               scrollController: _scrollController,
               region: (child, step) => _region(child, step),
               tourStep: _tourStep,
               tourPanel: _tourStep == null ? null : _tourPanel(),
               tourTargets: _tourTargets,
-              onViewHistory: _openScanHistory,
-              onGuardAi: _openGuardAi,
-              onViewAllCases: _openAllCases,
               onFindingSelected: _showFindingDetail,
             ),
           ),

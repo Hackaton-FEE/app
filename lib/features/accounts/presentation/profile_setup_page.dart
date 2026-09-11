@@ -118,9 +118,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(
-            widget.isInitialOnboarding
-                ? 'Perfil de Auditoría'
-                : 'Editar Identidad',
+            widget.isInitialOnboarding ? 'Mi perfil' : 'Editar mi perfil',
           ),
           automaticallyImplyLeading: !widget.isInitialOnboarding,
         ),
@@ -142,7 +140,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     Semantics(
                       header: true,
                       child: Text(
-                        'Configura tu identidad a proteger',
+                        'Completa tu perfil',
                         style: Theme.of(context).textTheme.headlineSmall,
                         textAlign: TextAlign.center,
                       ),

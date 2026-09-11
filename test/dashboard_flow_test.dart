@@ -98,10 +98,10 @@ void main() {
       expect(find.byKey(const Key('dashboard-scan-fab')), findsOneWidget);
       expect(find.byKey(const Key('dashboard-guardai-fab')), findsOneWidget);
 
-      // Verify Recommendation Card
+      // Redundant actions no longer interrupt the dashboard.
       expect(
         find.byKey(const Key('recommendation-guardai-button')),
-        findsOneWidget,
+        findsNothing,
       );
     },
   );
@@ -284,10 +284,10 @@ void main() {
     (tester) async {
       await startDashboard(tester);
 
-      await scrollAndTap(
-        tester,
-        find.byKey(const Key('recommendation-view-history-button')),
-      );
+      await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('profile-history')));
+      await tester.pumpAndSettle();
 
       expect(find.byType(ScanHistoryPage), findsOneWidget);
 
