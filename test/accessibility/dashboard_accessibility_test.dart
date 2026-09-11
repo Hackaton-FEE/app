@@ -98,7 +98,18 @@ void main() {
           textScale: scale,
           reduceMotion: true,
         );
-        await tester.tap(find.byTooltip('Ayuda de uso'));
+        await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byKey(const Key('profile-help')),
+          160,
+          scrollable: find.descendant(
+            of: find.byType(NavigationDrawer),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('profile-help')));
         await tester.pumpAndSettle();
         for (var step = 1; step <= 5; step++) {
           final heading = find.textContaining('Paso $step de 5');
@@ -123,10 +134,21 @@ void main() {
         }
         expect(find.textContaining('Paso 5 de 5'), findsNothing);
         final help = tester.widget<IconButton>(
-          find.widgetWithIcon(IconButton, Icons.help_outline),
+          find.byKey(const Key('dashboard-profile-button')),
         );
         expect(help.focusNode!.hasFocus, isTrue);
-        await tester.tap(find.byTooltip('Ayuda de uso'));
+        await tester.tap(find.byKey(const Key('dashboard-profile-button')));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.byKey(const Key('profile-help')),
+          160,
+          scrollable: find.descendant(
+            of: find.byType(NavigationDrawer),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('profile-help')));
         await tester.pumpAndSettle();
         await reveal(tester, find.text('Salir del recorrido'));
         await tester.tap(find.text('Salir del recorrido'));

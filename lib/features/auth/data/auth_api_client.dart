@@ -4,8 +4,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../domain/auth_tokens.dart';
-import '../domain/scan_capability.dart';
-import '../domain/session_info.dart';
 import '../domain/user_profile.dart';
 import 'token_storage.dart';
 
@@ -222,23 +220,6 @@ class AuthApiClient {
       await tokenStorage.clearAll();
     }
   }
-
-  Future<List<SessionInfo>> getSessions() async => throw const AuthApiException(
-    message: 'El servidor aún no ofrece la lista de sesiones.',
-    code: 'sessions_unavailable',
-  );
-
-  Future<void> revokeSession(String sessionId) async =>
-      throw const AuthApiException(
-        message: 'El servidor aún no permite revocar otras sesiones.',
-        code: 'sessions_unavailable',
-      );
-
-  Future<List<ScanCapabilityProvider>> getScanCapabilities() async =>
-      throw const AuthApiException(
-        message: 'El servidor aún no ofrece un catálogo de motores.',
-        code: 'capabilities_unavailable',
-      );
 
   /// Realiza una petición autenticada con reintento automático si expira el token.
   Future<http.Response> _authenticatedRequest(

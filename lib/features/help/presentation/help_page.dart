@@ -31,7 +31,7 @@ class HelpPage extends StatelessWidget {
                     title: 'Explora tu huella digital',
                     body:
                         'El dashboard presenta el diagnóstico de exposición de tu identidad digital. Escanear te permite auditar un correo o alias para detectar datos públicos indexados o filtraciones.\n\n'
-                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo para conocer los datos expuestos y las acciones de mitigación recomendadas. Abre el menú lateral para consultar los casos del dispositivo o el historial de escaneos (los registros con más de 72 horas se depuran automáticamente al actualizar).',
+                        'En Lista o Mapa puedes explorar categorías y abrir cada hallazgo para conocer los datos expuestos y las acciones de mitigación recomendadas. Abre el menú lateral para consultar el historial de escaneos (los registros con más de 72 horas se depuran automáticamente al actualizar).',
                   ),
                   _HelpSection(
                     title: 'Organiza un caso a tu ritmo',

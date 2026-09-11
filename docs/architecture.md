@@ -38,8 +38,8 @@ persistidos; si la renovación falla se solicita acceso explícito. Nunca se
 registra otra cuenta como recuperación automática.
 
 No hay endpoints de contraseña, catálogo de proveedores ni administración de
-sesiones en el contrato desplegado. La UI de acceso ofrece passkeys; las vistas
-de catálogo/sesiones muestran indisponibilidad en vez de listas fabricadas.
+sesiones en el contrato desplegado. La UI de acceso ofrece passkeys; el menú lateral no incluye catálogo ni
+administración de sesiones.
 
 ## Contrato OSINT
 

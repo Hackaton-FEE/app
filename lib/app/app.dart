@@ -234,7 +234,6 @@ class _FeeAppState extends State<FeeApp> {
                     identityController: session.identity,
                     account: account,
                     onManageAccounts: _accounts.signOut,
-                    authRepository: _accounts.authRepository,
                   );
                 },
               );

@@ -10,13 +10,9 @@ class ProfileDrawer extends StatelessWidget {
     required this.identity,
     this.historyCount = 0,
     this.onViewHistory,
-    required this.caseCount,
-    required this.onViewCases,
     required this.onHelp,
     this.accountName,
     this.onManageAccounts,
-    this.onViewSessions,
-    this.onViewCapabilities,
     this.onViewIdentity,
     super.key,
   });
@@ -26,11 +22,7 @@ class ProfileDrawer extends StatelessWidget {
   final String? identity;
   final String? accountName;
   final VoidCallback? onManageAccounts;
-  final VoidCallback? onViewSessions;
-  final VoidCallback? onViewCapabilities;
   final VoidCallback? onViewIdentity;
-  final int caseCount;
-  final VoidCallback onViewCases;
   final VoidCallback onHelp;
 
   List<(String, IconData, String, VoidCallback?)> get _destinations => [
@@ -48,26 +40,6 @@ class ProfileDrawer extends StatelessWidget {
         Icons.history,
         'profile-history',
         onViewHistory,
-      ),
-    (
-      'Casos del dispositivo ($caseCount)',
-      Icons.folder_outlined,
-      'profile-cases',
-      onViewCases,
-    ),
-    if (onViewSessions != null)
-      (
-        'Sesiones activas',
-        Icons.devices_rounded,
-        'profile-sessions',
-        onViewSessions,
-      ),
-    if (onViewCapabilities != null)
-      (
-        'Catálogo de escaneo',
-        Icons.radar_rounded,
-        'profile-capabilities',
-        onViewCapabilities,
       ),
     if (onManageAccounts != null)
       (
