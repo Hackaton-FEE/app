@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../domain/footprint_item.dart';
 import '../domain/footprint_profile.dart';
 import '../domain/footprint_repository.dart';
+import '../domain/resumable_footprint_repository.dart';
 
 class FootprintController extends ChangeNotifier {
   FootprintController(this._repository, {this.onScanCompleted});
@@ -18,6 +19,8 @@ class FootprintController extends ChangeNotifier {
   bool _disposed = false;
   String? _error;
   String? _failedScanIdentity;
+  List<String> _failedAliases = const [];
+  bool _failedConsent = true;
   String? _scanningStage;
   FootprintCategory? _selectedCategory;
 
@@ -66,7 +69,11 @@ class FootprintController extends ChangeNotifier {
     if (identity == null) {
       await loadProfile();
     } else {
-      await scanIdentity(identity);
+      await scanIdentity(
+        identity,
+        associatedUsernames: _failedAliases,
+        consentSelfAudit: _failedConsent,
+      );
     }
   }
 
@@ -81,9 +88,57 @@ class FootprintController extends ChangeNotifier {
       final profile = await _repository.getProfile();
       if (_disposed) return;
       _profile = profile;
+      await _resume();
     } catch (_) {
       if (!_disposed) {
         _error = 'No se pudo cargar la información de huella digital.';
+      }
+    } finally {
+      _finishOperation();
+    }
+  }
+
+  void setForeground(bool foreground, {bool recover = true}) {
+    final repository = _repository;
+    if (repository is! ResumableFootprintRepository || _disposed) return;
+    repository.setForeground(foreground);
+    if (foreground && recover && !_isLoading) unawaited(resumePendingScan());
+  }
+
+  Future<void> _accept(FootprintProfile profile) async {
+    await onScanCompleted?.call(profile);
+    if (_disposed) return;
+    final repository = _repository;
+    final report = profile.osintReport;
+    if (repository is ResumableFootprintRepository && report != null) {
+      await repository.acknowledgeScan(report.scanId);
+    }
+    if (!_disposed) {
+      _profile = profile;
+      _failedScanIdentity = null;
+    }
+  }
+
+  Future<bool> _resume() async {
+    final repository = _repository;
+    if (repository is! ResumableFootprintRepository) return false;
+    final profile = await repository.resumePendingScan();
+    if (profile == null || _disposed) return false;
+    await _accept(profile);
+    return true;
+  }
+
+  Future<void> resumePendingScan() async {
+    if (_disposed || _isLoading) return;
+    _isLoading = true;
+    _scanningStage = 'Recuperando el análisis pendiente…';
+    _notify();
+    try {
+      final recovered = await _resume();
+      if (!_disposed && recovered) _error = null;
+    } catch (_) {
+      if (!_disposed) {
+        _error = 'No se pudo recuperar el análisis. Reintenta para continuar el mismo escaneo.';
       }
     } finally {
       _finishOperation();
@@ -122,12 +177,13 @@ class FootprintController extends ChangeNotifier {
         consentSelfAudit: consentSelfAudit,
       );
       if (_disposed) return false;
-      _profile = profile;
-      await onScanCompleted?.call(profile);
+      await _accept(profile);
       return !_disposed;
     } catch (e) {
       if (!_disposed) {
         _failedScanIdentity = identity;
+        _failedAliases = List.unmodifiable(associatedUsernames);
+        _failedConsent = consentSelfAudit;
         _error = e is FormatException
             ? e.message
             : 'Ocurrió un error al realizar el escaneo.';

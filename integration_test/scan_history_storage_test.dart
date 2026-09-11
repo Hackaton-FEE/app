@@ -1,5 +1,6 @@
 import 'package:fee_app/features/footprint/data/flutter_secure_scan_storage.dart';
 import 'package:fee_app/features/footprint/data/local_scan_history_repository.dart';
+import 'package:fee_app/features/footprint/data/pending_scan_store.dart';
 import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
 import 'package:fee_app/features/footprint/domain/scan_history_entry.dart';
 import 'package:flutter/widgets.dart';
@@ -43,6 +44,18 @@ void main() {
         ),
       );
       try {
+        PendingScanStore pending(String account) => PendingScanStore(
+          FlutterSecureScanStorage(
+            prefix: 'pending.$account.',
+            storage: native(),
+          ),
+        );
+        await pending('a')
+            .save(const PendingScan('pending-scan', 'example_alias'));
+        expect((await pending('a').load())!.id, 'pending-scan');
+        expect(await pending('b').load(), isNull);
+        await pending('a').clear();
+        expect(await pending('a').load(), isNull);
         await repository('account-a.').saveScan(entry);
         await repository('account-b.').saveScan(entry);
         expect(

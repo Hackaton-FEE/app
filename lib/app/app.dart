@@ -23,6 +23,7 @@ import '../features/footprint/data/flutter_secure_scan_storage.dart';
 import '../features/footprint/data/local_scan_history_repository.dart';
 import '../features/footprint/data/unavailable_footprint_repository.dart';
 import '../features/footprint/data/osint_client.dart';
+import '../features/footprint/data/pending_scan_store.dart';
 import '../features/footprint/domain/footprint_repository.dart';
 import '../features/footprint/domain/scan_history_repository.dart';
 import '../features/footprint/presentation/dashboard_page.dart';
@@ -128,6 +129,9 @@ class _FeeAppState extends State<FeeApp> {
             asyncTokenProvider: ({forceRefresh = false}) =>
                 backendAuth.ensureAccessToken(forceRefresh: forceRefresh),
           ),
+          pendingStore: PendingScanStore(
+            FlutterSecureScanStorage(prefix: 'fee.pending.${account.id}.v1.'),
+          ),
           targetIdentity: account.email,
           historyRepository: scanHistoryRepo,
           onProgressUpdate: (stage, _) {
@@ -142,7 +146,14 @@ class _FeeAppState extends State<FeeApp> {
 
       final footprint = FootprintController(
         footprintRepo,
-        onScanCompleted: history.recordScan,
+        onScanCompleted: (profile) async {
+          await history.recordScan(profile);
+          if (history.error != null) {
+            throw const FormatException(
+              'No se pudo guardar el análisis. Reintenta para conservarlo.',
+            );
+          }
+        },
       );
       footprintController = footprint;
 

@@ -57,7 +57,7 @@ class ScanHistoryController extends ChangeNotifier {
 
   Future<void> recordScan(FootprintProfile profile) {
     final entry = ScanHistoryEntry.fromProfile(
-      id: _idFactory(),
+      id: profile.osintReport?.scanId ?? _idFactory(),
       profile: profile,
     );
     return _run(() async {

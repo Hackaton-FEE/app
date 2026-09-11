@@ -124,3 +124,20 @@ representa un dispositivo, una ceremonia biométrica ni un recorrido TalkBack.
 Las pruebas de adaptador passkeys están en `test/auth/`; véase
 [native-passkeys.md](native-passkeys.md). Apple queda aplazado por petición del
 usuario. El build Android no acredita que un proveedor externo acepte cada consulta.
+
+## Recuperación de análisis al volver a la app
+
+`test/footprint/pending_scan_recovery_test.dart` cubre pérdida de conexión,
+recreación del repositorio, consulta del mismo ID sin otro POST, respuesta vieja
+tras suspensión, corrupción conservada y fallo de guardado sin confirmación.
+`test/footprint/scan_lifecycle_test.dart` verifica que el dashboard observe la
+pausa y solicite recuperación al volver a primer plano. Son pruebas con dobles;
+no prueban ejecución Flutter en segundo plano.
+
+La integración `scan_history_storage_test.dart` también verifica que el ID
+pendiente sobreviva a recrear el adaptador nativo y se separe por cuenta. El
+marcador solo se elimina tras guardar el resultado, o ante FAILED/EXPIRED/404.
+Para el recorrido real: iniciar una autoauditoría, esperar su aceptación,
+bloquear o cambiar de app, volver y comprobar que continúa el mismo ID. Forzar
+la detención y reabrir permite comprobar recuperación tras terminar el proceso,
+sin borrar almacenamiento ni crear otra búsqueda.

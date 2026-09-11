@@ -206,8 +206,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                     controller: _identifierController,
                     decoration: const InputDecoration(
                       labelText: 'Alias, correo o nombre principal *',
-                      helperText:
-                          'Tu alias en redes (sin espacios), correo o nombre completo.',
+                      helperText: 'Tu alias en redes (sin espacios), correo o nombre completo.',
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                     keyboardType: TextInputType.text,

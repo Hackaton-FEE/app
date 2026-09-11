@@ -130,3 +130,20 @@ La app no promete recuperación después de desinstalación ni conocimiento cero
 
 Consulta [las pruebas](testing.md) para distinguir unidad/widgets, plugin nativo,
 compilación y cierre/reapertura real del proceso.
+
+## Escaneos pendientes y ciclo de vida
+
+El ID aceptado y la identidad consultada se conservan en almacenamiento seguro
+con prefijo `fee.pending.<accountId>.v1.`, separado del historial. Al volver al
+dashboard o recrear la sesión, se consulta ese mismo ID. Las consultas GET se
+pausan al salir de primer plano y se repiten al regresar; una respuesta anterior
+a la suspensión se descarta. El análisis sigue ejecutándose en el servidor.
+
+Reintentar un pendiente no envía otro POST. El resultado se guarda en historial
+con su ID remoto como clave para evitar duplicados; después se elimina el
+marcador pendiente. Fallos de red, escritura o datos inválidos conservan el
+marcador. FAILED, EXPIRED y 404 liberan el pendiente y muestran un error.
+
+La recuperación requiere haber recibido y persistido el ID del HTTP 202. Si el
+proceso termina antes de ese punto, el contrato actual no permite descubrir el
+ID perdido: no hay listado remoto ni clave de idempotencia para crear escaneos.

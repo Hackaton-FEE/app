@@ -51,7 +51,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   final _scrollController = ScrollController();
   final _tourAnchor = GlobalKey();
   final _spotlightSurface = GlobalKey();
@@ -93,6 +94,8 @@ class _DashboardPageState extends State<DashboardPage> {
   );
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.footprintController.setForeground(false);
     _scrollController.dispose();
     _helpFocus.dispose();
     _tourFocus.dispose();
@@ -103,6 +106,8 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.footprintController.setForeground(true, recover: false);
     if (widget.footprintController.profile == null &&
         !widget.footprintController.isLoading) {
       unawaited(widget.footprintController.loadProfile());
@@ -110,6 +115,13 @@ class _DashboardPageState extends State<DashboardPage> {
     if (widget.scanHistoryController?.error == null) {
       unawaited(widget.scanHistoryController?.load());
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    widget.footprintController.setForeground(
+      state == AppLifecycleState.resumed,
+    );
   }
 
   void _openScanSheet() {

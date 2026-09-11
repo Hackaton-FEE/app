@@ -4,8 +4,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../domain/scan_target.dart';
+import 'scan_activity.dart';
 
 /// Modelo que encapsula el avance y estado de un escaneo OSINT.
+class OsintScanEndedException extends FormatException {
+  const OsintScanEndedException(super.message);
+}
+
 class OsintProgress {
   const OsintProgress({
     required this.scanId,
@@ -66,6 +71,8 @@ class OsintClient {
   final http.Client _client;
 
   String get accessToken => _tokenProvider() ?? '';
+
+  final activity = ScanActivity();
 
   static const _timeout = Duration(seconds: 45);
 
@@ -144,17 +151,7 @@ class OsintClient {
     var polls = 0;
     while (polls < maxPolls) {
       polls++;
-      var headers = await _getHeaders();
-      var response = await _client
-          .get(Uri.parse('$baseUrl/osint/scans/$scanId'), headers: headers)
-          .timeout(_timeout);
-
-      if (response.statusCode == 401 && _asyncTokenProvider != null) {
-        headers = await _getHeaders(forceRefresh: true);
-        response = await _client
-            .get(Uri.parse('$baseUrl/osint/scans/$scanId'), headers: headers)
-            .timeout(_timeout);
-      }
+      final response = await _readScan('$baseUrl/osint/scans/$scanId');
 
       if (response.statusCode == 200) {
         final data =
@@ -163,7 +160,14 @@ class OsintClient {
         yield progress;
 
         if (progress.isFailed) {
-          throw const FormatException('El escaneo falló. Puedes reintentarlo.');
+          throw const OsintScanEndedException(
+            'El escaneo falló. Puedes iniciar otro.',
+          );
+        }
+        if (progress.status == 'EXPIRED') {
+          throw const OsintScanEndedException(
+            'El escaneo ha caducado. Puedes iniciar otro.',
+          );
         }
         if (progress.isDone) return;
       } else {
@@ -177,23 +181,7 @@ class OsintClient {
 
   /// Descarga el dashboard consolidado de hallazgos para el scan_id completado.
   Future<Map<String, dynamic>> fetchResults(String scanId) async {
-    var headers = await _getHeaders();
-    var response = await _client
-        .get(
-          Uri.parse('$baseUrl/osint/scans/$scanId/results'),
-          headers: headers,
-        )
-        .timeout(_timeout);
-
-    if (response.statusCode == 401 && _asyncTokenProvider != null) {
-      headers = await _getHeaders(forceRefresh: true);
-      response = await _client
-          .get(
-            Uri.parse('$baseUrl/osint/scans/$scanId/results'),
-            headers: headers,
-          )
-          .timeout(_timeout);
-    }
+    final response = await _readScan('$baseUrl/osint/scans/$scanId/results');
 
     if (response.statusCode == 200) {
       return jsonDecode(utf8.decode(response.bodyBytes))
@@ -202,6 +190,25 @@ class OsintClient {
 
     _handleError(response);
   }
+
+  Future<http.Response> _readScan(String url) => activity.read(() async {
+    var headers = await _getHeaders();
+    var response = await _client
+        .get(Uri.parse(url), headers: headers)
+        .timeout(_timeout);
+    if (response.statusCode == 401 && _asyncTokenProvider != null) {
+      headers = await _getHeaders(forceRefresh: true);
+      response = await _client
+          .get(Uri.parse(url), headers: headers)
+          .timeout(_timeout);
+    }
+    if (response.statusCode == 404) {
+      throw const OsintScanEndedException(
+        'El escaneo ya no está disponible. Puedes iniciar otro.',
+      );
+    }
+    return response;
+  });
 
   /// Elimina los resultados del escaneo en el servidor.
   Future<void> deleteScan(String scanId) async {
@@ -229,11 +236,13 @@ class OsintClient {
 
     final message = switch (response.statusCode) {
       400 || 422 =>
-        serverDetail ?? 'Revisa el identificador y el consentimiento del escaneo.',
+        serverDetail ??
+            'Revisa el identificador y el consentimiento del escaneo.',
       401 => 'Sesión no autorizada o expirada. Vuelve a iniciar sesión.',
       403 => serverDetail ?? 'No tienes acceso a este escaneo.',
       404 => serverDetail ?? 'El escaneo ya no está disponible.',
-      409 => serverDetail ?? 'El escaneo aún no está listo. Inténtalo más tarde.',
+      409 =>
+        serverDetail ?? 'El escaneo aún no está listo. Inténtalo más tarde.',
       429 =>
         'Límite de escaneos alcanzado en el servidor. Inténtalo más tarde.',
       _ => 'No se pudo completar la consulta al servidor OSINT.',
@@ -241,4 +250,3 @@ class OsintClient {
     throw FormatException(message);
   }
 }
-

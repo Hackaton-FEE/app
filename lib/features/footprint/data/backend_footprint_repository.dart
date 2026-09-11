@@ -4,17 +4,21 @@ import '../../cases/domain/privacy_case.dart';
 import '../domain/footprint_item.dart';
 import '../domain/footprint_profile.dart';
 import '../domain/footprint_repository.dart';
+import '../domain/resumable_footprint_repository.dart';
+import 'pending_scan_store.dart';
 import '../domain/scan_history_repository.dart';
 import 'osint_client.dart';
 import 'osint_dashboard_payload.dart';
 
 /// Implementación de [FootprintRepository] conectada al motor OSINT real de FastAPI v0.2.0.
-class BackendFootprintRepository implements FootprintRepository {
+class BackendFootprintRepository
+    implements FootprintRepository, ResumableFootprintRepository {
   BackendFootprintRepository({
     required this.client,
     this.targetIdentity,
     this._historyRepository,
     this.onProgressUpdate,
+    this.pendingStore,
   });
 
   final OsintClient client;
@@ -22,7 +26,42 @@ class BackendFootprintRepository implements FootprintRepository {
   final ScanHistoryRepository? _historyRepository;
   final void Function(String stage, int percentage)? onProgressUpdate;
 
+  final PendingScanStore? pendingStore;
+  PendingScan? _pendingScan;
+  Future<FootprintProfile?>? _active;
   FootprintProfile? _currentProfile;
+  FootprintProfile? _pendingResult;
+
+  @override
+  void setForeground(bool foreground) =>
+      client.activity.setForeground(foreground);
+
+  Future<FootprintProfile?> _exclusive(
+    Future<FootprintProfile?> Function() run,
+  ) {
+    if (_active != null) return _active!;
+    final future = run();
+    _active = future;
+    return future.whenComplete(() => _active = null);
+  }
+
+  @override
+  Future<FootprintProfile?> resumePendingScan() => _exclusive(() async {
+    _pendingScan ??= await pendingStore?.load();
+    final pending = _pendingScan;
+    if (pending == null) return null;
+    await pendingStore?.save(pending);
+    return _recover(pending);
+  });
+
+  @override
+  Future<void> acknowledgeScan(String scanId) async {
+    if (_pendingScan?.id != scanId) return;
+    await pendingStore?.clear();
+    _pendingScan = null;
+    _currentProfile = _pendingResult ?? _currentProfile;
+    _pendingResult = null;
+  }
 
   @override
   Future<FootprintProfile> getProfile() async {
@@ -54,7 +93,20 @@ class BackendFootprintRepository implements FootprintRepository {
     String identity, {
     List<String> associatedUsernames = const [],
     bool consentSelfAudit = true,
-  }) async {
+  }) async => (await _exclusive(() async {
+    _pendingScan ??= await pendingStore?.load();
+    if (_pendingScan case final pending?) {
+      await pendingStore?.save(pending);
+      return _recover(pending);
+    }
+    return _startScan(identity, associatedUsernames, consentSelfAudit);
+  }))!;
+
+  Future<FootprintProfile> _startScan(
+    String identity,
+    List<String> associatedUsernames,
+    bool consentSelfAudit,
+  ) async {
     final cleanIdentity = identity.trim();
     if (cleanIdentity.isEmpty) {
       throw const FormatException(
@@ -63,7 +115,6 @@ class BackendFootprintRepository implements FootprintRepository {
     }
 
     onProgressUpdate?.call('Encolando auditoría en el motor OSINT…', 5);
-
     final isEmail = cleanIdentity.contains('@');
     final scanId = await client.startScan(
       mainIdentifier: cleanIdentity,
@@ -72,6 +123,24 @@ class BackendFootprintRepository implements FootprintRepository {
       consentSelfAudit: consentSelfAudit,
     );
 
+    if (pendingStore != null) {
+      _pendingScan = PendingScan(scanId, cleanIdentity);
+      await pendingStore!.save(_pendingScan!);
+    }
+    return _recover(PendingScan(scanId, cleanIdentity));
+  }
+
+  Future<FootprintProfile> _recover(PendingScan pending) async {
+    try {
+      return await _collect(pending.identity, pending.id);
+    } on OsintScanEndedException {
+      _pendingResult = null;
+      await acknowledgeScan(pending.id);
+      rethrow;
+    }
+  }
+
+  Future<FootprintProfile> _collect(String cleanIdentity, String scanId) async {
     onProgressUpdate?.call(
       'Consultando las fuentes disponibles para este identificador…',
       15,
@@ -87,9 +156,17 @@ class BackendFootprintRepository implements FootprintRepository {
 
     onProgressUpdate?.call('Consolidando resultados y deduplicando…', 98);
     final rawResults = await client.fetchResults(scanId);
-
+    if (rawResults['scan_id'] != scanId) {
+      throw const FormatException(
+        'El resultado no corresponde al escaneo pendiente.',
+      );
+    }
     final profile = _parseDashboardResult(cleanIdentity, rawResults);
-    _currentProfile = profile;
+    if (pendingStore == null) {
+      _currentProfile = profile;
+    } else {
+      _pendingResult = profile;
+    }
     onProgressUpdate?.call('Diagnóstico de huella completado', 100);
     return profile;
   }
