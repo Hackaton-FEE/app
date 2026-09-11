@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/palette.dart';
 import '../../domain/footprint_item.dart';
 import '../footprint_labels.dart';
+import 'osint_report_card.dart';
 import '../../domain/footprint_profile.dart';
 
 class ExposureGauge extends StatelessWidget {
@@ -130,6 +131,13 @@ class ExposureGauge extends StatelessWidget {
                 ),
               ],
             ),
+          if (profile.osintReport case final report?) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(),
+            ),
+            OsintReportCard(report: report),
+          ],
         ],
       ),
     );

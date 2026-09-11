@@ -5,7 +5,6 @@ import '../../domain/footprint_profile.dart';
 import 'finding_card.dart';
 import 'dashboard_spotlight.dart';
 import 'footprint_map.dart';
-import 'osint_report_card.dart';
 
 /// A sliver section sharing the dashboard's viewport with its overview.
 class FootprintExplorer extends StatefulWidget {
@@ -61,13 +60,6 @@ class _FootprintExplorerState extends State<FootprintExplorer> {
     }
     return SliverMainAxisGroup(
       slivers: [
-        if (widget.profile.osintReport != null)
-          SliverToBoxAdapter(
-            child: SpotlightRegion(
-              dimmed: widget.tourStep != null,
-              child: OsintReportCard(report: widget.profile.osintReport!),
-            ),
-          ),
         SliverToBoxAdapter(
           child: RepaintBoundary(
             key: widget.tourTargetKey,

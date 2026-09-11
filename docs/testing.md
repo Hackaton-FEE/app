@@ -119,6 +119,7 @@ flutter test --dart-define=FEE_CAPTURE_CORRELATION=true \
   test/footprint/osint_report_card_test.dart
 ```
 
+La captura del mapa queda en `docs/images/osint-nexus-map.png`.
 La imagen usa exclusivamente el fixture `correlated_dashboard.json`. No
 representa un dispositivo, una ceremonia biométrica ni un recorrido TalkBack.
 Las pruebas de adaptador passkeys están en `test/auth/`; véase
@@ -149,3 +150,13 @@ reabrir, la app recuperó el mismo ID; el total de escaneos del servidor no aume
 El servidor llegó a COMPLETED y el cliente guardó una sola entrada de historial.
 La consulta devolvió cero hallazgos con Blackbird degradado; esto no acredita
 cobertura de fuentes. No se ejecutó un bloqueo físico ni un recorrido TalkBack.
+
+## Mapa de nexos integrado en exposición
+
+`flutter test test/footprint/osint_report_card_test.dart test/footprint/correlation_graph_test.dart`
+verifica acceso desde el índice de exposición, selección de nodos, datos
+coincidentes, paginación de más de seis vecinos, cuentas aisladas, grafo vacío,
+cronología y regreso al dashboard. La navegación se comprueba a 390 px y a
+320 px con texto al 200 %. Las líneas representan solo aristas reales de la
+cuenta elegida, sin inferir conexiones entre sus vecinos. Estas pruebas de
+widgets no sustituyen un recorrido TalkBack/VoiceOver ni un dispositivo nativo.

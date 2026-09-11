@@ -95,8 +95,12 @@ mutaciones. Un dato opcional corrupto produce error, no pérdida silenciosa.
 
 ## Presentación de nuevos datos
 
-`OsintReportCard` muestra resultado parcial, consultas limitadas y acceso a
-conexiones y cronología. `CorrelationDetails` muestra las cuentas relacionadas,
+`ExposureGauge` integra el resultado parcial, consultas limitadas y acceso al
+mapa de nexos dentro del índice de exposición, sin otro recuadro en los hallazgos.
+`CorrelationGraph` permite seleccionar cualquier cuenta, incluidas las aisladas,
+y recorrer sus vecinos en grupos de seis. Solo dibuja relaciones recibidas del
+servidor; tocar un nodo lo selecciona y la lista explica los datos coincidentes.
+La pestaña «Cronología y datos» conserva en `CorrelationDetails` los grupos,
 campos coincidentes, grupos, fechas de registro y patrones de contacto.
 La coincidencia no acredita titularidad. Una cuenta antigua no se presenta como
 inactiva: el servidor no conoce su última actividad.
