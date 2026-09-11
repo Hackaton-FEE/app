@@ -3,7 +3,7 @@ import 'package:fee_app/features/cases/data/local_case_repository.dart';
 import 'package:fee_app/features/cases/presentation/case_form_page.dart';
 import 'package:fee_app/features/cases/presentation/cases_controller.dart';
 
-import '../support/demo_guard_ai_repository.dart';
+import '../support/guard_ai/demo_guard_ai_repository.dart';
 
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
@@ -24,7 +24,10 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final storage = FakeCaseStorage();
         final cases = CasesController(LocalCaseRepository(storage: storage));
-        final chat = GuardAiController(DemoGuardAiRepository());
+        final chat = GuardAiController(
+          DemoGuardAiRepository(),
+          createRepository: DemoGuardAiRepository.new,
+        );
         addTearDown(cases.dispose);
         addTearDown(chat.dispose);
         await cases.load();

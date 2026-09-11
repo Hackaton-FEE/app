@@ -1,6 +1,6 @@
 import 'package:fee_app/app/theme.dart';
 
-import '../support/demo_guard_ai_repository.dart';
+import '../support/guard_ai/demo_guard_ai_repository.dart';
 
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
@@ -63,14 +63,21 @@ void main() {
   testWidgets(
     'suggestions advance a conversation and free text stays editable',
     (tester) async {
-      final controller = GuardAiController(DemoGuardAiRepository());
+      final controller = GuardAiController(
+        DemoGuardAiRepository(),
+        createRepository: DemoGuardAiRepository.new,
+      );
       addTearDown(controller.dispose);
       await start(tester, controller);
+      await tester.tap(find.byTooltip('Mostrar sugerencias'));
+      await tester.pumpAndSettle();
       final first = find.text('Revisar mis datos');
       await reveal(tester, first);
       await tester.tap(first);
       await tester.pumpAndSettle();
-      expect(controller.conversation.messages, hasLength(3));
+      expect(controller.conversation.messages, hasLength(2));
+      await tester.tap(find.byTooltip('Mostrar sugerencias'));
+      await tester.pumpAndSettle();
       final second = find.text('En un buscador');
       await reveal(tester, second);
       await tester.tap(second);
@@ -95,7 +102,10 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      final controller = GuardAiController(DemoGuardAiRepository());
+      final controller = GuardAiController(
+        DemoGuardAiRepository(),
+        createRepository: DemoGuardAiRepository.new,
+      );
       addTearDown(controller.dispose);
       try {
         await start(tester, controller, size: scenario.$1, scale: scenario.$2);
@@ -109,6 +119,8 @@ void main() {
           isTrue,
         );
         await guidelines(tester);
+        await tester.tap(find.byTooltip('Mostrar sugerencias'));
+        await tester.pumpAndSettle();
         final suggestion = find.text('Revisar mis datos');
         await reveal(tester, suggestion);
         await guidelines(tester);
@@ -137,7 +149,7 @@ void main() {
         tester.view.resetViewInsets();
         await tester.pumpAndSettle();
         expect(controller.error, isNull);
-        expect(controller.conversation.messages, hasLength(3));
+        expect(controller.conversation.messages, hasLength(2));
         expect(tester.takeException(), isNull);
         await guidelines(tester);
       } finally {
@@ -149,7 +161,10 @@ void main() {
   testWidgets(
     'help and reopening the page preserve the draft and conversation',
     (tester) async {
-      final controller = GuardAiController(DemoGuardAiRepository());
+      final controller = GuardAiController(
+        DemoGuardAiRepository(),
+        createRepository: DemoGuardAiRepository.new,
+      );
       addTearDown(controller.dispose);
       await start(tester, controller, size: const Size(320, 640), scale: 2);
       await reveal(tester, find.byType(TextField));
@@ -169,7 +184,7 @@ void main() {
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'Borrador ficticio',
       );
-      expect(controller.conversation.messages, hasLength(1));
+      expect(controller.conversation.messages, isEmpty);
     },
   );
 
@@ -186,10 +201,11 @@ void main() {
       await reveal(tester, send);
       await tester.tap(send);
       await tester.pump();
-      expect(find.text('Preparando respuesta…'), findsOneWidget);
-      expect(tester.widget<FilledButton>(send).onPressed, isNull);
+      expect(find.text('Thinking…'), findsOneWidget);
+      expect(tester.widget<IconButton>(send).onPressed, isNull);
       repository.pending.completeError(Exception('No disponible'));
       await tester.pumpAndSettle();
+      expect(find.text('Thinking…'), findsNothing);
       expect(find.byKey(const Key('guard-ai-error')), findsOneWidget);
       expect(controller.conversation.messages, hasLength(1));
       expect(
@@ -197,7 +213,7 @@ void main() {
         'Texto ficticio',
       );
       expect(find.text('Respuesta de ejemplo lista.'), findsNothing);
-      expect(tester.widget<FilledButton>(send).onPressed, isNotNull);
+      expect(tester.widget<IconButton>(send).onPressed, isNotNull);
     },
   );
 }

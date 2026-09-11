@@ -162,6 +162,9 @@ class _FeeAppState extends State<FeeApp> {
         guardAi: GuardAiController(
           widget.guardAiRepositoryFactory?.call(account) ??
               const UnavailableGuardAiRepository(),
+          createRepository: () =>
+              widget.guardAiRepositoryFactory?.call(account) ??
+              const UnavailableGuardAiRepository(),
         ),
         scanHistory: history,
         identity: identity,

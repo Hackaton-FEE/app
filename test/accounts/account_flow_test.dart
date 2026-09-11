@@ -205,7 +205,9 @@ void main() {
     await tester.ensureVisible(input);
     await tester.enterText(input, draft);
 
-    await tester.tap(find.byType(BackButtonIcon));
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Regresar al inicio'));
     await tester.pumpAndSettle();
     await returnToPicker(tester);
     await select(tester, _second);
@@ -215,7 +217,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<TextField>(input).controller!.text, isEmpty);
 
-    await tester.tap(find.byType(BackButtonIcon));
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Regresar al inicio'));
     await tester.pumpAndSettle();
     await returnToPicker(tester);
     await select(tester, _first);

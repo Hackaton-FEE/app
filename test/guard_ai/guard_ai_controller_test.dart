@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:fee_app/features/footprint/domain/footprint_item.dart';
 import 'package:fee_app/features/footprint/domain/footprint_profile.dart';
 
-import '../support/demo_guard_ai_repository.dart';
+import '../support/guard_ai/demo_guard_ai_repository.dart';
 
 import 'package:fee_app/features/guard_ai/domain/guard_ai_repository.dart';
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart';
@@ -27,6 +27,32 @@ void main() {
       expect(restarted.suggestions, contains('Quiero preparar un reporte'));
     },
   );
+  test('actions require context and do not repeat on later turns', () async {
+    final repository = DemoGuardAiRepository();
+    var reply = await repository.reply(GuardAiInput('Revisar mis datos'));
+    expect(reply.messages.last.recommendedAction, isNull);
+    for (final text in [
+      'Hola',
+      'Aún no lo sé',
+      'No quiero revisar un buscador',
+    ]) {
+      reply = await repository.reply(GuardAiInput(text));
+      expect(reply.messages.last.recommendedAction, isNull);
+    }
+    reply = await repository.reply(GuardAiInput('En un buscador'));
+    expect(reply.messages.last.recommendedAction, isNull);
+    reply = await repository.reply(GuardAiInput('Quiero retirar mis datos'));
+    expect(reply.messages.last.recommendedAction, contains('retiro'));
+    for (final text in ['Gracias', 'Preparar una lista', 'Otra pregunta']) {
+      reply = await repository.reply(GuardAiInput(text));
+      expect(reply.messages.last.recommendedAction, isNull);
+    }
+    expect(reply.messages.where((m) => m.recommendedAction != null).length, 1);
+    reply = await repository.reply(GuardAiInput('Quiero preparar un reporte'));
+    expect(reply.canPrepareReport, isTrue);
+    expect(reply.messages.last.recommendedAction, isNull);
+  });
+
   test('demo follows answers and keeps prior turns', () async {
     final repository = DemoGuardAiRepository();
     final initial = await repository.loadConversation();
@@ -36,28 +62,31 @@ void main() {
     expect(second.messages.last.text, contains('página que lo publica'));
     final third = await repository.reply(GuardAiInput('Preparar una lista'));
     expect(third.messages.last.text, contains('Tu lista de revisión'));
-    expect(third.messages, hasLength(7));
-    expect(initial.messages, hasLength(1));
-    expect(first.messages, hasLength(3));
+    expect(third.messages, hasLength(6));
+    expect(initial.messages, isEmpty);
+    expect(first.messages, hasLength(2));
     expect(() => third.messages.clear(), throwsUnsupportedError);
     expect(() => third.suggestions.clear(), throwsUnsupportedError);
     expect(await repository.loadConversation(), same(third));
   });
 
-  test('different profile answers guide the next reply', () async {
-    final repository = DemoGuardAiRepository();
-    await repository.reply(GuardAiInput('Revisar un perfil'));
-    final answer = await repository.reply(
-      GuardAiInput('No reconozco el perfil'),
-    );
-    expect(answer.messages.last.text, contains('no puede confirmar'));
-    final restarted = await repository.reply(GuardAiInput('Empezar otro tema'));
-    expect(restarted.suggestions, contains('Organizar próximos pasos'));
-    final nextTopic = await repository.reply(
-      GuardAiInput('Organizar próximos pasos'),
-    );
-    expect(nextTopic.messages.last.text, contains('lista breve'));
-  });
+  test(
+    'profile review requests a username and allows changing topic',
+    () async {
+      final repository = DemoGuardAiRepository();
+      final answer = await repository.reply(GuardAiInput('Revisar mi perfil'));
+      expect(answer.messages.last.text, contains('ingresa el usuario'));
+      expect(answer.messages.last.profileReport, isNull);
+      final restarted = await repository.reply(
+        GuardAiInput('Empezar otro tema'),
+      );
+      expect(restarted.suggestions, contains('Organizar próximos pasos'));
+      final nextTopic = await repository.reply(
+        GuardAiInput('Organizar próximos pasos'),
+      );
+      expect(nextTopic.messages.last.text, contains('lista breve'));
+    },
+  );
 
   test(
     'unrecognized queries guide user to privacy topics and allow recovery',

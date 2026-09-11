@@ -6,6 +6,7 @@ import 'package:fee_app/features/guard_ai/presentation/guard_ai_controller.dart'
 import 'package:fee_app/features/guard_ai/presentation/guard_ai_page.dart';
 import 'package:fee_app/features/guard_ai/presentation/widgets/guard_ai_history.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -87,7 +88,8 @@ void main() {
         await tester.tap(send);
         await tester.pump();
 
-        expect(tester.widget<FilledButton>(send).onPressed, isNull);
+        expect(tester.widget<IconButton>(send).onPressed, isNull);
+        expect(find.text('Thinking…'), findsOneWidget);
         expect(
           tester
               .widget<IconButton>(
@@ -109,7 +111,12 @@ void main() {
         expect(controller.conversation.messages, hasLength(161));
         expect(controller.draft, 'Texto de prueba');
         expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
-        expect(_viewport(tester).overlaps(tester.getRect(field)), isTrue);
+        expect(
+          tester
+              .getRect(find.byKey(const Key('guard-ai-composer-scroll')))
+              .overlaps(tester.getRect(field)),
+          isTrue,
+        );
         expect(
           find.byKey(const Key('guard-ai-error'), skipOffstage: false),
           findsOneWidget,
@@ -130,15 +137,65 @@ void main() {
         );
         expect(controller.conversation.messages, hasLength(163));
         expect(controller.error, isNull);
+        expect(find.text('Thinking…'), findsNothing);
         expect(controller.draft, isEmpty);
         expect(tester.widget<TextField>(field).focusNode!.hasFocus, isFalse);
         expect(latest, findsOneWidget);
         final replyBounds = tester.getRect(latest);
         expect(replyBounds.top, greaterThanOrEqualTo(_viewport(tester).top));
-        expect(replyBounds.bottom, lessThanOrEqualTo(_viewport(tester).bottom));
+        if (replyBounds.height <= _viewport(tester).height) {
+          expect(
+            replyBounds.bottom,
+            lessThanOrEqualTo(_viewport(tester).bottom),
+          );
+        } else {
+          expect(_viewport(tester).overlaps(replyBounds), isTrue);
+        }
         expect(tester.takeException(), isNull);
       },
     );
+  }
+
+  for (final useWheel in [false, true]) {
+    testWidgets('manual scroll stays free after a reply (wheel: $useWheel)', (
+      tester,
+    ) async {
+      final repository = _LongHistoryRepository();
+      final controller = GuardAiController(repository);
+      addTearDown(controller.dispose);
+      await _start(tester, controller);
+      await tester.enterText(find.byType(TextField), 'Continuar');
+      await tester.tap(find.byKey(const Key('guard-ai-send')));
+      await tester.pump();
+      repository.completeReply();
+      await tester.pumpAndSettle();
+      final viewport = find.byKey(const Key('guard-ai-scroll'));
+      final scrollable = find
+          .descendant(of: viewport, matching: find.byType(Scrollable))
+          .first;
+      final position = tester.state<ScrollableState>(scrollable).position;
+      final latestOffset = position.pixels;
+      for (var i = 0; i < 3; i++) {
+        if (useWheel) {
+          await tester.sendEventToBinding(
+            PointerScrollEvent(
+              position: tester.getCenter(viewport),
+              scrollDelta: const Offset(0, -400),
+              kind: PointerDeviceKind.mouse,
+            ),
+          );
+        } else {
+          await tester.drag(viewport, const Offset(0, 400));
+        }
+        await tester.pumpAndSettle();
+      }
+      expect(position.pixels, lessThan(latestOffset - 300));
+      // A viewport change must not pull someone reading older turns to the end.
+      tester.view.physicalSize = const Size(390, 814);
+      await tester.pumpAndSettle();
+      expect(position.pixels, lessThan(latestOffset - 300));
+      expect(tester.takeException(), isNull);
+    });
   }
 
   testWidgets(

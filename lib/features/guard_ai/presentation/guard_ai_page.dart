@@ -1,24 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../shared/presentation/status_notice.dart';
 import '../domain/guard_ai_repository.dart';
+import '../domain/guard_ai_action_executor.dart';
 import 'guard_ai_controller.dart';
 import 'widgets/guard_ai_history.dart';
 import '../../cases/presentation/cases_controller.dart';
-import 'widgets/report_prompt.dart';
+import 'widgets/guard_ai_composer.dart';
+import 'widgets/guard_ai_drawer.dart';
+import 'widgets/guard_ai_welcome.dart';
 
 class GuardAiPage extends StatefulWidget {
   const GuardAiPage({
     required this.controller,
     this.casesController,
+    this.createActionExecutor,
     super.key,
   });
 
   final GuardAiController controller;
   final CasesController? casesController;
+  final GuardAiActionExecutor Function()? createActionExecutor;
 
   @override
   State<GuardAiPage> createState() => _GuardAiPageState();
@@ -31,6 +35,9 @@ class _GuardAiPageState extends State<GuardAiPage> {
   final _latestReplyKey = GlobalKey();
   late GuardAiConversation _conversation;
   late Widget _history;
+  int? _chatId;
+  bool _followReply = false;
+  final _decisions = <GuardAiMessage, String>{};
 
   @override
   void initState() {
@@ -58,9 +65,17 @@ class _GuardAiPageState extends State<GuardAiPage> {
   }
 
   void _updateHistory() {
+    if (_chatId != widget.controller.chatId) {
+      _followReply = false;
+      _chatId = widget.controller.chatId;
+      _text.text = widget.controller.draft;
+    }
     _conversation = widget.controller.conversation;
     _history = GuardAiHistory(
+      key: ValueKey(widget.controller.chatId),
       messages: _conversation.messages,
+      decisions: _decisions,
+      createActionExecutor: widget.createActionExecutor,
       latestReplyKey: _latestReplyKey,
     );
   }
@@ -78,11 +93,12 @@ class _GuardAiPageState extends State<GuardAiPage> {
     final succeeded = await widget.controller.sendDraft();
     if (!mounted) return;
     if (succeeded) {
+      _followReply = true;
       _text.clear();
       _inputFocus.unfocus();
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || (succeeded && !_followReply)) return;
       if (!succeeded) _inputFocus.requestFocus();
       final target = succeeded
           ? _latestReplyKey.currentContext
@@ -110,9 +126,12 @@ class _GuardAiPageState extends State<GuardAiPage> {
         title: const Text('Cómo usar GuardAI'),
         scrollable: true,
         content: const Text(
-          'El servicio de conversación GuardAI aún no está disponible. '
-          'Mientras tanto, revisa los hallazgos de tu escaneo en el panel '
-          'y abre un caso local si deseas darles seguimiento.',
+          'Elige una sugerencia o escribe un mensaje para avanzar paso a paso. '
+          'GuardAI te guía en la evaluación de tu privacidad y opciones de protección.\n\n'
+          'Puedes abrir un formulario para registrar un caso local cuando decidas dar seguimiento a un hallazgo. '
+          'Evita escribir contraseñas o datos sensibles.\n\n'
+          'La conversación y lo que estés escribiendo se conservan al volver '
+          'al inicio durante esta sesión de la app.',
         ),
         actions: [
           TextButton(
@@ -134,14 +153,25 @@ class _GuardAiPageState extends State<GuardAiPage> {
       return PopScope(
         canPop: !controller.isSending,
         child: Scaffold(
+          drawer: GuardAiDrawer(
+            controller: controller,
+            onHome: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).maybePop();
+            },
+          ),
           appBar: AppBar(
-            title: const Text('GuardAI'),
-            leading: IconButton(
-              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-              icon: const BackButtonIcon(),
-              onPressed: controller.isSending
-                  ? null
-                  : () => Navigator.of(context).maybePop(),
+            title: const Row(
+              children: [
+                Icon(Icons.shield_outlined, size: 22),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'GuardAI',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
             actions: [
               IconButton(
@@ -151,27 +181,87 @@ class _GuardAiPageState extends State<GuardAiPage> {
               ),
             ],
           ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight:
+                      (MediaQuery.sizeOf(context).height -
+                          MediaQuery.viewInsetsOf(context).bottom -
+                          kToolbarHeight -
+                          MediaQuery.paddingOf(context).vertical) *
+                      .55,
+                ),
+                child: Material(
+                  color: Theme.of(context).colorScheme.surface,
+                  child: SingleChildScrollView(
+                    key: const Key('guard-ai-composer-scroll'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: GuardAiComposer(
+                          key: ValueKey((controller, controller.chatId)),
+                          controller: controller,
+                          casesController: widget.casesController,
+                          text: _text,
+                          inputFocus: _inputFocus,
+                          inputKey: _inputKey,
+                          onSend: _send,
+                          onSuggestion: _selectSuggestion,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           body: SafeArea(
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 760),
-                child: CustomScrollView(
-                  key: const Key('guard-ai-scroll'),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  slivers: [
-                    SliverPadding(
-                      padding: const EdgeInsets.all(20),
-                      sliver: SliverMainAxisGroup(
-                        slivers: [
-                          SliverToBoxAdapter(child: _buildHeader(context)),
-                          history!,
-                          SliverToBoxAdapter(child: _buildComposer()),
-                        ],
-                      ),
+                child: Listener(
+                  // Manual navigation takes priority over following new replies.
+                  onPointerDown: (_) => _followReply = false,
+                  onPointerSignal: (_) => _followReply = false,
+                  onPointerPanZoomStart: (_) => _followReply = false,
+                  child: NotificationListener<ScrollMetricsNotification>(
+                    onNotification: (_) {
+                      if (_followReply) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          final target = _latestReplyKey.currentContext;
+                          if (mounted && _followReply && target != null) {
+                            unawaited(Scrollable.ensureVisible(target));
+                          }
+                        });
+                      }
+                      return false;
+                    },
+                    child: CustomScrollView(
+                      key: const Key('guard-ai-scroll'),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.all(20),
+                          sliver: SliverMainAxisGroup(
+                            slivers: [
+                              SliverToBoxAdapter(child: _buildHeader(context)),
+                              history!,
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -181,124 +271,15 @@ class _GuardAiPageState extends State<GuardAiPage> {
     },
   );
 
-  Widget _buildHeader(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Semantics(
-          header: true,
-          child: Text(
-            'Tu privacidad, paso a paso',
-            style: Theme.of(context).textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-        const SizedBox(height: 12),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colors.secondaryContainer,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              'El servicio de conversación estará disponible cuando se conecte '
-              'GuardAI al servidor. No se generan respuestas locales.',
-              style: TextStyle(color: colors.onSecondaryContainer),
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        if (widget.controller.isLoading)
-          const StatusNotice(message: 'Abriendo GuardAI…'),
-      ],
-    );
-  }
-
-  Widget _buildComposer() {
-    final controller = widget.controller;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (controller.error != null) ...[
-          StatusNotice(
-            key: const Key('guard-ai-error'),
-            message: controller.error!,
-            isError: true,
-          ),
-          const SizedBox(height: 12),
-        ] else if (controller.status != null) ...[
-          StatusNotice(message: controller.status!),
-          const SizedBox(height: 12),
-        ],
-        if (!controller.isReady &&
-            !controller.isLoading &&
-            !controller.isUnavailable)
-          OutlinedButton.icon(
-            onPressed: controller.load,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Volver a abrir el chat'),
-          ),
-        if (controller.isReady) ...[
-          if (controller.conversation.canPrepareReport &&
-              widget.casesController != null)
-            ReportPrompt(
-              controller: widget.casesController!,
-              enabled: !controller.isSending,
-            ),
-          for (final suggestion
-              in controller.draft.isEmpty
-                  ? controller.conversation.suggestions
-                  : const <String>[])
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: OutlinedButton(
-                onPressed: controller.isSending
-                    ? null
-                    : () => _selectSuggestion(suggestion),
-                child: Text(suggestion),
-              ),
-            ),
-          const SizedBox(height: 16),
-          Semantics(
-            isRequired: true,
-            child: TextField(
-              key: _inputKey,
-              controller: _text,
-              focusNode: _inputFocus,
-              enabled: !controller.isSending,
-              onChanged: controller.setDraft,
-              minLines: 2,
-              maxLines: 5,
-              maxLength: GuardAiInput.maxLength,
-              maxLengthEnforcement: MaxLengthEnforcement.none,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: 'Mensaje para GuardAI',
-                errorText: controller.error,
-                errorMaxLines: 8,
-                helperText:
-                    'El mensaje es obligatorio para continuar. '
-                    'Evita datos sensibles.',
-                helperMaxLines: 6,
-                alignLabelWithHint: true,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            key: const Key('guard-ai-send'),
-            onPressed: controller.isSending ? null : _send,
-            icon: Icon(
-              controller.isSending ? Icons.hourglass_top : Icons.arrow_upward,
-            ),
-            label: Text(
-              controller.isSending ? 'Preparando respuesta…' : 'Enviar mensaje',
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  Widget _buildHeader(BuildContext context) => Column(
+    children: [
+      GuardAiWelcome(
+        showIntro:
+            !widget.controller.isSending &&
+            widget.controller.conversation.messages.isEmpty,
+      ),
+      if (widget.controller.isLoading)
+        const StatusNotice(message: 'Abriendo GuardAI…'),
+    ],
+  );
 }

@@ -215,7 +215,9 @@ void main() {
     await tester.tap(find.byKey(const Key('dashboard-guardai-fab')));
     await tester.pumpAndSettle();
     expect(find.byType(GuardAiPage), findsOneWidget);
-    await tester.tap(find.byType(BackButtonIcon));
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Regresar al inicio'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Paso 4 de 5'), findsOneWidget);
     await tester.ensureVisible(find.text('Siguiente'));
@@ -242,8 +244,10 @@ void main() {
     expect(find.byType(GuardAiPage), findsOneWidget);
     expect(find.byType(CaseFormPage), findsNothing);
 
-    // Back button pops back to Dashboard
-    await tester.tap(find.byType(BackButtonIcon));
+    // Drawer home action returns to Dashboard.
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Regresar al inicio'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('dashboard-scan-fab')), findsOneWidget);

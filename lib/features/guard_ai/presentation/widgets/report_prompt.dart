@@ -107,7 +107,8 @@ class AiReportFrame extends StatelessWidget {
                     AppPalette.deepOlive,
                     AppPalette.olive,
                     AppPalette.warmKhaki,
-                    AppPalette.deepOlive,
+                    AppPalette.sandGold,
+                    AppPalette.paleCream,
                   ],
           ),
           boxShadow: highContrast

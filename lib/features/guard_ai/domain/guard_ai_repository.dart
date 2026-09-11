@@ -1,12 +1,25 @@
 import 'package:characters/characters.dart';
 
+import 'guard_ai_profile_report.dart';
+
 enum GuardAiRole { person, assistant }
 
+class GuardAiUnavailable implements Exception {
+  const GuardAiUnavailable();
+}
+
 class GuardAiMessage {
-  const GuardAiMessage({required this.role, required this.text});
+  const GuardAiMessage({
+    required this.role,
+    required this.text,
+    this.recommendedAction,
+    this.profileReport,
+  });
 
   final GuardAiRole role;
   final String text;
+  final String? recommendedAction;
+  final GuardAiProfileReport? profileReport;
 }
 
 class GuardAiConversation {
@@ -39,9 +52,4 @@ abstract interface class GuardAiRepository {
   Future<GuardAiConversation> loadConversation();
 
   Future<GuardAiConversation> reply(GuardAiInput input);
-}
-
-/// The deployed API does not currently expose a GuardAI conversation service.
-class GuardAiUnavailableException implements Exception {
-  const GuardAiUnavailableException();
 }

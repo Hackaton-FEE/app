@@ -15,7 +15,7 @@ en producción. Los dobles y datos ficticios se encuentran exclusivamente en tes
 | `features/footprint/domain/` | Modelos inmutables de hallazgos, informe OSINT, correlación e historial. |
 | `features/footprint/data/` | Cliente HTTP, mapeo del dashboard y persistencia local del historial. |
 | `features/footprint/presentation/` | ChangeNotifier, dashboard, conexiones, cronología e historial. |
-| `features/guard_ai/` | Estado de servicio no disponible hasta que exista un contrato de chat. |
+| `features/guard_ai/` | Interfaz de chat, conversaciones de sesión y adaptadores reemplazables; servicio no conectado. |
 | `features/cases/` | Casos locales del dispositivo; sin sincronización ni envío externo. |
 
 Se conserva ChangeNotifier, modelos inmutables y repositorios asíncronos como
@@ -112,9 +112,25 @@ permiten reintentar, sin completar el onboarding por un guardado fallido.
 
 ## GuardAI y casos
 
-El servidor actual no ofrece chat. `UnavailableGuardAiRepository` comunica
-esa ausencia; la pantalla no recibe mensajes ni muestra respuestas prefabricadas.
-El contrato del repositorio permite integrar un servicio posterior por inyección.
+GuardAI incorpora los componentes de `front` (`cc10c47`): bienvenida, drawer,
+conversaciones y borradores durante la sesión, ayuda, informes y diálogos de
+acciones. `FeeApp.guardAiRepositoryFactory` crea un repositorio independiente
+por cuenta y por conversación. El adaptador de producción sigue siendo
+`UnavailableGuardAiRepository`: conserva el borrador y avisa que el mensaje no
+se ha enviado. Los ejemplos y ejecutores simulados viven solo en `test/support`.
+`GuardAiActionExecutor` permite integrar ejecución y progreso; su implementación
+por defecto falla sin confirmar éxito. Posponer no programa notificaciones.
+
+La inspección del backend desplegado `d92af3e` en `oracle-fee` el 11 de septiembre
+de 2026 confirmó `POST /api/v1/assistant/chat`, autenticado y limitado a 15/minuto.
+Recibe `messages` con `role` (`user` o `assistant`) y `content`; responde SSE con
+`token` (`content`), `error` (`detail`) y `done`. El servidor antepone su prompt
+fijo y no persiste conversaciones. En producción está `assistant_mode=disabled`
+y no hay clave del proveedor configurada. Este cliente todavía no consume ese
+endpoint. Habilitarlo requiere configurar el proveedor y verificar el adaptador,
+el streaming completo, renovación de sesión y errores sin falso envío exitoso.
+El contrato inspeccionado no incluye ejecución de acciones ni informes
+estructurados. No se inventan esas capacidades en el cliente.
 
 Los casos conservan título, URL, categoría, notas, estado y fechas. Siguen
 siendo casos del dispositivo compartidos entre sesiones, sin asignarles propiedad
