@@ -1,6 +1,7 @@
 # Candidato Android para la demo · 11 de septiembre de 2026
 
-Rama: `codex/demo-guardai-integration`.
+Rama de entrega: `codex/demo-final-all-engines` (PR #8).
+Integración aislada: `codex/all-osint-engines`.
 
 ## Procedencia y alcance
 
@@ -41,9 +42,9 @@ Flutter 3.47.2 / Dart 3.13.2, Linux, Android debug:
 
 - `flutter pub get --enforce-lockfile`: correcto.
 - Formato de `lib test integration_test tool`: correcto.
-- `dart run tool/check_source_size.dart`: 111 archivos; máximo 350 líneas.
+- `dart run tool/check_source_size.dart`: 112 archivos; máximo 329 líneas.
 - `flutter analyze`: sin incidencias.
-- `flutter test`: 360 pasan, una prueba de red opt-in omitida.
+- `flutter test`: 361 pasan, una prueba de red opt-in omitida.
 - Capturas GuardAI: cinco pruebas pasan, incluidas anchura 320 y texto al 200 %.
 - `flutter build apk --debug`: correcto.
 - `adb install -r`: correcto en el Pixel conectado, sin borrar almacenamiento.
@@ -72,3 +73,31 @@ no impidió compilar y no se actualizaron dependencias antes de la demo.
 Usar este PR como candidato consolidado. Incluye los cambios de icono del PR #7;
 no requiere integrar front completa. Antes de fusionar, aplicar la revisión
 cruzada y los checks del repositorio. Las ramas originales se conservan.
+
+
+## Auditorías con entradas para todos los motores
+
+El formulario exige correo propio, de uno a diez alias y teléfono internacional.
+Se precompletan datos del perfil; los nuevos valores se guardan antes de iniciar.
+Una sola solicitud envía teléfono como objetivo principal, correo y alias como
+identificadores asociados. Ese contrato ya está desplegado y alimenta Blackbird,
+Maigret, Holehe e Ignorant sin modificar el backend. Los identificadores se
+conservan en reintentos y renovación de token; no se infieren datos faltantes.
+Los pendientes anteriores se recuperan sin volver a crearlos.
+
+La validación por SSH ejecutó únicamente ScanRequest, ScanService._validate y
+ScanService._engine_request con datos ficticios: el esquema se aceptó y entregó
+correo, teléfono y alias al motor. No se lanzó una nueva consulta externa.
+Las pruebas HTTP cubren el cuerpo completo después de 401/renovación y después
+de un fallo/reintento. Las pruebas de UI cubren campos obligatorios, foco,
+conservación ante fallo de escritura, cancelación de salida y 320 px/texto 200 %.
+[Captura de prueba](images/scan-all-engines.png), con identificadores ficticios.
+No se garantiza respuesta de cada fuente: los motores pueden fallar o limitarse.
+
+Se integra también el menú simplificado del commit d9b9749 de la otra tarea,
+con sus cambios de ayuda y pruebas. Las ramas originales se conservan; los
+cambios duplicados que quedaron en la carpeta compartida se respaldaron en un
+stash identificado antes de abrir la rama final. No se reescribió ninguna rama.
+
+APK actualizado: `/home/peterpad/Hackaton-FEE/demo-artifacts/osisnt-demo-all-engines.apk`.
+Respaldo anterior: `osisnt-demo-before-all-engines.apk` en el mismo directorio.
