@@ -195,7 +195,8 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                             )
                           : const Icon(Icons.shield_rounded),
                       label: Text(
-                        widget.isInitialOnboarding
+                        (widget.isInitialOnboarding ||
+                                widget.footprintController != null)
                             ? 'Guardar e Iniciar Auditoría'
                             : 'Guardar Cambios',
                       ),

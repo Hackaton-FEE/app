@@ -101,3 +101,8 @@ stash identificado antes de abrir la rama final. No se reescribió ninguna rama.
 
 APK actualizado: `/home/peterpad/Hackaton-FEE/demo-artifacts/osisnt-demo-all-engines.apk`.
 Respaldo anterior: `osisnt-demo-before-all-engines.apk` en el mismo directorio.
+
+La nueva compilación se instaló con `adb install -r` en el Pixel. Se verificó
+la apertura de «Identidad a proteger» con los alias existentes conservados y
+los campos de correo/teléfono pendientes de completar. No se introdujeron
+identificadores ficticios en una consulta real ni se inició otra auditoría.
