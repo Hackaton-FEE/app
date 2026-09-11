@@ -48,9 +48,9 @@ void main() {
         client: AssistantClient(
           httpClient: MockClient.streaming((request, bodyStream) async {
             callCount++;
-            final body =
-                jsonDecode(await bodyStream.bytesToString())
-                    as Map<String, dynamic>;
+            final body = jsonDecode(
+              await bodyStream.bytesToString(),
+            ) as Map<String, dynamic>;
             seenRequests.add(body['messages'] as List<dynamic>);
             return http.StreamedResponse(
               Stream.value(

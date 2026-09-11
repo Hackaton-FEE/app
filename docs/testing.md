@@ -160,3 +160,17 @@ cronología y regreso al dashboard. La navegación se comprueba a 390 px y a
 320 px con texto al 200 %. Las líneas representan solo aristas reales de la
 cuenta elegida, sin inferir conexiones entre sus vecinos. Estas pruebas de
 widgets no sustituyen un recorrido TalkBack/VoiceOver ni un dispositivo nativo.
+
+
+## GuardAI con el informe del dashboard
+
+Abre GuardAI y usa el botón de rayo a la izquierda de enviar. Las opciones
+Revisar mi perfil, Ayúdame con una recomendación y Preparar un plan de privacidad
+envían un atajo conservando el borrador. El repositorio añade el informe visible
+a cada petición SSE y actualiza ese contexto si cambia el informe.
+
+`flutter test test/guard_ai/guard_ai_report_context_test.dart` verifica los
+datos enviados, cambio de informe entre turnos, ausencia de informe sin
+hallazgos inventados, borrador conservado y contexto bajo el límite del servidor.
+Las suites de widgets siguen cubriendo navegación y texto ampliado.
+No prueba disponibilidad del proveedor, TalkBack ni VoiceOver.

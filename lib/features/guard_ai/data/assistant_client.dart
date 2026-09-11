@@ -18,7 +18,9 @@ class AssistantChatRejected implements Exception {
   final String message;
 }
 
-typedef AssistantAsyncTokenProvider = Future<String?> Function({bool forceRefresh});
+typedef AssistantAsyncTokenProvider = Future<String?> Function({
+  bool forceRefresh,
+});
 
 /// Cliente HTTP para `POST /api/v1/assistant/chat`: reenvía el historial de
 /// la conversación en cada petición (el servidor no persiste nada) y
@@ -27,10 +29,9 @@ class AssistantClient {
   AssistantClient({
     this.baseUrl = 'https://backosisnt.ici-labs.com/api/v1',
     String? Function()? tokenProvider,
-    AssistantAsyncTokenProvider? asyncTokenProvider,
+    this._asyncTokenProvider,
     http.Client? httpClient,
   }) : _tokenProvider = tokenProvider ?? (() => null),
-       _asyncTokenProvider = asyncTokenProvider,
        _client = httpClient ?? http.Client();
 
   final String baseUrl;
@@ -75,10 +76,9 @@ class AssistantClient {
     List<Map<String, String>> messages,
     Map<String, String> headers,
   ) {
-    final request =
-        http.Request('POST', Uri.parse('$baseUrl/assistant/chat'))
-          ..headers.addAll(headers)
-          ..body = jsonEncode({'messages': messages});
+    final request = http.Request('POST', Uri.parse('$baseUrl/assistant/chat'))
+      ..headers.addAll(headers)
+      ..body = jsonEncode({'messages': messages});
     return _client.send(request).timeout(_connectTimeout);
   }
 

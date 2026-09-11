@@ -8,6 +8,7 @@ import '../../domain/guard_ai_repository.dart';
 import '../guard_ai_controller.dart';
 import 'report_prompt.dart';
 import 'guard_ai_thinking.dart';
+import 'guard_ai_quick_actions.dart';
 
 class GuardAiComposer extends StatefulWidget {
   const GuardAiComposer({
@@ -17,6 +18,7 @@ class GuardAiComposer extends StatefulWidget {
     required this.inputKey,
     required this.onSend,
     required this.onSuggestion,
+    required this.onQuickAction,
     this.casesController,
     super.key,
   });
@@ -27,6 +29,7 @@ class GuardAiComposer extends StatefulWidget {
   final GlobalKey inputKey;
   final VoidCallback onSend;
   final ValueChanged<String> onSuggestion;
+  final ValueChanged<String> onQuickAction;
 
   @override
   State<GuardAiComposer> createState() => _GuardAiComposerState();
@@ -67,6 +70,19 @@ class _GuardAiComposerState extends State<GuardAiComposer> {
             ReportPrompt(
               controller: widget.casesController!,
               enabled: !controller.isSending,
+            ),
+          if (controller.conversation.suggestions.isNotEmpty)
+            IconButton(
+              tooltip: _suggestionsVisible
+                  ? 'Ocultar sugerencias'
+                  : 'Mostrar sugerencias',
+              isSelected: _suggestionsVisible,
+              onPressed: controller.isSending
+                  ? null
+                  : () => setState(
+                      () => _suggestionsVisible = !_suggestionsVisible,
+                    ),
+              icon: const Icon(Icons.help_outline, size: 22),
             ),
           if (_suggestionsVisible)
             SingleChildScrollView(
@@ -159,23 +175,14 @@ class _GuardAiComposerState extends State<GuardAiComposer> {
                       ),
                     ),
                   ),
-                  if (controller.conversation.suggestions.isNotEmpty)
-                    IconButton(
-                      tooltip: _suggestionsVisible
-                          ? 'Ocultar sugerencias'
-                          : 'Mostrar sugerencias',
-                      isSelected: _suggestionsVisible,
-                      onPressed: controller.isSending
-                          ? null
-                          : () => setState(
-                              () => _suggestionsVisible = !_suggestionsVisible,
-                            ),
-                      icon: const Icon(Icons.help_outline, size: 22),
-                    ),
+                  GuardAiQuickActions(
+                    enabled: !controller.isSending,
+                    onSelected: widget.onQuickAction,
+                  ),
                   IconButton.filled(
                     key: const Key('guard-ai-send'),
                     tooltip: controller.isSending
-                        ? 'Thinking…'
+                        ? 'Preparando respuesta…'
                         : 'Enviar mensaje',
                     onPressed: controller.isSending ? null : _send,
                     icon: Icon(

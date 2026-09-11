@@ -208,7 +208,7 @@ void main() {
     expect(controller.draft, 'Revisar mis datos');
     expect(find.text('Revisar mi perfil'), findsOneWidget);
     final send = find.byKey(const Key('guard-ai-send'));
-    final help = find.byTooltip('Ocultar sugerencias');
+    final help = find.byTooltip('Acciones rápidas');
     expect(tester.getCenter(help).dx, greaterThan(tester.getCenter(field).dx));
     expect(tester.getCenter(send).dx, greaterThan(tester.getCenter(help).dx));
     expect(tester.getCenter(send).dy, tester.getCenter(help).dy);
