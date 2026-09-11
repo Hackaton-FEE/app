@@ -53,8 +53,10 @@ Se inspeccionaron máscaras circular y redondeada del lanzador. El componente
 `AppLogo`, sus pruebas y la declaración de assets de Flutter se conservan
 exactamente como estaban antes de este cambio.
 
-La actualización por `adb install -r` al Pixel 10 Pro XL fue rechazada con
-`INSTALL_FAILED_UPDATE_INCOMPATIBLE`: la instalación previa tiene otra firma.
-No se desinstaló la app ni se borraron datos. La inspección en ese dispositivo
-queda pendiente de compilar con la firma original. No se verificaron iOS ni
+El APK se firmó con la clave debug local y se verificó con `apksigner`. Se
+instaló correctamente en el Pixel 10 Pro XL, Android 17, después de que la
+persona usuaria eliminara la versión anterior firmada desde otra computadora.
+Se inspeccionaron el icono nativo y la apertura de la app con el logo interior
+original. Es una instalación nueva; no acredita migración entre firmas ni
+conservación de datos de la instalación anterior. No se verificaron iOS ni
 lectores de pantalla en dispositivo.
