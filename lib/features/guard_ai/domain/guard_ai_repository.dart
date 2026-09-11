@@ -27,12 +27,14 @@ class GuardAiConversation {
     Iterable<GuardAiMessage> messages = const [],
     Iterable<String> suggestions = const [],
     this.canPrepareReport = false,
+    this.isSimulation = false,
   }) : messages = List.unmodifiable(messages),
        suggestions = List.unmodifiable(suggestions);
 
   final List<GuardAiMessage> messages;
   final List<String> suggestions;
   final bool canPrepareReport;
+  final bool isSimulation;
 }
 
 class GuardAiInput {

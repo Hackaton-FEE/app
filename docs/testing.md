@@ -160,3 +160,18 @@ cronología y regreso al dashboard. La navegación se comprueba a 390 px y a
 320 px con texto al 200 %. Las líneas representan solo aristas reales de la
 cuenta elegida, sin inferir conexiones entre sus vecinos. Estas pruebas de
 widgets no sustituyen un recorrido TalkBack/VoiceOver ni un dispositivo nativo.
+
+
+## Conversación de muestra de GuardAI
+
+Abre GuardAI → botón de rayo a la izquierda de enviar → Conversación de muestra.
+El título debe indicar «Muestra». Usa Revisar mi perfil para obtener el
+análisis ficticio y Ayúdame con una recomendación para abrir la confirmación.
+Prueba Posponer y Aceptar: la segunda opción muestra tres pasos y termina con
+«Simulación completada», sin modificar cuentas. Vuelve al inicio desde el menú
+y reabre GuardAI: conserva la conversación y el borrador durante la sesión.
+
+`flutter test test/guard_ai/guard_ai_sample_flow_test.dart` verifica el recorrido
+a 320 × 640 y texto al 100 % y 200 %, el retorno con una sola salida de ruta,
+el borrador, la separación del chat normal y las etiquetas/objetivos Android.
+No prueba TalkBack, VoiceOver ni ejecución externa.

@@ -2,8 +2,9 @@
 
 El cliente Flutter 3.47.2 / Dart 3.13.2 presenta la huella digital consultada por
 la API FEE. La entrega actual se valida en Android; Apple queda aplazado por
-petición del usuario. No incluye cuentas, hallazgos ni respuestas de demostración
-en producción. Los dobles y datos ficticios se encuentran exclusivamente en tests.
+petición del usuario. No incluye cuentas ni hallazgos de demostración en los escaneos. GuardAI
+ofrece una conversación de muestra explícita y separada, con datos ficticios
+y sin comunicación externa; el chat normal conserva su adaptador configurado.
 
 ## Composición y responsabilidades
 
@@ -142,7 +143,15 @@ conversaciones y borradores durante la sesión, ayuda, informes y diálogos de
 acciones. `FeeApp.guardAiRepositoryFactory` crea un repositorio independiente
 por cuenta y por conversación. El adaptador de producción sigue siendo
 `UnavailableGuardAiRepository`: conserva el borrador y avisa que el mensaje no
-se ha enviado. Los ejemplos y ejecutores simulados viven solo en `test/support`.
+se ha enviado. Desde «Acciones rápidas» se puede abrir una conversación de
+muestra separada con `SampleGuardAiRepository`, identificada en el título.
+Usa siempre el perfil ficticio @cliente.demo; nunca interpreta un escaneo real.
+Los atajos permiten revisar el perfil de muestra, preparar un plan y pedir
+ayuda para abrir la confirmación. Conservan el borrador. Aceptar inicia el
+ejecutor local de muestra y su progreso; completar la simulación no modifica
+cuentas ni envía solicitudes. Posponer conserva una preferencia de sesión.
+El menú se cierra con `closeDrawer` antes de salir una sola vez de GuardAI,
+sin apilar un dashboard nuevo. El resto de dobles vive en `test/support`.
 `GuardAiActionExecutor` permite integrar ejecución y progreso; su implementación
 por defecto falla sin confirmar éxito. Posponer no programa notificaciones.
 

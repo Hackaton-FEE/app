@@ -29,15 +29,15 @@ class GuardAiController extends ChangeNotifier {
     final messages = conversation.messages.where(
       (m) => m.role == GuardAiRole.person,
     );
+    if (conversation.isSimulation) return 'Conversación de muestra';
     return messages.isEmpty ? 'Nueva conversación' : messages.first.text;
   }
 
-  Future<void> newChat() async {
+  Future<void> newChat({GuardAiRepository? repository}) async {
     if (_isSending || _isLoading || _disposed) return;
     _chats[_chatId] = (_repository, _conversation, _draft);
     _chatId = _nextChatId++;
-    final repository = _createRepository();
-    _repository = repository;
+    _repository = repository ?? _createRepository();
     _conversation = GuardAiConversation();
     _draft = '';
     _status = null;
@@ -152,6 +152,15 @@ class GuardAiController extends ChangeNotifier {
       _isSending = false;
       _emit();
     }
+  }
+
+  Future<bool> sendQuickPrompt(String prompt) async {
+    if (_isSending || _isLoading || !_loaded || _disposed) return false;
+    final savedDraft = _draft;
+    setDraft(prompt);
+    final succeeded = await sendDraft();
+    setDraft(savedDraft);
+    return succeeded;
   }
 
   void _emit() {

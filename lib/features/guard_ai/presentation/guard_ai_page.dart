@@ -1,5 +1,10 @@
 import 'dart:async';
 
+import '../data/sample_guard_ai_repository.dart';
+import '../data/sample_guard_ai_action_executor.dart';
+import 'widgets/guard_ai_action_dialog.dart';
+import 'widgets/guard_ai_quick_actions.dart';
+
 import 'package:flutter/material.dart';
 
 import '../../../shared/presentation/status_notice.dart';
@@ -31,6 +36,8 @@ class GuardAiPage extends StatefulWidget {
 class _GuardAiPageState extends State<GuardAiPage> {
   late final TextEditingController _text;
   final _inputFocus = FocusNode();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _returningHome = false;
   final _inputKey = GlobalKey();
   final _latestReplyKey = GlobalKey();
   late GuardAiConversation _conversation;
@@ -75,7 +82,10 @@ class _GuardAiPageState extends State<GuardAiPage> {
       key: ValueKey(widget.controller.chatId),
       messages: _conversation.messages,
       decisions: _decisions,
-      createActionExecutor: widget.createActionExecutor,
+      createActionExecutor: _conversation.isSimulation
+          ? SampleGuardAiActionExecutor.new
+          : widget.createActionExecutor,
+      isSimulation: _conversation.isSimulation,
       latestReplyKey: _latestReplyKey,
     );
   }
@@ -119,6 +129,45 @@ class _GuardAiPageState extends State<GuardAiPage> {
     unawaited(_send());
   }
 
+  Future<void> _quickAction(String choice) async {
+    if (choice == sampleConversationAction) {
+      await widget.controller.newChat(repository: SampleGuardAiRepository());
+      return;
+    }
+    final succeeded = await widget.controller.sendQuickPrompt(choice);
+    if (!mounted) return;
+    _text.text = widget.controller.draft;
+    if (!succeeded) return;
+    _followReply = true;
+    _inputFocus.unfocus();
+    final message = widget.controller.conversation.messages.last;
+    if (choice == SampleGuardAiRepository.help &&
+        message.recommendedAction != null) {
+      final simulation = widget.controller.conversation.isSimulation;
+      final result = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => GuardAiActionDialog(
+          action: message.recommendedAction!,
+          isSimulation: simulation,
+          executor: simulation
+              ? SampleGuardAiActionExecutor()
+              : widget.createActionExecutor?.call(),
+        ),
+      );
+      if (mounted && result != null) {
+        _decisions[message] = result;
+        setState(_updateHistory);
+      }
+    }
+  }
+
+  void _returnHome() {
+    if (_returningHome || widget.controller.isSending) return;
+    _returningHome = true;
+    _scaffoldKey.currentState?.closeDrawer();
+  }
+
   void _showHelp() {
     showDialog<void>(
       context: context,
@@ -153,22 +202,25 @@ class _GuardAiPageState extends State<GuardAiPage> {
       return PopScope(
         canPop: !controller.isSending,
         child: Scaffold(
-          drawer: GuardAiDrawer(
-            controller: controller,
-            onHome: () {
-              Navigator.of(context).pop();
+          key: _scaffoldKey,
+          onDrawerChanged: (open) {
+            if (!open && _returningHome) {
+              _returningHome = false;
               Navigator.of(context).maybePop();
-            },
-          ),
+            }
+          },
+          drawer: GuardAiDrawer(controller: controller, onHome: _returnHome),
           appBar: AppBar(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.shield_outlined, size: 22),
-                SizedBox(width: 8),
+                const Icon(Icons.shield_outlined, size: 22),
+                const SizedBox(width: 8),
                 Flexible(
                   child: Text(
-                    'GuardAI',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    controller.conversation.isSimulation
+                        ? 'Muestra'
+                        : 'GuardAI',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -215,6 +267,7 @@ class _GuardAiPageState extends State<GuardAiPage> {
                           inputKey: _inputKey,
                           onSend: _send,
                           onSuggestion: _selectSuggestion,
+                          onQuickAction: _quickAction,
                         ),
                       ),
                     ),
