@@ -216,13 +216,24 @@ class OsintClient {
   }
 
   Never _handleError(http.Response response) {
-    // Response bodies may echo identifiers. Keep diagnostics independent of them.
+    String? serverDetail;
+    try {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      if (body is Map<String, dynamic> && body['detail'] is String) {
+        final d = (body['detail'] as String).trim();
+        if (d.isNotEmpty && !d.contains('\n')) {
+          serverDetail = d;
+        }
+      }
+    } catch (_) {}
+
     final message = switch (response.statusCode) {
-      400 || 422 => 'Revisa el identificador y el consentimiento del escaneo.',
+      400 || 422 =>
+        serverDetail ?? 'Revisa el identificador y el consentimiento del escaneo.',
       401 => 'Sesión no autorizada o expirada. Vuelve a iniciar sesión.',
-      403 => 'No tienes acceso a este escaneo.',
-      404 => 'El escaneo ya no está disponible.',
-      409 => 'El escaneo aún no está listo. Inténtalo más tarde.',
+      403 => serverDetail ?? 'No tienes acceso a este escaneo.',
+      404 => serverDetail ?? 'El escaneo ya no está disponible.',
+      409 => serverDetail ?? 'El escaneo aún no está listo. Inténtalo más tarde.',
       429 =>
         'Límite de escaneos alcanzado en el servidor. Inténtalo más tarde.',
       _ => 'No se pudo completar la consulta al servidor OSINT.',
@@ -230,3 +241,4 @@ class OsintClient {
     throw FormatException(message);
   }
 }
+

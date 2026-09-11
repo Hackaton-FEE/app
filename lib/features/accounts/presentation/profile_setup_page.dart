@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/palette.dart';
 import '../../../core/widgets/app_logo.dart';
+import '../../footprint/domain/scan_target.dart';
 import '../../footprint/presentation/footprint_controller.dart';
 import '../domain/identity_profile.dart';
 import '../domain/local_account.dart';
@@ -204,8 +205,9 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                   TextFormField(
                     controller: _identifierController,
                     decoration: const InputDecoration(
-                      labelText: 'Nombre o identificador principal *',
-                      helperText: 'Tu nombre, alias o identificador más utilizado en tus cuentas.',
+                      labelText: 'Alias, correo o nombre principal *',
+                      helperText:
+                          'Tu alias en redes (sin espacios), correo o nombre completo.',
                       prefixIcon: Icon(Icons.person_outline_rounded),
                     ),
                     keyboardType: TextInputType.text,
@@ -213,7 +215,12 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
                       if (val == null || val.trim().isEmpty) {
                         return 'El identificador principal es obligatorio.';
                       }
-                      return null;
+                      try {
+                        ScanTarget.parse(val);
+                        return null;
+                      } on FormatException catch (e) {
+                        return e.message;
+                      }
                     },
                   ),
                   const SizedBox(height: 18),

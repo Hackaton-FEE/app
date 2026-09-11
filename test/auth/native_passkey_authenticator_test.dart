@@ -198,6 +198,20 @@ void main() {
     }
   });
 
+  test('RP ID validation failure from Android Credential Manager maps to passkey_domain_unavailable', () async {
+    platform.error = native.UnhandledAuthenticatorException(
+      'android-unhandled',
+      'RP ID cannot be validated.',
+      null,
+    );
+    try {
+      await authenticator.createCredential(_registration);
+      fail('must fail');
+    } on AuthApiException catch (error) {
+      expect(error.code, 'passkey_domain_unavailable');
+    }
+  });
+
   test('missing native signature cannot become success', () async {
     platform.signature = '';
     await expectLater(

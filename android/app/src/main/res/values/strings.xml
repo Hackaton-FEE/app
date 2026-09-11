@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="asset_statements" translatable="false">
+        [
+            {
+                \"include\": \"https://backosisnt.ici-labs.com/.well-known/assetlinks.json\"
+            },
+            {
+                \"relation\": [
+                    \"delegate_permission/common.handle_all_urls\",
+                    \"delegate_permission/common.get_login_creds\"
+                ],
+                \"target\": {
+                    \"namespace\": \"web\",
+                    \"site\": \"https://backosisnt.ici-labs.com\"
+                }
+            }
+        ]
+    </string>
+</resources>

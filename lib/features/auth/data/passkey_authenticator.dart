@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:passkeys/authenticator.dart' as native;
 import 'package:passkeys/types.dart' as native;
@@ -69,8 +71,8 @@ class NativePasskeyAuthenticator implements PasskeyAuthenticator {
       }
       await _remember(result.id);
       return result.toJson();
-    } catch (error) {
-      throw _authError(error);
+    } catch (error, stackTrace) {
+      throw _authError(error, stackTrace);
     }
   }
 
@@ -97,8 +99,8 @@ class NativePasskeyAuthenticator implements PasskeyAuthenticator {
       }
       await _remember(result.id);
       return result.toJson();
-    } catch (error) {
-      throw _authError(error);
+    } catch (error, stackTrace) {
+      throw _authError(error, stackTrace);
     }
   }
 
@@ -160,7 +162,23 @@ class NativePasskeyAuthenticator implements PasskeyAuthenticator {
     code: 'passkey_storage_error',
   );
 
-  AuthApiException _authError(Object error) {
+  AuthApiException _authError(Object error, StackTrace stackTrace) {
+    if (kDebugMode) {
+      final code = switch (error) {
+        native.UnhandledAuthenticatorException e => e.code,
+        PlatformException e => e.code,
+        _ => '',
+      };
+      debugPrint('FEE passkey failure: ${error.runtimeType} [$code]');
+      if (error case native.UnhandledAuthenticatorException e) {
+        final reason = (e.message ?? '')
+            .replaceAll(RegExp(r'\{[\s\S]*\}'), '[request omitted]')
+            .replaceAll(RegExp(r'\S+@\S+'), '[address omitted]')
+            .replaceAll(RegExp(r'[A-Za-z0-9_-]{24,}'), '[identifier omitted]');
+        debugPrint('FEE passkey native reason: $reason');
+      }
+      debugPrint(stackTrace.toString().split('\n').take(6).join('\n'));
+    }
     if (error is AuthApiException) return error;
     if (error is native.PasskeyAuthCancelledException) {
       return const AuthApiException(
@@ -174,7 +192,9 @@ class NativePasskeyAuthenticator implements PasskeyAuthenticator {
         code: 'no_passkey_found',
       );
     }
-    if (error is native.DomainNotAssociatedException) {
+    if (error is native.DomainNotAssociatedException ||
+        (error is native.UnhandledAuthenticatorException &&
+            (error.message?.contains('RP ID cannot be validated') ?? false))) {
       return const AuthApiException(
         message: 'Esta versión de la app aún no está asociada al servicio.',
         code: 'passkey_domain_unavailable',
