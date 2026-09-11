@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../auth/data/auth_api_client.dart';
 import '../data/unavailable_guard_ai_repository.dart';
 import '../domain/guard_ai_repository.dart';
 
@@ -140,6 +141,10 @@ class GuardAiController extends ChangeNotifier {
       return true;
     } on GuardAiUnavailable {
       _error = 'GuardAI aún no está conectado. Tu mensaje no se ha enviado.';
+      _status = null;
+      return false;
+    } on AuthApiException {
+      _error = 'Tu sesión ha caducado. Vuelve a iniciar sesión para continuar.';
       _status = null;
       return false;
     } catch (_) {

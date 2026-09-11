@@ -29,6 +29,8 @@ import '../features/footprint/domain/scan_history_repository.dart';
 import '../features/footprint/presentation/dashboard_page.dart';
 import '../features/footprint/presentation/footprint_controller.dart';
 import '../features/footprint/presentation/scan_history_controller.dart';
+import '../features/guard_ai/data/assistant_client.dart';
+import '../features/guard_ai/data/backend_guard_ai_repository.dart';
 import '../features/guard_ai/data/unavailable_guard_ai_repository.dart';
 import '../features/guard_ai/domain/guard_ai_repository.dart';
 import '../features/guard_ai/presentation/guard_ai_controller.dart';
@@ -89,6 +91,25 @@ class _FeeAppState extends State<FeeApp> {
         unawaited(_accounts.restoreSession());
       }
     }
+  }
+
+  /// Una instancia nueva por llamada: cada chat de GuardAI guarda su propio
+  /// historial en memoria (el servidor no persiste la conversación).
+  GuardAiRepository _guardAiRepositoryFor(LocalAccount account) {
+    if (widget.guardAiRepositoryFactory != null) {
+      return widget.guardAiRepositoryFactory!(account);
+    }
+    if (_accounts.authRepository is BackendAuthRepository) {
+      final backendAuth = _accounts.authRepository! as BackendAuthRepository;
+      return BackendGuardAiRepository(
+        client: AssistantClient(
+          tokenProvider: () => backendAuth.tokenStorage.accessToken,
+          asyncTokenProvider: ({forceRefresh = false}) =>
+              backendAuth.ensureAccessToken(forceRefresh: forceRefresh),
+        ),
+      );
+    }
+    return const UnavailableGuardAiRepository();
   }
 
   _AccountSession _sessionFor(LocalAccount account) => _sessions.putIfAbsent(
@@ -160,11 +181,8 @@ class _FeeAppState extends State<FeeApp> {
       return _AccountSession(
         footprint: footprint,
         guardAi: GuardAiController(
-          widget.guardAiRepositoryFactory?.call(account) ??
-              const UnavailableGuardAiRepository(),
-          createRepository: () =>
-              widget.guardAiRepositoryFactory?.call(account) ??
-              const UnavailableGuardAiRepository(),
+          _guardAiRepositoryFor(account),
+          createRepository: () => _guardAiRepositoryFor(account),
         ),
         scanHistory: history,
         identity: identity,
